@@ -1,0 +1,1388 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Le choix intertemporel</title>
+  <style>
+    :root {
+      --paper:#f8f5ed; --panel:#fffdf8; --ink:#132536; --muted:#66747d;
+      --line:#e4e2dc; --green:#176b52; --blue:#1737ff; --red:#b6483b;
+      --gold:#c98c2d; --soft:#edf3f0; --button:#e8edf0;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--paper);color:var(--ink);font-family:Georgia,"Times New Roman",serif;
+         font-size:18px;line-height:1.5;overflow:hidden;}
+    .app{height:100vh;height:100dvh;display:grid;
+         grid-template-columns:minmax(290px,34%) 1fr;
+         grid-template-rows:auto minmax(0,1fr);gap:18px;padding:18px;overflow:hidden;}
+    .progress-strip{grid-column:1/-1;display:flex;gap:6px;align-items:center;
+         overflow-x:auto;padding:7px;border:1px solid var(--line);border-radius:14px;
+         background:rgba(255,253,248,.92);box-shadow:0 8px 20px rgba(19,37,54,.04);}
+    .progress-step{flex:1 1 0;min-width:0;padding:6px 11px;border:1px solid #d6ded9;
+         border-radius:9px;background:#fbfaf5;color:var(--muted);font-size:14px;
+         font-weight:700;text-align:center;white-space:nowrap;}
+    .progress-step.done{color:var(--green);background:#edf6f2;}
+    .progress-step.current{color:#fff;background:var(--green);border-color:var(--green);}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+           padding:20px;box-shadow:0 14px 34px rgba(19,37,54,.06);min-height:0;overflow:hidden;}
+    .left-panel{display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+    h1{margin:0 0 14px;color:var(--muted);text-transform:uppercase;font-size:24px;letter-spacing:.02em;}
+    .narration-text{flex:1;min-height:200px;padding:20px;border:1px solid var(--line);
+         border-radius:14px;background:#fffefa;font-size:21px;overflow:auto;line-height:1.55;}
+    .controls{display:flex;flex-wrap:wrap;gap:11px;margin-top:16px;}
+    button{border:0;border-radius:999px;padding:11px 18px;color:var(--ink);
+           background:var(--button);font:700 17px Georgia,serif;cursor:pointer;
+           transition:transform .15s,opacity .15s;}
+    button:hover:not(:disabled){transform:translateY(-1px);}
+    button:disabled{opacity:.5;cursor:default;}
+    button.primary{background:var(--green);color:#fff;}
+    button.action-focus{box-shadow:0 0 0 3px rgba(23,107,82,.18),0 8px 20px rgba(23,107,82,.22);transform:translateY(-1px);}
+    .btn-dev{font-size:12px;padding:4px 11px;background:transparent;border:1px dashed #b0b8bc;
+             color:var(--muted);border-radius:999px;font-family:Georgia,serif;font-weight:700;cursor:pointer;align-self:center;}
+    .btn-dev.on{border-color:var(--gold);color:var(--gold);background:#fdf6e3;}
+    .score-card{margin-top:14px;padding:13px 15px;border:1px solid #d5e0dc;border-radius:12px;
+                background:#f5f9f7;display:none;}
+    .score-card.visible{display:block;}
+    .score-title{color:var(--green);font-weight:700;font-size:18px;margin-bottom:8px;}
+    .score-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .score-item{padding:8px 10px;border-radius:10px;background:#fff;border:1px solid #dfe8e4;}
+    .score-label{color:var(--muted);font-size:13px;font-weight:700;}
+    .score-value{color:var(--ink);font-size:24px;font-weight:700;line-height:1.05;}
+    .main{display:grid;gap:16px;grid-template-rows:minmax(0,1fr) auto;min-height:0;}
+    .main.no-exercise{grid-template-rows:minmax(0,1fr);}
+    .main.no-exercise .interaction{display:none;}
+    .main>.panel:first-child{display:grid;grid-template-rows:minmax(0,1fr);}
+    .stage{min-height:0;height:100%;display:grid;place-items:center;overflow:hidden;}
+    .interaction{min-height:140px;max-height:30vh;overflow:auto;}
+    .interaction.titleless h2{display:none;}
+    .interaction.action-focus{border-color:rgba(23,107,82,.55);
+      box-shadow:0 0 0 3px rgba(23,107,82,.12),0 14px 30px rgba(23,107,82,.12);}
+    .interaction.action-focus h2{color:var(--green);font-weight:700;}
+    h2{margin:0 0 10px;color:var(--muted);text-transform:uppercase;font-size:20px;}
+    .action-hint{margin:-2px 0 10px;padding:7px 11px;border:1px solid #c9d8d2;border-radius:999px;
+                 width:fit-content;max-width:100%;color:var(--green);background:#edf6f2;
+                 font-size:15px;font-weight:700;}
+    .feedback{min-height:30px;margin-top:10px;color:var(--green);font-weight:700;font-size:17px;}
+    .feedback.err{color:var(--red);}
+    .button-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px;}
+    .choice-prompt{margin:0 0 10px;font-size:21px;line-height:1.45;}
+    .formula{color:var(--green);font-size:24px;font-weight:700;text-align:center;
+             padding:10px 14px;background:var(--soft);border-radius:10px;margin:8px 0;}
+    .formula-card{padding:15px 18px;border:1px solid #d5e0dc;border-radius:12px;background:#fbfaf5;}
+    .banner{padding:14px 18px;border:1px solid #d5e0dc;border-radius:12px;background:var(--soft);
+            color:var(--green);font-size:22px;font-weight:700;text-align:center;}
+    .cover-page{width:min(820px,100%);display:grid;gap:18px;padding:28px;
+                border:1px solid #c9d8d2;border-radius:16px;background:#fffefa;}
+    .cover-title{color:var(--green);font-size:36px;font-weight:700;line-height:1.15;}
+    .cover-list{display:grid;gap:8px;margin:0;padding-left:20px;font-size:20px;}
+    .cover-author{color:var(--muted);font-size:14px;font-weight:700;}
+    .graph-wrap{width:min(880px,100%);display:grid;gap:12px;justify-items:center;}
+    .graph-wrap.wide{width:100%;justify-items:stretch;}
+    svg{width:min(600px,100%,62vh);height:auto;border:1px solid #d5e0dc;border-radius:14px;
+        background:#f7fafb;}
+    svg.full{width:100%;max-height:520px;}
+    .result-statement{padding:22px 26px;border:1px solid #c9d8d2;border-radius:14px;
+                      background:#edf6f2;color:var(--green);font-size:26px;font-weight:700;
+                      line-height:1.3;text-align:center;}
+    .token-build{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px;
+                 border:1px solid #cfd8dc;border-radius:12px;background:#fff;min-height:60px;}
+    .token-slot{min-width:44px;min-height:38px;display:inline-grid;place-items:center;
+                padding:6px 10px;border:2px dashed #a8bbc3;border-radius:8px;
+                color:var(--green);font-weight:700;background:#f5fbf8;}
+    .token-slot.filled{border-style:solid;border-color:var(--green);}
+    .token-palette{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+    .token-palette button{min-width:50px;padding:8px 13px;}
+    .note-box{margin-top:10px;padding:12px 14px;border:1px solid #d5e0dc;border-radius:10px;
+              background:#fbfaf5;color:var(--muted);font-size:16px;}
+    .slider-wrap{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;}
+    .slider-wrap label{font-weight:700;color:var(--ink);white-space:nowrap;}
+    .slider-wrap input[type=range]{flex:1;min-width:120px;accent-color:var(--green);}
+    .slider-val{font-weight:700;color:var(--green);min-width:40px;}
+    .two-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
+    .info-card{padding:14px;border:1px solid #d5e0dc;border-radius:12px;background:#fbfaf5;}
+    .info-card h3{font-size:15px;color:var(--green);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+    .quiz-wrap{display:grid;gap:14px;}
+    .quiz-q{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:#fbfaf5;}
+    .quiz-q p{font-size:19px;margin-bottom:10px;}
+    .elicit-card{max-width:680px;padding:24px;border:1px solid var(--line);border-radius:16px;
+                 background:#fffefa;display:grid;gap:16px;}
+    .elicit-amount{font-size:28px;font-weight:700;color:var(--green);text-align:center;padding:12px;}
+    .elicit-badges{display:flex;gap:10px;flex-wrap:wrap;}
+    .badge{padding:6px 14px;border-radius:999px;font-size:15px;font-weight:700;}
+    .badge-green{background:#edf6f2;color:var(--green);border:1px solid rgba(23,107,82,.2);}
+    .badge-gold{background:#fdf6e3;color:#7a4f11;border:1px solid rgba(201,140,45,.2);}
+    .badge-red{background:#fdf0ee;color:var(--red);border:1px solid rgba(182,72,59,.2);}
+    .bank-slider-wrap{display:grid;gap:10px;padding:16px;border:1px solid #d5e0dc;border-radius:12px;background:#fbfaf5;}
+    .bank-display{font-size:22px;font-weight:700;padding:12px;border-radius:10px;
+                  background:#edf6f2;color:var(--green);text-align:center;}
+    .bank-display.bad{background:#fdf0ee;color:var(--red);}
+    select{min-width:140px;border:1px solid #cfd8dc;border-radius:10px;padding:9px 11px;
+           background:#fff;color:var(--ink);font:700 17px Georgia,serif;}
+    /* nav panel */
+    .nav-backdrop{display:none;position:fixed;inset:0;background:rgba(19,37,54,.28);z-index:999;}
+    .nav-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+               background:var(--panel);border:1px solid var(--line);border-radius:16px;
+               box-shadow:0 20px 50px rgba(19,37,54,.18);padding:18px;z-index:1000;
+               max-height:80vh;overflow-y:auto;width:min(360px,92vw);}
+    .nav-panel-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;
+                     letter-spacing:.04em;margin-bottom:12px;}
+    .nav-panel-item{display:block;width:100%;text-align:left;padding:8px 11px;margin-bottom:3px;
+                    border-radius:8px;border:1px solid transparent;background:transparent;
+                    color:var(--ink);font:400 15px Georgia,serif;cursor:pointer;}
+    .nav-panel-item:hover{background:var(--soft);}
+    .nav-panel-item.nav-current{background:#edf6f2;color:var(--green);border-color:#c0ddd4;font-weight:700;}
+    @media(max-width:860px){
+      .app{grid-template-columns:1fr;grid-template-rows:auto auto minmax(0,1fr);padding:12px;}
+      .narration-text{min-height:160px;}
+    }
+    @media(max-height:820px){
+      body{font-size:16px;}
+      .app{gap:12px;padding:12px;}
+      .panel{padding:14px;}
+      .narration-text{min-height:160px;padding:16px;font-size:18px;}
+      .interaction{min-height:110px;max-height:26vh;}
+      h1,h2{font-size:20px;margin-bottom:8px;}
+      button{padding:8px 14px;font-size:15px;}
+    }
+    @media(max-height:700px){
+      .app{gap:8px;padding:8px;}
+      .panel{padding:10px;border-radius:12px;}
+      .narration-text{min-height:120px;padding:12px;font-size:16px;}
+      .interaction{min-height:90px;max-height:24vh;}
+      svg{width:min(480px,100%,52vh);}
+    }
+  </style>
+</head>
+<body>
+<div id="navBackdrop" class="nav-backdrop"></div>
+<div id="navPanel" class="nav-panel">
+  <div class="nav-panel-title">Aller à la diapositive</div>
+  <div id="navPanelItems"></div>
+</div>
+<main class="app">
+  <nav id="progressStrip" class="progress-strip" aria-label="Progression"></nav>
+  <section class="panel left-panel">
+    <h1 id="seqTitle">Progression</h1>
+    <div id="narration" class="narration-text"></div>
+    <div class="controls">
+      <button id="backBtn">Retour</button>
+      <button id="nextBtn" class="primary">Suivant</button>
+      <button id="devBtn" class="btn-dev" title="Passer (dev)">dev →</button>
+      <button id="navBtn" class="btn-dev" title="Navigation">↗ aller à</button>
+    </div>
+    <div id="scoreCard" class="score-card">
+      <div class="score-title">Score</div>
+      <div class="score-grid">
+        <div class="score-item"><div class="score-label">Réussites</div><div id="scoreP" class="score-value">0</div></div>
+        <div class="score-item"><div class="score-label">1er coup</div><div id="scorePr" class="score-value">0</div></div>
+      </div>
+    </div>
+  </section>
+  <section class="main" id="mainSection">
+    <section class="panel"><div id="stage" class="stage"></div></section>
+    <section class="panel interaction" id="intPanel">
+      <h2 id="intTitle">Exercice</h2>
+      <div id="hint" class="action-hint" style="display:none"></div>
+      <div id="interaction"></div>
+      <div id="feedback" class="feedback"></div>
+    </section>
+  </section>
+</main>
+
+<script>
+'use strict';
+// ─── Config ───────────────────────────────────────────────────────
+const G = {
+  R1:100, R2:110, r:.10, rC:.05, rD:.15, rho:.10,
+  sz:460, mg:54, mc:240,
+  get delta(){return 1/(1+this.rho);},
+  get W(){return this.R1+this.R2/(1+this.r);},
+  get WF(){return this.R1*(1+this.r)+this.R2;},
+};
+
+// ─── Elicitation state ────────────────────────────────────────────
+const elic={phase:0, q1:null, q2:null, q3:null, rhoEst:.10, consistent:null};
+
+// ─── App state ────────────────────────────────────────────────────
+const S={
+  step:0,
+  answered:new Set(),
+  active:null,
+  missed:new Set(),
+  score:{p:0,pr:0},
+};
+
+// ─── DOM refs ─────────────────────────────────────────────────────
+const $=(id)=>document.getElementById(id);
+const narration=$('narration'), stage=$('stage'), interaction=$('interaction');
+const feedback=$('feedback'), mainSection=$('mainSection'), intPanel=$('intPanel');
+const intTitle=$('intTitle'), hint=$('hint'), seqTitle=$('seqTitle');
+const scoreCard=$('scoreCard'), scoreP=$('scoreP'), scorePr=$('scorePr');
+const backBtn=$('backBtn'), nextBtn=$('nextBtn');
+const navBackdrop=$('navBackdrop'), navPanel=$('navPanel'), navPanelItems=$('navPanelItems');
+
+// ─── SVG helpers ──────────────────────────────────────────────────
+function sx(x){return G.mg+(x/G.mc)*(G.sz-2*G.mg);}
+function sy(y){return G.sz-G.mg-(y/G.mc)*(G.sz-2*G.mg);}
+function sxR(px){return Math.max(0,Math.min(G.mc,(px-G.mg)/(G.sz-2*G.mg)*G.mc));}
+function syR(py){return Math.max(0,Math.min(G.mc,(G.sz-G.mg-py)/(G.sz-2*G.mg)*G.mc));}
+function svgE(tag,attrs={}){
+  const e=document.createElementNS("http://www.w3.org/2000/svg",tag);
+  for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);
+  return e;
+}
+
+function makeSVG(label=''){
+  const svg=svgE('svg',{viewBox:`0 0 ${G.sz} ${G.sz}`,'aria-label':label||'Graphique'});
+  // grid
+  for(let i=0;i<=G.mc;i+=40){
+    svg.appendChild(svgE('line',{x1:sx(i),y1:sy(0),x2:sx(i),y2:sy(G.mc),stroke:'#d7e0e4','stroke-width':1}));
+    svg.appendChild(svgE('line',{x1:sx(0),y1:sy(i),x2:sx(G.mc),y2:sy(i),stroke:'#d7e0e4','stroke-width':1}));
+  }
+  // axes
+  svg.appendChild(svgE('line',{x1:sx(0),y1:sy(0),x2:sx(G.mc)+10,y2:sy(0),stroke:'#132536','stroke-width':3}));
+  svg.appendChild(svgE('line',{x1:sx(0),y1:sy(0),x2:sx(0),y2:sy(G.mc)-10,stroke:'#132536','stroke-width':3}));
+  svg.appendChild(svgE('polygon',{points:`${sx(G.mc)+10},${sy(0)} ${sx(G.mc)},${sy(0)-6} ${sx(G.mc)},${sy(0)+6}`,fill:'#132536'}));
+  svg.appendChild(svgE('polygon',{points:`${sx(0)},${sy(G.mc)-10} ${sx(0)-6},${sy(G.mc)} ${sx(0)+6},${sy(G.mc)}`,fill:'#132536'}));
+  // axis ticks & labels
+  for(let i=40;i<=G.mc;i+=40){
+    svg.appendChild(svgE('text',{x:sx(i)-8,y:sy(0)+22,fill:'#66747d','font-size':13,'text-anchor':'middle'})).textContent=i;
+    svg.appendChild(svgE('text',{x:sx(0)-12,y:sy(i)+5,fill:'#66747d','font-size':13,'text-anchor':'end'})).textContent=i;
+  }
+  // axis names
+  const lx=svgE('text',{x:sx(G.mc)-40,y:sy(0)+34,fill:'#132536','font-size':18,'font-weight':700});
+  lx.textContent='c₁'; svg.appendChild(lx);
+  const ly=svgE('text',{x:sx(0)-28,y:sy(G.mc)+60,fill:'#132536','font-size':18,'font-weight':700,
+    transform:`rotate(-90 ${sx(0)-28} ${sy(G.mc)+60})`});
+  ly.textContent='c₂'; svg.appendChild(ly);
+  return svg;
+}
+
+function drawBL(svg, r=G.r, R1=G.R1, R2=G.R2, color='#b6483b', width=3.5){
+  const W=R1+R2/(1+r), WF=R1*(1+r)+R2;
+  const x1=0, y1=Math.min(WF,G.mc);
+  const x2=Math.min(W,G.mc), y2=Math.max(0,WF-(1+r)*Math.min(W,G.mc));
+  svg.appendChild(svgE('path',{
+    d:`M ${sx(x1)} ${sy(y1)} L ${sx(x2)} ${sy(y2)}`,
+    fill:'none',stroke:color,'stroke-width':width,'stroke-linecap':'round'
+  }));
+}
+
+function drawKinkedBL(svg, rC=G.rC, rD=G.rD, R1=G.R1, R2=G.R2){
+  // Left segment (saver): from (0, R2+(1+rC)*R1) to E=(R1,R2)
+  const WF_c = R1*(1+rC)+R2;
+  svg.appendChild(svgE('path',{
+    d:`M ${sx(0)} ${sy(Math.min(WF_c,G.mc))} L ${sx(R1)} ${sy(R2)}`,
+    fill:'none',stroke:'#176b52','stroke-width':3.5,'stroke-linecap':'round'
+  }));
+  // Right segment (borrower): from E=(R1,R2) to (R1+R2/(1+rD), 0)
+  const W_d = R1+R2/(1+rD);
+  svg.appendChild(svgE('path',{
+    d:`M ${sx(R1)} ${sy(R2)} L ${sx(Math.min(W_d,G.mc))} ${sy(0)}`,
+    fill:'none',stroke:'#b6483b','stroke-width':3.5,'stroke-linecap':'round'
+  }));
+}
+
+function drawIC(svg, k, delta=G.delta, highlighted=false, color=null){
+  const pts=[];
+  for(let c1=5;c1<=G.mc;c1+=1){
+    const lnc2=(k-Math.log(c1))/delta;
+    const c2=Math.exp(lnc2);
+    if(c2>1&&c2<=G.mc) pts.push(`${sx(c1).toFixed(1)},${sy(c2).toFixed(1)}`);
+  }
+  if(pts.length<2)return;
+  const d='M '+pts.join(' L ');
+  const sc=color||(highlighted?'#1737ff':'#6c85ff');
+  const sw=highlighted?4:2.5;
+  svg.appendChild(svgE('path',{d,fill:'none',stroke:sc,'stroke-width':sw,'stroke-linecap':'round',opacity:highlighted?.95:.62}));
+}
+
+function icLevel(c1,c2,delta=G.delta){return Math.log(c1)+delta*Math.log(c2);}
+
+function optPoint(r=G.r,R1=G.R1,R2=G.R2,rho=G.rho){
+  // U=ln(c1)+delta*ln(c2), BC: c1+c2/(1+r)=W
+  // FOC: 1/c1 = delta*(1+r)/c2 => c2=delta*(1+r)*c1
+  // => c1(1+delta)=W
+  const delta=1/(1+rho), W=R1+R2/(1+r);
+  const c1=W/(1+delta), c2=delta*(1+r)*c1;
+  return{c1,c2};
+}
+
+function drawPt(svg,c1,c2,label,color='#176b52',dx=10,dy=-12){
+  svg.appendChild(svgE('circle',{cx:sx(c1),cy:sy(c2),r:7,fill:color,stroke:'#fff','stroke-width':3}));
+  const t=svgE('text',{x:sx(c1)+dx,y:sy(c2)+dy,fill:color,'font-size':16,'font-weight':700});
+  t.textContent=label; svg.appendChild(t);
+}
+
+function svgText(svg,txt,c1,c2,color,size=15){
+  const t=svgE('text',{x:sx(c1),y:sy(c2),fill:color,'font-size':size,'font-weight':700});
+  t.textContent=txt; svg.appendChild(t);
+}
+
+// ─── Feedback helpers ─────────────────────────────────────────────
+function setFB(txt,ok=true){
+  feedback.innerHTML=txt;
+  feedback.className='feedback'+(ok?'':' err');
+  if(!S.active)return;
+  if(!ok){S.missed.add(S.active);}
+  else if(/^(Exact|Très bien|Correct|Oui|Bien)/i.test(String(txt))){
+    if(!S.score.p||!S.answered.has(S.active)){
+      S.score.p++;
+      if(!S.missed.has(S.active))S.score.pr++;
+      S.answered.add(S.active);
+      scoreP.textContent=S.score.p; scorePr.textContent=S.score.pr;
+      scoreCard.classList.add('visible');
+    }
+  }
+}
+function setActive(key){S.active=key;}
+
+// ─── Progress strip ───────────────────────────────────────────────
+const sections=[
+  {label:'1. Préférences',from:0,to:6},
+  {label:'2. Contrainte',from:7,to:14},
+  {label:'3. Choix',from:15,to:19},
+  {label:'4. Extensions',from:20,to:25},
+];
+function renderStrip(){
+  $('progressStrip').innerHTML=sections.map((s,i)=>{
+    const cur=S.step>=s.from&&S.step<=s.to;
+    const done=S.step>s.to;
+    return`<span class="progress-step${cur?' current':done?' done':''}">${s.label}</span>`;
+  }).join('');
+}
+
+// ─── Steps ────────────────────────────────────────────────────────
+const steps=[
+  // 0 — Cover
+  {label:'Présentation',text:'Ce module porte sur le choix intertemporel. Comment un individu choisit-il entre consommer aujourd\'hui et consommer demain ?',
+   render:renderCover},
+  // 1 — Élicitation
+  {label:'Vos préférences',text:'Avant toute théorie, une expérience : je vais vous soumettre trois choix pour révéler votre propre taux de préférence pour le présent.',
+   render:renderElicit,gate:()=>S.answered.has('elic_done')},
+  // 2 — ρ et δ
+  {label:'ρ et δ',text:'Le taux de préférence pour le présent ρ et le facteur d\'actualisation δ sont les deux faces d\'une même pièce. Voyons le lien.',
+   render:renderDelta,gate:()=>S.answered.has('delta_done')},
+  // 3 — Courbes d'indifférence
+  {label:'Courbes d\'indifférence',text:'Dans l\'espace (c₁, c₂), les préférences s\'expriment comme dans l\'espace de deux biens : par des courbes d\'indifférence.',
+   render:renderIC},
+  // 4 — TMS intertemporel
+  {label:'TMS intertemporel',text:'La pente des courbes d\'indifférence dans (c₁, c₂) est le taux marginal de substitution intertemporel. Découvrons ce qu\'il signifie.',
+   render:renderTMS,gate:()=>S.answered.has('tms_done')},
+  // 5 — Utilité
+  {label:'Fonction d\'utilité',text:'La fonction d\'utilité intertemporelle s\'écrit comme une somme actualisée de félicités. Construisons-la ensemble.',
+   render:renderUtility,gate:()=>S.answered.has('util_done')},
+  // 6 — Quiz 1
+  {label:'Quiz 1',text:'Vérifions les acquis sur les préférences intertemporelles.',
+   render:renderQuiz1,gate:()=>S.answered.has('q1_done')},
+  // 7 — Période 1
+  {label:'Période 1',text:'Construisons la contrainte budgétaire pas à pas. Commençons par la période 1.',
+   render:renderCB1,gate:()=>S.answered.has('cb1_done')},
+  // 8 — Période 2
+  {label:'Période 2',text:'En période 2, l\'individu consomme son revenu R₂ augmenté de ce que lui rapporte son épargne.',
+   render:renderCB2,gate:()=>S.answered.has('cb2_done')},
+  // 9 — Substitution
+  {label:'Substitution',text:'En substituant E tiré de la contrainte de période 1 dans la contrainte de période 2, on obtient la droite de budget intertemporelle.',
+   render:renderSubst,gate:()=>S.answered.has('subst_done')},
+  // 10 — Banque
+  {label:'La banque',text:'Pour comprendre les intercepts de la droite de budget, vivons la situation : tu veux consommer le maximum possible en période 1.',
+   render:renderBank,gate:()=>S.answered.has('bank_done')},
+  // 11 — Graphique
+  {label:'Graphique CB',text:'Traçons maintenant la droite de budget dans le plan (c₁, c₂). Elle passe par le point de dotation E = (R₁, R₂).',
+   render:renderCBGraph},
+  // 12 — Effet de r
+  {label:'Effet de r',text:'Comment une variation du taux d\'intérêt modifie-t-elle la droite de budget ? Explorez avec le curseur.',
+   render:renderREffect,gate:()=>S.answered.has('r_done')},
+  // 13 — Taux asymétriques
+  {label:'Taux asymétriques',text:'En réalité, le taux auquel on emprunte (r_D) est souvent supérieur au taux auquel on épargne (r_C). La droite de budget se coude.',
+   render:renderAsym,gate:()=>S.answered.has('asym_done')},
+  // 14 — Quiz 2
+  {label:'Quiz 2',text:'Vérifions les acquis sur la contrainte budgétaire intertemporelle.',
+   render:renderQuiz2,gate:()=>S.answered.has('q2_done')},
+  // 15 — Choix intro
+  {label:'Le choix',text:'Réunissons maintenant préférences et contrainte : le consommateur choisit le panier (c₁*, c₂*) qui maximise son utilité sur la droite de budget.',
+   render:renderChoiceIntro},
+  // 16 — Tangence
+  {label:'Condition de tangence',text:'À l\'optimum intérieur, la courbe d\'indifférence est tangente à la droite de budget. Découvrons la condition qui en résulte.',
+   render:renderTangency,gate:()=>S.answered.has('tang_done')},
+  // 17 — Épargnant / emprunteur
+  {label:'Épargnant ou emprunteur',text:'Selon la position du point optimal par rapport au point de dotation E, l\'individu est épargnant ou emprunteur.',
+   render:renderSB,gate:()=>S.answered.has('sb_done')},
+  // 18 — Effet de r sur le choix
+  {label:'r et le choix',text:'Comment une hausse de r affecte-t-elle le choix optimal ? L\'effet dépend du statut d\'épargnant ou d\'emprunteur.',
+   render:renderRChoice},
+  // 19 — Quiz 3
+  {label:'Quiz 3',text:'Quiz sur le choix optimal intertemporel.',
+   render:renderQuiz3,gate:()=>S.answered.has('q3_done')},
+  // 20 — N périodes
+  {label:'N périodes',text:'Généralisons à N périodes. La logique est la même : richesse actualisée totale, facteur δ pour chaque période.',
+   render:renderNPer},
+  // 21 — Euler
+  {label:'Équation d\'Euler',text:'La condition d\'optimalité en N périodes s\'appelle l\'équation d\'Euler. Elle généralise la condition de tangence.',
+   render:renderEuler,gate:()=>S.answered.has('euler_done')},
+  // 22 — Incohérence
+  {label:'Incohérence temporelle',text:'Retour sur l\'expérience initiale : pourquoi peut-on observer des réponses contradictoires selon l\'horizon du choix ?',
+   render:renderIncons,gate:()=>S.answered.has('inc_done')},
+  // 23 — β-δ
+  {label:'Modèle β-δ',text:'Le modèle quasi-hyperbolique β-δ formalise l\'incohérence temporelle observée empiriquement.',
+   render:renderBetaDelta},
+  // 24 — Quiz final
+  {label:'Quiz final',text:'Synthèse sur l\'ensemble de la séquence.',
+   render:renderFinalQuiz,gate:()=>S.answered.has('qf_done')},
+  // 25 — Conclusion
+  {label:'Conclusion',text:'Félicitations ! Vous avez maîtrisé les fondements du choix intertemporel.',
+   render:renderConclusion},
+];
+
+const stepLabels=steps.map(s=>s.label);
+
+// ─── Navigation helpers ───────────────────────────────────────────
+function updateNav(){
+  renderStrip();
+  const cur=steps[S.step];
+  narration.innerHTML=cur.text;
+  seqTitle.textContent=`${S.step+1}/${steps.length}`;
+  backBtn.disabled=S.step===0;
+  const gated=cur.gate&&!cur.gate();
+  nextBtn.disabled=(gated||S.step===steps.length-1);
+  nextBtn.classList.toggle('action-focus',!gated&&S.step<steps.length-1);
+  intPanel.classList.toggle('action-focus',!!gated);
+  mainSection.classList.toggle('no-exercise',false);
+  feedback.textContent=''; feedback.className='feedback';
+  hint.style.display='none'; hint.textContent='';
+  intTitle.textContent='Exercice';
+  intPanel.classList.remove('titleless');
+  interaction.innerHTML='';
+  S.active=null;
+  cur.render();
+  // build nav panel
+  navPanelItems.innerHTML=steps.map((s,i)=>
+    `<button class="nav-panel-item${i===S.step?' nav-current':''}" onclick="goStep(${i})">${i+1}. ${s.label}</button>`
+  ).join('');
+}
+
+function goStep(i){
+  S.step=i; hideNavPanel(); updateNav();
+}
+function hideNavPanel(){
+  navPanel.style.display='none'; navBackdrop.style.display='none';
+}
+function noExercise(){
+  mainSection.classList.add('no-exercise');
+}
+function setStage(html){stage.innerHTML=html;}
+function setInt(html){interaction.innerHTML=html;}
+
+backBtn.addEventListener('click',()=>{if(S.step>0){S.step--;updateNav();}});
+nextBtn.addEventListener('click',()=>{if(S.step<steps.length-1){S.step++;updateNav();}});
+$('devBtn').addEventListener('click',()=>{
+  // force-unlock current gate
+  const cur=steps[S.step];
+  if(cur.gate){
+    // add all gate keys for this step manually
+    const gateStr=cur.gate.toString();
+    const keys=gateStr.match(/'([^']+)'/g)||[];
+    keys.forEach(k=>S.answered.add(k.replace(/'/g,'')));
+  }
+  updateNav();
+});
+$('navBtn').addEventListener('click',()=>{
+  navPanel.style.display='block'; navBackdrop.style.display='block';
+});
+navBackdrop.addEventListener('click',hideNavPanel);
+
+// ─── PART 1: PRÉFÉRENCES ──────────────────────────────────────────
+
+function renderCover(){
+  noExercise();
+  setStage(`
+    <div class="cover-page">
+      <div class="cover-title">Le choix intertemporel</div>
+      <div class="formula-card">
+        <p>Dans ce module, vous allez apprendre à :</p>
+        <ul class="cover-list">
+          <li>Modéliser les préférences temporelles (ρ, δ)</li>
+          <li>Construire la contrainte budgétaire intertemporelle</li>
+          <li>Trouver le choix optimal — épargnant ou emprunteur</li>
+          <li>Généraliser à N périodes et comprendre l'incohérence temporelle</li>
+        </ul>
+      </div>
+      <div class="cover-author">Auteur : Tanguy van Ypersele · Programmation IA</div>
+    </div>`);
+}
+
+function renderElicit(){
+  setActive('elic_done');
+  // Phase machine
+  if(elic.phase===0){
+    setStage(`<div class="elicit-card">
+      <div class="choice-prompt" style="font-size:22px">Choix n°1 — répondez spontanément</div>
+      <div class="elicit-amount">100 € <span style="color:var(--muted)">maintenant</span></div>
+      <div style="text-align:center;font-size:26px;color:var(--muted)">— ou —</div>
+      <div class="elicit-amount">110 € <span style="color:var(--muted)">dans 1 mois</span></div>
+    </div>`);
+    setInt(`<div class="choice-prompt">Lequel préférez-vous ?</div>
+      <div class="button-row">
+        <button onclick="elicQ1('now')">100 € maintenant</button>
+        <button onclick="elicQ1('later')">110 € dans 1 mois</button>
+      </div>`);
+    intTitle.textContent='Expérience';
+    hint.textContent='Répondez instinctivement — il n\'y a pas de bonne réponse.';
+    hint.style.display='block';
+  } else if(elic.phase===1){
+    const amt=elic.q1==='now'?115:105;
+    setStage(`<div class="elicit-card">
+      <div class="choice-prompt" style="font-size:22px">Choix n°2 — affinage</div>
+      <div class="elicit-amount">100 € <span style="color:var(--muted)">maintenant</span></div>
+      <div style="text-align:center;font-size:26px;color:var(--muted)">— ou —</div>
+      <div class="elicit-amount">${amt} € <span style="color:var(--muted)">dans 1 mois</span></div>
+    </div>`);
+    setInt(`<div class="choice-prompt">Et maintenant ?</div>
+      <div class="button-row">
+        <button onclick="elicQ2('now')">100 € maintenant</button>
+        <button onclick="elicQ2('later')">${amt} € dans 1 mois</button>
+      </div>`);
+  } else if(elic.phase===2){
+    setStage(`<div class="elicit-card">
+      <div class="choice-prompt" style="font-size:22px">Choix n°3 — test de cohérence</div>
+      <div class="elicit-amount">100 € <span style="color:var(--muted)">dans 12 mois</span></div>
+      <div style="text-align:center;font-size:26px;color:var(--muted)">— ou —</div>
+      <div class="elicit-amount">110 € <span style="color:var(--muted)">dans 13 mois</span></div>
+    </div>`);
+    setInt(`<div class="choice-prompt">Les deux options sont décalées d'un an. Votre choix ?</div>
+      <div class="button-row">
+        <button onclick="elicQ3('now')">100 € dans 12 mois</button>
+        <button onclick="elicQ3('later')">110 € dans 13 mois</button>
+      </div>`);
+  } else {
+    // Reveal
+    let rhoLabel, rhoColor;
+    if(elic.rhoEst>=.18){rhoLabel='élevé (≥ 18 % / mois)';rhoColor='var(--red)';}
+    else if(elic.rhoEst>=.10){rhoLabel='modéré (~10-15 % / mois)';rhoColor='var(--gold)';}
+    else if(elic.rhoEst>=.05){rhoLabel='faible (~5-10 % / mois)';rhoColor='#1737ff';}
+    else{rhoLabel='très faible (< 5 % / mois)';rhoColor='var(--green)';}
+    const consText=elic.consistent
+      ?'✓ Cohérent — vos préférences sont stables dans le temps.'
+      :'⚠ Incohérence temporelle détectée — votre préférence dépend de l\'horizon. Nous y reviendrons !';
+    setStage(`<div class="elicit-card">
+      <div class="choice-prompt" style="font-size:20px">Vos préférences révélées</div>
+      <div class="banner">ρ estimé : <span style="color:${rhoColor}">${(elic.rhoEst*100).toFixed(0)} % / mois</span></div>
+      <div class="formula-card">
+        <p>${consText}</p>
+        <p style="margin-top:10px;color:var(--muted);font-size:16px">Ce taux de préférence pour le présent sera notre point de départ pour comprendre la théorie.</p>
+      </div>
+    </div>`);
+    setInt(`<div class="choice-prompt">Compris ? Passez à la suite pour formaliser ce taux.</div>
+      <div class="button-row"><button class="primary" onclick="elicDone()">Continuer →</button></div>`);
+  }
+}
+
+window.elicQ1=function(ans){
+  elic.q1=ans; elic.phase=1;
+  setFB(ans==='now'?'Vous préférez le présent. Affinons l\'estimation.':'Vous préférez attendre. Affinons l\'estimation.');
+  renderElicit(); updateNav();
+};
+window.elicQ2=function(ans){
+  elic.q2=ans; elic.phase=2;
+  if(elic.q1==='now'&&ans==='now') elic.rhoEst=.20;
+  else if(elic.q1==='now'&&ans==='later') elic.rhoEst=.12;
+  else if(elic.q1==='later'&&ans==='now') elic.rhoEst=.07;
+  else elic.rhoEst=.03;
+  setFB('Bien. Dernier choix pour tester la cohérence de vos préférences.');
+  renderElicit(); updateNav();
+};
+window.elicQ3=function(ans){
+  elic.q3=ans; elic.phase=3;
+  elic.consistent=(elic.q1===ans);
+  renderElicit(); updateNav();
+};
+window.elicDone=function(){
+  S.answered.add('elic_done');
+  G.rho=elic.rhoEst; // update global rho with student's elicited value
+  updateNav();
+};
+
+function renderDelta(){
+  setActive('delta_done');
+  const delta=(1/(1+G.rho)).toFixed(3);
+  setStage(`<div class="graph-wrap" style="max-width:700px;gap:16px">
+    <div class="banner">Le facteur d'actualisation δ = 1 / (1 + ρ)</div>
+    <div class="formula-card">
+      <p>Votre ρ estimé est <b>${(G.rho*100).toFixed(0)} %</b> par mois. Cela correspond à un facteur δ = <b>${delta}</b>.</p>
+      <div class="formula">δ = <span style="display:inline-grid;text-align:center"><span style="border-bottom:2px solid var(--green);padding:0 8px">1</span><span style="padding:0 8px">1 + ρ</span></span></div>
+      <p style="margin-top:12px;color:var(--muted)">δ mesure la valeur accordée à une unité de consommation future par rapport à une unité présente. Plus ρ est grand, plus δ est petit, plus l'avenir est "décoté".</p>
+    </div>
+    <div class="two-cols">
+      <div class="info-card"><h3>ρ → 0 (très patient)</h3>δ → 1 : le futur vaut autant que le présent.</div>
+      <div class="info-card"><h3>ρ → ∞ (très impatient)</h3>δ → 0 : le futur ne vaut presque rien.</div>
+    </div>
+  </div>`);
+  setInt(`<div class="choice-prompt">Si ρ augmente, que se passe-t-il pour δ ?</div>
+    <div class="button-row">
+      <button onclick="chkDelta('up')">δ augmente</button>
+      <button onclick="chkDelta('down')">δ diminue</button>
+      <button onclick="chkDelta('same')">δ ne change pas</button>
+    </div>`);
+}
+window.chkDelta=function(ans){
+  if(ans==='down'){
+    setFB('Exact ! δ = 1/(1+ρ) : quand ρ augmente, δ diminue. Un individu plus impatient actualise davantage le futur.');
+    S.answered.add('delta_done'); updateNav();
+  } else setFB('Pas encore. δ = 1/(1+ρ) : que se passe-t-il quand le dénominateur augmente ?',false);
+};
+
+function renderIC(){
+  noExercise();
+  const svg=makeSVG('Courbes d\'indifférence intertemporelles');
+  // Draw 3 indifference curves
+  const delta=G.delta;
+  const k_opt=icLevel(104.8,104.8,delta);
+  const levels=[k_opt-0.9, k_opt-0.4, k_opt, k_opt+0.5];
+  levels.forEach((k,i)=>drawIC(svg,k,delta,i===2));
+  // Label the tangent curve
+  svgText(svg,'U*',105,118,'#1737ff',15);
+  // Endowment point
+  drawPt(svg,G.R1,G.R2,'E = (R₁,R₂)','#c98c2d',8,-14);
+  setStage(`<div class="graph-wrap">
+    <div class="banner">Espace (c₁, c₂) — courbes d'indifférence</div>
+    <div id="svgMount"></div>
+    <div class="formula-card" style="max-width:540px">
+      La courbe bleue plus foncée est la courbe d'indifférence la plus élevée représentée.
+      Comme pour deux biens, les courbes plus à droite/haut correspondent à une utilité plus élevée.
+    </div>
+  </div>`);
+  document.getElementById('svgMount').appendChild(svg);
+}
+
+function renderTMS(){
+  setActive('tms_done');
+  const svg=makeSVG('TMS intertemporel');
+  const delta=G.delta;
+  const k=icLevel(100,110,delta);
+  drawIC(svg,k,delta,true);
+  drawPt(svg,100,110,'A','#176b52');
+  // tangent line at (100,110): slope = -1/(delta) (for log utility)
+  // TMS = -dc2/dc1 = c2/(delta*c1)
+  const tms=(110/(delta*100));
+  // draw tangent segment
+  const x0=70,x1=130;
+  const y0=110+tms*(100-x0), y1=110+tms*(100-x1);
+  svg.appendChild(svgE('line',{x1:sx(x0),y1:sy(y0),x2:sx(x1),y2:sy(y1),
+    stroke:'#c98c2d','stroke-width':2.5,'stroke-dasharray':'6 3'}));
+  svgText(svg,`pente = −${tms.toFixed(2)}`,135,y1-5,'#c98c2d',14);
+  setStage(`<div class="graph-wrap">
+    <div class="banner">Le TMS intertemporel = pente de la courbe d'indifférence</div>
+    <div id="svgMount"></div>
+    <div class="formula-card" style="max-width:540px">
+      <div class="formula">TMS₁₂ = − u′(c₁) / [δ · u′(c₂)]</div>
+      <p style="margin-top:8px;color:var(--muted);font-size:15px">Pour u(c) = ln(c) : TMS = c₂ / (δ · c₁) = ${tms.toFixed(2)} au point A.</p>
+    </div>
+  </div>`);
+  document.getElementById('svgMount').appendChild(svg);
+  setInt(`<div class="choice-prompt">Que représente le TMS intertemporel ?</div>
+    <div class="button-row">
+      <button onclick="chkTMS('a')">Le taux d'intérêt du marché</button>
+      <button onclick="chkTMS('b')">La quantité de c₂ que l'individu accepte de sacrifier pour une unité de c₁ de plus, sans changer d'utilité</button>
+      <button onclick="chkTMS('c')">Le rapport des revenus R₁/R₂</button>
+    </div>`);
+}
+window.chkTMS=function(ans){
+  if(ans==='b'){
+    setFB('Exact ! Le TMS mesure le taux d\'échange subjectif entre la consommation présente et future, le long d\'une courbe d\'indifférence.');
+    S.answered.add('tms_done'); updateNav();
+  } else setFB('Pas encore. Pensez à la pente d\'une courbe d\'indifférence dans l\'espace (c₁, c₂).',false);
+};
+
+function renderUtility(){
+  setActive('util_done');
+  // Token puzzle to build U = u(c1) + delta*u(c2)
+  const slots=['A','B','C','D'];
+  const correct=['u(c₁)','+','δ','u(c₂)'];
+  let filled=Array(4).fill(null);
+  setStage(`<div class="graph-wrap" style="max-width:700px;gap:16px">
+    <div class="banner">Construire la fonction d'utilité intertemporelle</div>
+    <div class="formula-card">
+      <p>Pour deux périodes, l'utilité totale est une somme actualisée de <em>félicités</em> u(cₜ) :</p>
+      <div id="tokenBuild" class="token-build" style="font-size:22px;gap:14px">
+        <span id="sl0" class="token-slot" data-i="0">?</span>
+        <span id="sl1" class="token-slot" data-i="1">?</span>
+        <span id="sl2" class="token-slot" data-i="2">?</span>
+        <span id="sl3" class="token-slot" data-i="3">?</span>
+      </div>
+      <p style="margin-top:10px;color:var(--muted);font-size:15px">Cliquez sur les tokens dans le bon ordre pour assembler U.</p>
+    </div>
+  </div>`);
+  setInt(`<div class="token-palette" id="palette">
+    ${['u(c₁)','u(c₂)','+','δ'].map(t=>`<button onclick="placeToken('${t}')" data-tok="${t}">${t}</button>`).join('')}
+  </div>
+  <div class="note-box">u(·) est la <b>fonction de félicité</b> (utilité instantanée). δ = 1/(1+ρ) actualise la félicité future.</div>`);
+
+  let nextSlot=0;
+  window.placeToken=function(tok){
+    if(nextSlot>=4)return;
+    filled[nextSlot]=tok;
+    const sl=document.getElementById(`sl${nextSlot}`);
+    sl.textContent=tok; sl.classList.add('filled');
+    nextSlot++;
+    if(nextSlot===4){
+      if(filled.join('')===correct.join('')){
+        setFB('Exact ! U = u(c₁) + δ·u(c₂). La félicité future est actualisée par δ < 1, ce qui traduit l\'impatience.');
+        S.answered.add('util_done'); updateNav();
+      } else {
+        setFB('Pas tout à fait. Réessayez en remettant les tokens.',false);
+        setTimeout(()=>{filled=Array(4).fill(null);nextSlot=0;
+          [0,1,2,3].forEach(i=>{const sl=document.getElementById(`sl${i}`);sl.textContent='?';sl.classList.remove('filled');});
+          feedback.textContent='';
+        },1800);
+      }
+    }
+  };
+}
+
+function renderQuiz1(){
+  setActive('q1_done');
+  const qs=[
+    {q:'Si ρ augmente, les courbes d\'indifférence dans l\'espace (c₁, c₂) deviennent…',
+     opts:['Plus pentues (l\'individu exige davantage de c₂ pour renoncer à c₁)','Moins pentues','Horizontales'],
+     ok:0,fb:'Correct ! Un ρ élevé signifie forte impatience : pour renoncer à une unité de c₁, l\'individu exige beaucoup de c₂ en compensation → pente plus forte.'},
+    {q:'Que vaut δ si ρ = 25 % ?',
+     opts:['1,25','0,8','0,75'],ok:1,
+     fb:'Exact ! δ = 1/(1+0,25) = 1/1,25 = 0,8.'},
+    {q:'Dans U = u(c₁) + δ·u(c₂), quel rôle joue δ ?',
+     opts:['Il mesure le prix de c₂','Il actualise la félicité de la période 2','Il représente le taux d\'intérêt'],
+     ok:1,fb:'Correct ! δ < 1 « dévalue » la félicité future, exprimant la préférence pour le présent.'},
+    {q:'Pour un individu parfaitement patient (ρ = 0), que vaut δ ?',
+     opts:['0','0,5','1'],ok:2,
+     fb:'Exact ! δ = 1/(1+0) = 1 : le futur compte autant que le présent.'},
+  ];
+  runQuiz(qs,'q1_done');
+}
+
+// ─── PART 2: CONTRAINTE BUDGÉTAIRE ───────────────────────────────
+
+function renderCB1(){
+  setActive('cb1_done');
+  setStage(`<div class="graph-wrap" style="max-width:720px;gap:16px">
+    <div class="banner">Période 1 : C₁ = R₁ + E</div>
+    <div class="formula-card">
+      <p>L'individu reçoit un revenu <b>R₁ = ${G.R1} €</b> en période 1.</p>
+      <p style="margin-top:8px">Il peut <b>épargner</b> (E > 0) ou <b>emprunter</b> (E < 0). Sa consommation en période 1 est :</p>
+      <div class="formula">C₁ = R₁ + E</div>
+      <p style="color:var(--muted);font-size:16px;margin-top:8px">Si E > 0 : il épargne → C₁ &lt; R₁. &nbsp; Si E &lt; 0 : il emprunte → C₁ &gt; R₁.</p>
+    </div>
+    <div class="two-cols">
+      <div class="info-card"><h3>Exemple épargnant</h3>R₁=100, E=20 → C₁=80 €</div>
+      <div class="info-card"><h3>Exemple emprunteur</h3>R₁=100, E=−30 → C₁=130 €</div>
+    </div>
+  </div>`);
+  setInt(`<div class="choice-prompt">Si l'individu consomme C₁ = 120 €, que vaut E ?</div>
+    <div class="button-row">
+      <button onclick="chkCB1('a')">E = 20 (il épargne)</button>
+      <button onclick="chkCB1('b')">E = −20 (il emprunte)</button>
+      <button onclick="chkCB1('c')">E = 120 (il épargne tout)</button>
+    </div>`);
+}
+window.chkCB1=function(ans){
+  if(ans==='b'){
+    setFB('Exact ! C₁ = R₁ + E ⟹ 120 = 100 + E ⟹ E = −20. E négatif signifie qu\'il emprunte 20 €.');
+    S.answered.add('cb1_done'); updateNav();
+  } else setFB('Pas encore. C₁ = R₁ + E ⟹ E = C₁ − R₁ = 120 − 100 = ?',false);
+};
+
+function renderCB2(){
+  setActive('cb2_done');
+  setStage(`<div class="graph-wrap" style="max-width:720px;gap:16px">
+    <div class="banner">Période 2 : C₂ ≤ R₂ + (1+r)·E</div>
+    <div class="formula-card">
+      <p>En période 2, l'individu reçoit <b>R₂ = ${G.R2} €</b>.</p>
+      <p style="margin-top:8px">Son épargne de période 1 lui rapporte des intérêts au taux r = ${(G.r*100).toFixed(0)} % :</p>
+      <div class="formula">C₂ ≤ R₂ + (1+r)·E</div>
+      <p style="color:var(--muted);font-size:16px;margin-top:8px">Si E > 0 : l'épargne fructifie. &nbsp; Si E &lt; 0 : il rembourse la dette avec intérêts.</p>
+    </div>
+    <div class="two-cols">
+      <div class="info-card"><h3>Épargnant (E=20, r=10%)</h3>C₂ ≤ 110 + 1,1×20 = <b>132 €</b></div>
+      <div class="info-card"><h3>Emprunteur (E=−20, r=10%)</h3>C₂ ≤ 110 + 1,1×(−20) = <b>88 €</b></div>
+    </div>
+  </div>`);
+  setInt(`<div class="choice-prompt">Pourquoi utilise-t-on ≤ et non = dans C₂ ≤ R₂ + (1+r)·E ?</div>
+    <div class="button-row">
+      <button onclick="chkCB2('a')">Parce que r peut être négatif</button>
+      <button onclick="chkCB2('b')">Parce que l'individu peut choisir de ne pas consommer tout ce qu'il peut</button>
+      <button onclick="chkCB2('c')">Parce que R₂ est aléatoire</button>
+    </div>`);
+}
+window.chkCB2=function(ans){
+  if(ans==='b'){
+    setFB('Exact ! Mais avec la non-satiété, l\'individu dépensera tout son revenu disponible, donc C₂ = R₂ + (1+r)·E à l\'optimum.');
+    S.answered.add('cb2_done'); updateNav();
+  } else setFB('Pas encore. Pensez à la non-satiété : l\'individu préfère toujours plus.',false);
+};
+
+function renderSubst(){
+  setActive('subst_done');
+  setStage(`<div class="graph-wrap" style="max-width:720px;gap:16px">
+    <div class="banner">Substitution de E pour obtenir la droite de budget</div>
+    <div class="formula-card">
+      <p><b>Étape 1 :</b> De C₁ = R₁ + E, on tire <b>E = C₁ − R₁</b></p>
+      <p style="margin-top:10px"><b>Étape 2 :</b> On substitue dans C₂ = R₂ + (1+r)·E :</p>
+      <div class="formula" id="substFormula" style="font-size:20px">C₂ = R₂ + (1+r)·(C₁ − R₁)</div>
+      <p style="margin-top:10px"><b>Étape 3 :</b> On développe et réorganise :</p>
+      <div class="formula" id="substFinal" style="font-size:20px;opacity:.3">C₂ = (1+r)·R₁ + R₂ − (1+r)·C₁</div>
+      <p style="color:var(--muted);font-size:16px;margin-top:8px">Pente = <span id="slopeVal" style="color:var(--green);font-weight:700">?</span> &nbsp; · &nbsp; La droite passe par le point de dotation E = (R₁, R₂)</p>
+    </div>
+  </div>`);
+  setInt(`<div class="choice-prompt">Quelle est la pente de cette droite de budget ?</div>
+    <div class="button-row">
+      <button onclick="chkSubst('a')">−r</button>
+      <button onclick="chkSubst('b')">−(1+r)</button>
+      <button onclick="chkSubst('c')">+(1+r)</button>
+      <button onclick="chkSubst('d')">−R₁/R₂</button>
+    </div>`);
+}
+window.chkSubst=function(ans){
+  if(ans==='b'){
+    document.getElementById('substFinal').style.opacity='1';
+    document.getElementById('slopeVal').textContent=`−(1+r) = −${(1+G.r).toFixed(2)}`;
+    setFB(`Exact ! La pente vaut −(1+r) = −${(1+G.r).toFixed(2)}. Pour consommer 1 € de plus aujourd'hui, il faut renoncer à (1+r) € demain.`);
+    S.answered.add('subst_done'); updateNav();
+  } else setFB('Pas encore. Regardez le coefficient devant C₁ dans la formule développée.',false);
+};
+
+function renderBank(){
+  setActive('bank_done');
+  let bankPhase=0;
+  function updateBank(E){
+    const c1=G.R1+E, repay=E*(1+G.r), ok=repay<=G.R2;
+    const disp=document.getElementById('bankDisp');
+    const bdisp=document.getElementById('bankBig');
+    if(!disp)return;
+    if(E===0){
+      disp.textContent=`Tu ne demandes rien. C₁ = R₁ = ${G.R1} €.`;
+      disp.className='bank-display';
+      if(bdisp)bdisp.textContent=`C₁ = ${G.R1} €`;
+    } else if(!ok){
+      disp.innerHTML=`❌ Le banquier refuse ! Tu devrais rembourser ${repay.toFixed(0)} € mais tu n'auras que R₂ = ${G.R2} €.`;
+      disp.className='bank-display bad';
+      if(bdisp)bdisp.textContent=`C₁ = ${c1} € — REFUSÉ`;
+    } else {
+      const rest=G.R2-repay;
+      disp.innerHTML=`✓ Accordé ! C₁ = ${c1} €. En période 2 tu rembourses ${repay.toFixed(0)} €, il te reste ${rest.toFixed(0)} €.`;
+      disp.className='bank-display';
+      if(bdisp)bdisp.textContent=`C₁ = ${c1} €`;
+    }
+    // enable confirm button when E is exactly the max (or very close)
+    const confirmBtn=document.getElementById('bankConfirm');
+    if(confirmBtn) confirmBtn.disabled=Math.abs(E-G.R2/(1+G.r))>1;
+  }
+
+  setStage(`<div class="graph-wrap" style="max-width:700px;gap:16px">
+    <div class="banner" id="bankBig">C₁ = ? €</div>
+    <div class="formula-card">
+      <p>Tu reçois R₁ = <b>${G.R1} €</b> aujourd'hui et R₂ = <b>${G.R2} €</b> demain. Taux r = <b>${(G.r*100).toFixed(0)} %</b>.</p>
+      <p style="margin-top:8px">Tu veux consommer le maximum possible en période 1. Tu vas à la banque emprunter un montant E.</p>
+    </div>
+  </div>`);
+  setInt(`<div class="bank-slider-wrap">
+    <label>Montant emprunté E : <b id="eVal">0</b> €</label>
+    <input type="range" min="0" max="150" step="5" value="0" id="bankSlider" oninput="bankMove(this.value)">
+    <div id="bankDisp" class="bank-display">Tu ne demandes rien. C₁ = ${G.R1} €.</div>
+  </div>
+  <div class="button-row" style="margin-top:8px">
+    <button id="bankConfirm" onclick="bankConfirm()" disabled>C'est le maximum ! →</button>
+  </div>
+  <div class="note-box">Objectif : trouver le E maximum que le banquier accepte.</div>`);
+
+  window.bankMove=function(v){
+    document.getElementById('eVal').textContent=v;
+    updateBank(+v);
+  };
+  window.bankConfirm=function(){
+    const eMax=(G.R2/(1+G.r)).toFixed(1);
+    setFB(`Parfait ! E_max = R₂/(1+r) = ${G.R2}/${(1+G.r).toFixed(2)} = ${eMax} €. Donc C₁_max = R₁ + E_max = W = ${G.W.toFixed(0)} €. C'est la richesse actualisée.`);
+    S.answered.add('bank_done'); updateNav();
+  };
+}
+
+function renderCBGraph(){
+  noExercise();
+  const svg=makeSVG('Droite de budget intertemporelle');
+  // budget area
+  const W=G.W, WF=G.WF;
+  svg.appendChild(svgE('polygon',{
+    points:`${sx(0)},${sy(0)} ${sx(0)},${sy(Math.min(WF,G.mc))} ${sx(Math.min(W,G.mc))},${sy(0)}`,
+    fill:'#dceee7',opacity:.5}));
+  drawBL(svg);
+  // intercepts
+  drawPt(svg,0,Math.min(WF,G.mc),`WF=${WF.toFixed(0)}€`,'#b6483b',-80,-10);
+  drawPt(svg,Math.min(W,G.mc),0,`W=${W.toFixed(0)}€`,'#b6483b',6,20);
+  drawPt(svg,G.R1,G.R2,'E=(R₁,R₂)','#c98c2d',8,-12);
+  // slope label
+  svgText(svg,`pente = −(1+r) = −${(1+G.r).toFixed(1)}`,80,190,'#b6483b',14);
+  setStage(`<div class="graph-wrap">
+    <div class="banner">La droite de budget intertemporelle</div>
+    <div id="svgMount"></div>
+    <div class="formula-card" style="max-width:560px;display:grid;gap:8px">
+      <div class="formula" style="font-size:19px">C₁ + C₂/(1+r) = W = R₁ + R₂/(1+r) = ${W.toFixed(0)} €</div>
+      <p style="color:var(--muted);font-size:15px">W = richesse actualisée totale (intercept axe C₁).
+      WF = W·(1+r) = ${WF.toFixed(0)} € (intercept axe C₂). Le point E est toujours sur la droite.</p>
+    </div>
+  </div>`);
+  document.getElementById('svgMount').appendChild(svg);
+}
+
+function renderREffect(){
+  setActive('r_done');
+  let currentR=G.r;
+  function redraw(){
+    const svg=makeSVG('Effet de r sur la droite de budget');
+    // draw original in gray
+    drawBL(svg,G.r,G.R1,G.R2,'rgba(150,150,150,.4)',2);
+    // draw new
+    drawBL(svg,currentR,G.R1,G.R2,'#b6483b',3.5);
+    drawPt(svg,G.R1,G.R2,'E','#c98c2d',8,-12);
+    const newW=(G.R1+G.R2/(1+currentR)).toFixed(1);
+    const newWF=(G.R1*(1+currentR)+G.R2).toFixed(1);
+    svgText(svg,`W=${newW}€`,25,sy(0)-20,'#b6483b',13);
+    return svg;
+  }
+  function refresh(){
+    const m=document.getElementById('svgMount');
+    if(!m)return;
+    m.innerHTML=''; m.appendChild(redraw());
+    document.getElementById('rDisp').textContent=(currentR*100).toFixed(0)+'%';
+    const newW=G.R1+G.R2/(1+currentR);
+    document.getElementById('wDisp').textContent=`W = ${newW.toFixed(1)} €`;
+  }
+  setStage(`<div class="graph-wrap">
+    <div id="svgMount"></div>
+  </div>`);
+  setInt(`<div class="slider-wrap">
+    <label>Taux r :</label>
+    <input type="range" min="0" max="30" step="1" value="${(G.r*100).toFixed(0)}" id="rSlider"
+      oninput="adjR(this.value)">
+    <span class="slider-val" id="rDisp">${(G.r*100).toFixed(0)}%</span>
+  </div>
+  <div class="formula" id="wDisp" style="margin-top:8px">W = ${G.W.toFixed(1)} €</div>
+  <div class="choice-prompt" style="margin-top:12px">Que se passe-t-il avec la droite de budget quand r augmente ?</div>
+  <div class="button-row">
+    <button onclick="chkR('a')">Elle pivote autour du point E</button>
+    <button onclick="chkR('b')">Elle se translate parallèlement</button>
+    <button onclick="chkR('c')">Elle reste identique</button>
+  </div>`);
+  window.adjR=function(v){currentR=+v/100; refresh();};
+  setTimeout(()=>{const m=document.getElementById('svgMount');if(m)m.appendChild(redraw());},50);
+  window.chkR=function(ans){
+    if(ans==='a'){
+      setFB('Exact ! La droite pivote autour du point de dotation E = (R₁, R₂), qui appartient toujours à la contrainte budgétaire, quel que soit r.');
+      S.answered.add('r_done'); updateNav();
+    } else setFB('Observez sur le graphique : quel point reste fixe ?',false);
+  };
+}
+
+function renderAsym(){
+  setActive('asym_done');
+  const svg=makeSVG('Contrainte avec taux asymétriques');
+  drawKinkedBL(svg,G.rC,G.rD);
+  // reference: symmetric at average rate
+  const rMoy=(G.rC+G.rD)/2;
+  drawBL(svg,rMoy,G.R1,G.R2,'rgba(150,150,150,.35)',2);
+  drawPt(svg,G.R1,G.R2,'E','#c98c2d',8,-12);
+  // labels
+  svgText(svg,`Pente −(1+r_C)=−${(1+G.rC).toFixed(2)}`,10,80,'#176b52',13);
+  svgText(svg,`Pente −(1+r_D)=−${(1+G.rD).toFixed(2)}`,105,40,'#b6483b',13);
+  setStage(`<div class="graph-wrap">
+    <div class="banner">Taux créditeur r_C = ${(G.rC*100).toFixed(0)} % &lt; Taux débiteur r_D = ${(G.rD*100).toFixed(0)} %</div>
+    <div id="svgMount"></div>
+    <div class="two-cols" style="max-width:580px">
+      <div class="info-card"><h3 style="color:var(--green)">Segment épargnant (c₁ &lt; R₁)</h3>Pente = −(1+r_C) : moins avantageuse car le taux d'épargne est faible.</div>
+      <div class="info-card"><h3 style="color:var(--red)">Segment emprunteur (c₁ &gt; R₁)</h3>Pente = −(1+r_D) : plus coûteux car le taux d'emprunt est élevé.</div>
+    </div>
+  </div>`);
+  document.getElementById('svgMount').appendChild(svg);
+  setInt(`<div class="choice-prompt">Avec r_D > r_C, l'ensemble de budget est-il plus grand ou plus petit qu'avec un taux unique r = (r_C+r_D)/2 ?</div>
+    <div class="button-row">
+      <button onclick="chkAsym('a')">Plus petit — l'écart des taux réduit les possibilités</button>
+      <button onclick="chkAsym('b')">Plus grand</button>
+      <button onclick="chkAsym('c')">Identique</button>
+    </div>`);
+}
+window.chkAsym=function(ans){
+  if(ans==='a'){
+    setFB('Exact ! La contrainte coudée est toujours en dessous de la droite symétrique (en gris), sauf au point E. L\'écart r_D − r_C crée un "coin" qui réduit les échanges possibles.');
+    S.answered.add('asym_done'); updateNav();
+  } else setFB('Observez le graphique : comparez la zone verte/rouge à la droite grise.',false);
+};
+
+function renderQuiz2(){
+  setActive('q2_done');
+  const qs=[
+    {q:`Si R₁=${G.R1}, R₂=${G.R2}, r=${(G.r*100).toFixed(0)}%, quelle est la richesse actualisée W ?`,
+     opts:['200 €','210 €','190 €'],ok:0,
+     fb:`Exact ! W = R₁ + R₂/(1+r) = ${G.R1} + ${G.R2}/1,1 = ${G.W.toFixed(0)} €.`},
+    {q:'La droite de budget passe toujours par le point…',
+     opts:['L\'origine (0,0)','Le point de dotation E = (R₁, R₂)','Le point (W, 0)'],ok:1,
+     fb:'Correct ! Le point E = (R₁, R₂) correspond à ne rien épargner ni emprunter, ce qui est toujours réalisable.'},
+    {q:'Quand r augmente, que devient la valeur actuelle de R₂ pour l\'emprunteur ?',
+     opts:['Elle augmente','Elle diminue','Elle reste identique'],ok:1,
+     fb:'Exact ! R₂/(1+r) diminue quand r augmente. L\'emprunteur s\'appauvrit en valeur actuelle.'},
+    {q:'Avec taux créditeur r_C < taux débiteur r_D, la droite de budget est…',
+     opts:['Droite avec pente −(1+r_C) partout','Coudée au point E, avec deux segments de pentes différentes','Horizontale'],
+     ok:1,fb:'Correct ! Deux pentes : −(1+r_C) côté épargnant, −(1+r_D) côté emprunteur, avec un coude en E.'},
+    {q:'La pente de la droite de budget intertemporelle est…',
+     opts:['−r','+(1+r)','−(1+r)'],ok:2,
+     fb:'Exact ! −(1+r) : pour consommer 1 € de plus aujourd\'hui, on renonce à (1+r) € demain.'},
+  ];
+  runQuiz(qs,'q2_done');
+}
+
+// ─── PART 3: CHOIX OPTIMAL ────────────────────────────────────────
+
+function renderChoiceIntro(){
+  noExercise();
+  const svg=makeSVG('Choix optimal');
+  const delta=G.delta;
+  const opt=optPoint();
+  const k_opt=icLevel(opt.c1,opt.c2,delta);
+  [k_opt-.8,k_opt-.3,k_opt].forEach((k,i)=>drawIC(svg,k,delta,i===2));
+  drawBL(svg);
+  drawPt(svg,opt.c1,opt.c2,'C*','#176b52');
+  drawPt(svg,G.R1,G.R2,'E','#c98c2d',8,-12);
+  setStage(`<div class="graph-wrap">
+    <div class="banner">Préférences + Contrainte = Choix optimal C*</div>
+    <div id="svgMount"></div>
+    <div class="formula-card" style="max-width:560px">
+      <p>Le consommateur choisit le panier (c₁*, c₂*) sur la droite de budget situé sur la courbe d'indifférence la plus haute possible.</p>
+      <p style="margin-top:8px;color:var(--muted);font-size:15px">C* = (${opt.c1.toFixed(1)}, ${opt.c2.toFixed(1)}) avec ρ = ${(G.rho*100).toFixed(0)}% et r = ${(G.r*100).toFixed(0)}%.</p>
+    </div>
+  </div>`);
+  document.getElementById('svgMount').appendChild(svg);
+}
+
+function renderTangency(){
+  setActive('tang_done');
+  const delta=G.delta, opt=optPoint();
+  const k_opt=icLevel(opt.c1,opt.c2,delta);
+  const svg=makeSVG('Condition de tangence');
+  drawBL(svg);
+  drawIC(svg,k_opt,delta,true);
+  drawPt(svg,opt.c1,opt.c2,'C*','#176b52');
+  // tangent segment (budget line is the tangent!)
+  setStage(`<div class="graph-wrap">
+    <div id="svgMount"></div>
+    <div class="formula-card" style="max-width:560px;display:grid;gap:8px">
+      <div class="formula" style="font-size:19px">TMS₁₂ = −(1+r)</div>
+      <div class="formula" style="font-size:17px">u′(c₁) / [δ · u′(c₂)] = 1+r</div>
+    </div>
+  </div>`);
+  document.getElementById('svgMount').appendChild(svg);
+  setInt(`<div class="choice-prompt">Pourquoi la condition de tangence TMS = −(1+r) est-elle la condition d'optimalité ?</div>
+    <div class="button-row">
+      <button onclick="chkTang('a')">Car c'est là que la courbe d'indifférence la plus haute touche la droite de budget</button>
+      <button onclick="chkTang('b')">Car c'est le point le plus à droite sur la droite de budget</button>
+      <button onclick="chkTang('c')">Car c₁ = c₂ à ce point</button>
+    </div>`);
+}
+window.chkTang=function(ans){
+  if(ans==='a'){
+    setFB('Exact ! En ce point, les deux « prix » d\'échange sont égaux : le taux subjectif d\'échange (TMS) et le taux de marché (1+r). Aucun mouvement ne peut améliorer l\'utilité.');
+    S.answered.add('tang_done'); updateNav();
+  } else setFB('Pensez à la définition de l\'optimum : la courbe d\'indifférence la plus haute atteignable.',false);
+};
+
+function renderSB(){
+  setActive('sb_done');
+  // Two graphs: saver case (R1=120,R2=88) and borrower case (R1=80,R2=132)
+  function mkCase(R1,R2,label,color){
+    const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute('viewBox',`0 0 ${G.sz} ${G.sz}`);
+    for(let i=0;i<=G.mc;i+=40){
+      svg.appendChild(svgE('line',{x1:sx(i),y1:sy(0),x2:sx(i),y2:sy(G.mc),stroke:'#d7e0e4','stroke-width':1}));
+      svg.appendChild(svgE('line',{x1:sx(0),y1:sy(i),x2:sx(G.mc),y2:sy(i),stroke:'#d7e0e4','stroke-width':1}));
+    }
+    svg.appendChild(svgE('line',{x1:sx(0),y1:sy(0),x2:sx(G.mc)+8,y2:sy(0),stroke:'#132536','stroke-width':2.5}));
+    svg.appendChild(svgE('line',{x1:sx(0),y1:sy(0),x2:sx(0),y2:sy(G.mc)-8,stroke:'#132536','stroke-width':2.5}));
+    const lx=svgE('text',{x:sx(G.mc)-30,y:sy(0)+28,fill:'#132536','font-size':15,'font-weight':700});lx.textContent='c₁';svg.appendChild(lx);
+    const ly=svgE('text',{x:sx(0)-20,y:sy(G.mc)+50,fill:'#132536','font-size':15,'font-weight':700,transform:`rotate(-90 ${sx(0)-20} ${sy(G.mc)+50})`});ly.textContent='c₂';svg.appendChild(ly);
+    const W=R1+R2/(1+G.r), WF=R1*(1+G.r)+R2;
+    svg.appendChild(svgE('path',{d:`M ${sx(0)} ${sy(Math.min(WF,G.mc))} L ${sx(Math.min(W,G.mc))} ${sy(0)}`,
+      fill:'none',stroke:'#b6483b','stroke-width':3,'stroke-linecap':'round'}));
+    const opt=optPoint(G.r,R1,R2,G.rho);
+    const delta=G.delta,k=icLevel(opt.c1,opt.c2,delta);
+    drawIC(svg,k-0.5,delta,false);
+    drawIC(svg,k,delta,true);
+    svg.appendChild(svgE('circle',{cx:sx(opt.c1),cy:sy(opt.c2),r:7,fill:color,stroke:'#fff','stroke-width':3}));
+    const tc=svgE('text',{x:sx(opt.c1)+8,y:sy(opt.c2)-12,fill:color,'font-size':15,'font-weight':700});tc.textContent='C*';svg.appendChild(tc);
+    svg.appendChild(svgE('circle',{cx:sx(R1),cy:sy(R2),r:7,fill:'#c98c2d',stroke:'#fff','stroke-width':3}));
+    const te=svgE('text',{x:sx(R1)+8,y:sy(R2)-12,fill:'#c98c2d','font-size':14,'font-weight':700});te.textContent='E';svg.appendChild(te);
+    // arrow showing saving or borrowing
+    const mid=(opt.c1+R1)/2;
+    const arrowColor=opt.c1<R1?'#176b52':'#b6483b';
+    const arrowLabel=opt.c1<R1?`Épargne: S=${(R1-opt.c1).toFixed(0)}€`:`Emprunt: D=${(opt.c1-R1).toFixed(0)}€`;
+    svg.appendChild(svgE('line',{x1:sx(R1),y1:sy(R2)+30,x2:sx(opt.c1),y2:sy(R2)+30,stroke:arrowColor,'stroke-width':2.5,'marker-end':'url(#arr)'}));
+    const tl=svgE('text',{x:sx(mid)-20,y:sy(R2)+52,fill:arrowColor,'font-size':13,'font-weight':700});tl.textContent=arrowLabel;svg.appendChild(tl);
+    const title=svgE('text',{x:G.sz/2,y:30,fill:color,'font-size':16,'font-weight':700,'text-anchor':'middle'});title.textContent=label;svg.appendChild(title);
+    return svg;
+  }
+  setStage(`<div class="two-cols" style="gap:14px;width:min(840px,100%)">
+    <div style="display:grid;gap:8px">
+      <div id="svgSaver"></div>
+      <div class="info-card" style="font-size:15px"><h3 style="color:var(--green)">Épargnant</h3>C₁* &lt; R₁ : revenu élevé aujourd'hui → épargne la différence.</div>
+    </div>
+    <div style="display:grid;gap:8px">
+      <div id="svgBorrower"></div>
+      <div class="info-card" style="font-size:15px"><h3 style="color:var(--red)">Emprunteur</h3>C₁* &gt; R₁ : revenu faible aujourd'hui → emprunte contre le futur.</div>
+    </div>
+  </div>`);
+  const saverSvg=mkCase(120,88,'Épargnant','#176b52');
+  saverSvg.style.cssText=`width:100%;height:auto;border:1px solid #d5e0dc;border-radius:12px;background:#f7fafb;`;
+  const borrowSvg=mkCase(80,132,'Emprunteur','#b6483b');
+  borrowSvg.style.cssText=saverSvg.style.cssText;
+  document.getElementById('svgSaver').appendChild(saverSvg);
+  document.getElementById('svgBorrower').appendChild(borrowSvg);
+  setInt(`<div class="choice-prompt">Quel individu est épargnant si r = 10% et ρ = 10% ?</div>
+    <div class="button-row">
+      <button onclick="chkSB('a')">Celui dont R₁ est élevé et R₂ faible</button>
+      <button onclick="chkSB('b')">Celui dont ρ est très élevé</button>
+      <button onclick="chkSB('c')">Celui dont R₁ est faible et R₂ élevé</button>
+    </div>`);
+}
+window.chkSB=function(ans){
+  if(ans==='a'){
+    setFB('Exact ! C₁* dépend de W total. Si R₁ est élevé, C₁* &lt; R₁ : l\'individu épargne pour lisser sa consommation dans le temps.');
+    S.answered.add('sb_done'); updateNav();
+  } else setFB('Pensez à qui a besoin de lisser sa consommation dans le temps.',false);
+};
+
+function renderRChoice(){
+  noExercise();
+  setStage(`<div class="graph-wrap" style="max-width:740px;gap:16px">
+    <div class="banner">Effet de r sur le choix optimal</div>
+    <div class="two-cols">
+      <div class="info-card">
+        <h3 style="color:var(--green)">Épargnant (c₁* &lt; R₁)</h3>
+        <p style="font-size:15px">r ↑ :</p>
+        <ul style="font-size:15px;padding-left:16px;margin-top:4px">
+          <li><b>Effet richesse</b> : s'enrichit (WF augmente) → ↑ c₁ et c₂</li>
+          <li><b>Effet substitution</b> : c₂ moins cher relativement → ↑ c₂, ↓ c₁</li>
+          <li>Résultat net sur c₁ : ambigu. c₂ : augmente.</li>
+        </ul>
+      </div>
+      <div class="info-card">
+        <h3 style="color:var(--red)">Emprunteur (c₁* &gt; R₁)</h3>
+        <p style="font-size:15px">r ↑ :</p>
+        <ul style="font-size:15px;padding-left:16px;margin-top:4px">
+          <li><b>Effet richesse</b> : s'appauvrit (W diminue) → ↓ c₁ et c₂</li>
+          <li><b>Effet substitution</b> : c₂ moins cher → ↑ c₂, ↓ c₁</li>
+          <li>Résultat net sur c₁ : diminue clairement. c₂ : ambigu.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="formula-card">
+      <p><b>Point clé :</b> le signe de l'effet richesse dépend du statut épargnant/emprunteur, mais l'effet substitution joue toujours dans le même sens (c₁ ↓ quand r ↑).</p>
+    </div>
+  </div>`);
+}
+
+function renderQuiz3(){
+  setActive('q3_done');
+  const qs=[
+    {q:'La condition d\'optimalité intertemporelle s\'écrit…',
+     opts:['TMS = −r','TMS = −(1+r)','TMS = −ρ'],ok:1,
+     fb:'Exact ! TMS = −(1+r) : le taux d\'échange subjectif doit égaler le taux de marché −(1+r).'},
+    {q:'Si c₁* > R₁, l\'individu est…',
+     opts:['Épargnant','Emprunteur','Ni l\'un ni l\'autre'],ok:1,
+     fb:'Correct ! Il consomme plus que son revenu en période 1 → il emprunte.'},
+    {q:'Pour un épargnant, une hausse de r a un effet richesse…',
+     opts:['Positif (il s\'enrichit)','Négatif (il s\'appauvrit)','Nul'],ok:0,
+     fb:'Exact ! L\'épargnant reçoit plus d\'intérêts sur son épargne → effet richesse positif.'},
+    {q:'Si ρ = r, que peut-on dire du plan de consommation optimal avec une utilité logarithmique ?',
+     opts:['c₁* = c₂* (consommation plate)','c₁* > c₂*','c₂* > c₁*'],ok:0,
+     fb:'Exact ! Quand ρ = r, l\'équation d\'Euler donne u\'(c₁)/u\'(c₂) = 1, soit c₁ = c₂ pour l\'utilité log.'},
+  ];
+  runQuiz(qs,'q3_done');
+}
+
+// ─── PART 4: EXTENSIONS ───────────────────────────────────────────
+
+function renderNPer(){
+  noExercise();
+  setStage(`<div class="graph-wrap" style="max-width:740px;gap:16px">
+    <div class="banner">Généralisation à N périodes</div>
+    <div class="formula-card">
+      <p><b>Fonction d'utilité :</b></p>
+      <div class="formula">U = Σₜ₌₁ᴺ δᵗ⁻¹ · u(cₜ)</div>
+      <p style="margin-top:10px"><b>Contrainte budgétaire (valeur actuelle) :</b></p>
+      <div class="formula">Σₜ₌₁ᴺ cₜ / (1+r)ᵗ⁻¹ = Σₜ₌₁ᴺ Rₜ / (1+r)ᵗ⁻¹ = W</div>
+      <p style="margin-top:10px;color:var(--muted);font-size:16px">La richesse actualisée totale W est la valeur présente de tous les revenus futurs. La contrainte dit que la valeur présente de la consommation totale ne peut pas dépasser W.</p>
+    </div>
+    <div class="two-cols">
+      <div class="info-card"><h3>Exemple N=3</h3>r=10%, R₁=100, R₂=110, R₃=121<br>W = 100 + 110/1,1 + 121/1,21 = 300 €</div>
+      <div class="info-card"><h3>Interprétation</h3>À chaque paire de périodes adjacentes, la logique de tangence s'applique → équation d'Euler.</div>
+    </div>
+  </div>`);
+}
+
+function renderEuler(){
+  setActive('euler_done');
+  setStage(`<div class="graph-wrap" style="max-width:740px;gap:16px">
+    <div class="banner">L'équation d'Euler — condition d'optimalité en N périodes</div>
+    <div class="formula-card">
+      <p>La condition d'optimalité entre deux périodes adjacentes t et t+1 :</p>
+      <div class="formula">u′(cₜ) = δ · (1+r) · u′(cₜ₊₁)</div>
+      <p style="margin-top:10px;color:var(--muted);font-size:16px">Pour u(c) = ln(c) : 1/cₜ = δ(1+r)/cₜ₊₁ ⟹ cₜ₊₁/cₜ = δ(1+r) = (1+r)/(1+ρ)</p>
+    </div>
+    <div class="formula-card" style="margin-top:0">
+      <p><b>Interprétation :</b></p>
+      <ul style="padding-left:18px;margin-top:6px;font-size:16px;color:var(--muted)">
+        <li>Si r = ρ : cₜ₊₁ = cₜ → profil de consommation plat.</li>
+        <li>Si r &gt; ρ : cₜ₊₁ &gt; cₜ → consommation croissante (épargne).</li>
+        <li>Si r &lt; ρ : cₜ₊₁ &lt; cₜ → consommation décroissante (désépargne).</li>
+      </ul>
+    </div>
+  </div>`);
+  setInt(`<div class="choice-prompt">Si r = 8 % et ρ = 12 %, le profil de consommation optimal est…</div>
+    <div class="button-row">
+      <button onclick="chkEuler('a')">Croissant dans le temps</button>
+      <button onclick="chkEuler('b')">Décroissant dans le temps</button>
+      <button onclick="chkEuler('c')">Plat (cₜ constant)</button>
+    </div>`);
+}
+window.chkEuler=function(ans){
+  if(ans==='b'){
+    setFB('Exact ! r < ρ ⟹ δ(1+r) = (1+r)/(1+ρ) = 1,08/1,12 < 1 ⟹ cₜ₊₁ < cₜ. L\'impatience domine : l\'individu consomme davantage tôt.');
+    S.answered.add('euler_done'); updateNav();
+  } else setFB('Consultez l\'équation d\'Euler : quel est le signe de cₜ₊₁/cₜ − 1 quand r < ρ ?',false);
+};
+
+function renderIncons(){
+  setActive('inc_done');
+  const q1lab=elic.q1==='now'?'100 € maintenant':'110 € dans 1 mois';
+  const q3lab=elic.q3==='now'?'100 € dans 12 mois':'110 € dans 13 mois';
+  const incons=!elic.consistent;
+  setStage(`<div class="graph-wrap" style="max-width:720px;gap:16px">
+    <div class="banner">Retour sur votre expérience</div>
+    <div class="two-cols">
+      <div class="info-card"><h3>Choix 1 (0 vs 1 mois)</h3>Vous avez choisi : <b>${q1lab}</b></div>
+      <div class="info-card"><h3>Choix 3 (12 vs 13 mois)</h3>Vous avez choisi : <b>${q3lab}</b></div>
+    </div>
+    <div class="formula-card" style="background:${incons?'#fdf0ee':'#edf6f2'};border-color:${incons?'rgba(182,72,59,.2)':'rgba(23,107,82,.2)'}">
+      ${incons?
+        '<p><b>⚠ Incohérence temporelle détectée.</b> Vos préférences entre 100€ et 110€ dépendent de l\'horizon : immédiat vs lointain. C\'est le <em>biais présent</em>.</p><p style="margin-top:8px;color:var(--muted);font-size:16px">Avec un actualisation exponentielle standard (δ constant), ces deux choix devraient être identiques.</p>':
+        '<p><b>✓ Préférences cohérentes.</b> Vous montrez la même patience que l\'horizon soit proche ou lointain — cohérent avec l\'actualisation exponentielle standard.</p>'}
+    </div>
+  </div>`);
+  setInt(`<div class="choice-prompt">L'incohérence temporelle se produit quand…</div>
+    <div class="button-row">
+      <button onclick="chkInc('a')">Le taux de préférence pour le présent est nul</button>
+      <button onclick="chkInc('b')">Les préférences dépendent de l'horizon : l'individu est plus impatient face à des choix immédiats qu'à des choix lointains</button>
+      <button onclick="chkInc('c')">Le revenu varie dans le temps</button>
+    </div>`);
+}
+window.chkInc=function(ans){
+  if(ans==='b'){
+    setFB('Exact ! L\'incohérence temporelle signifie que le ρ effectif est plus élevé pour les décisions immédiates. Un plan optimal formulé aujourd\'hui peut ne plus l\'être demain.');
+    S.answered.add('inc_done'); updateNav();
+  } else setFB('Pensez à la différence entre vos choix "0 vs 1 mois" et "12 vs 13 mois".',false);
+};
+
+function renderBetaDelta(){
+  noExercise();
+  setStage(`<div class="graph-wrap" style="max-width:740px;gap:16px">
+    <div class="banner">Le modèle β-δ (quasi-hyperbolique)</div>
+    <div class="formula-card">
+      <p>Laibson (1997) propose de modifier la fonction d'utilité avec un paramètre β ∈ (0,1] :</p>
+      <div class="formula">U = u(c₁) + β · Σₜ₌₂ᴺ δᵗ⁻¹ · u(cₜ)</div>
+      <p style="margin-top:10px;color:var(--muted);font-size:16px">β = 1 : actualisation exponentielle standard (cohérent). β &lt; 1 : sur-pondération du présent (biais présent, incohérent).</p>
+    </div>
+    <div class="two-cols">
+      <div class="info-card"><h3>Implication</h3>À t=0, l'individu planifie de consommer c₂* en t=1. Mais en t=1, il révise à la hausse car β s'applique à nouveau au présent → problème de <em>commitment</em>.</div>
+      <div class="info-card"><h3>Applications</h3>Procrastination, retraite insuffisante, addiction, régimes alimentaires abandonnés. Justifie les dispositifs d'engagement (épargne forcée, etc.).</div>
+    </div>
+    <div class="formula-card">
+      <p><b>Analogie mythologique :</b> Ulysse et les sirènes — se faire attacher au mât pour résister à l'envie du moment.</p>
+    </div>
+  </div>`);
+}
+
+function renderFinalQuiz(){
+  setActive('qf_done');
+  const qs=[
+    {q:'Que mesure δ = 1/(1+ρ) ?',
+     opts:['Le taux d\'intérêt du marché','La valeur accordée à une unité de consommation future','Le rapport des revenus R₁/R₂'],
+     ok:1,fb:'Exact ! δ mesure la valeur accordée à la consommation future. Plus ρ est élevé, plus δ est faible.'},
+    {q:`Avec R₁=${G.R1}, R₂=${G.R2}, r=10%, quelle est la pente de la droite de budget ?`,
+     opts:[`−${(1+G.r).toFixed(1)}`,`−${G.r}`,`+${(1+G.r).toFixed(1)}`],ok:0,
+     fb:`Exact ! Pente = −(1+r) = −${(1+G.r).toFixed(1)}.`},
+    {q:'Un épargnant voit son bien-être augmenter quand r monte. Pourquoi ?',
+     opts:['Son revenu R₁ augmente','La valeur de son épargne augmente : effet richesse positif','Il peut plus facilement emprunter'],
+     ok:1,fb:'Correct ! L\'épargnant reçoit plus d\'intérêts sur son épargne → richesse actuelle W augmente → bien-être supérieur.'},
+    {q:'Avec taux d\'emprunt r_D > taux d\'épargne r_C, la contrainte budgétaire est…',
+     opts:['Droite avec pente unique','Coudée au point E','Courbée comme une courbe d\'indifférence'],
+     ok:1,fb:'Exact ! La contrainte est coudée (kinked) au point de dotation E, avec deux pentes différentes.'},
+    {q:'L\'équation d\'Euler u′(cₜ) = δ(1+r)·u′(cₜ₊₁) implique que si r > ρ…',
+     opts:['La consommation diminue dans le temps','La consommation augmente dans le temps','La consommation est constante'],
+     ok:1,fb:'Exact ! r > ρ ⟹ δ(1+r) = (1+r)/(1+ρ) > 1 ⟹ cₜ₊₁ > cₜ : profil croissant.'},
+    {q:'L\'incohérence temporelle dans le modèle β-δ vient de…',
+     opts:['Un δ variable dans le temps','Un β < 1 qui sur-pondère le présent immédiat','Un taux r très élevé'],
+     ok:1,fb:'Exact ! β < 1 crée un "extra escompte" pour le présent immédiat, que l\'on retrouve à chaque période, rendant les plans initiaux non crédibles.'},
+  ];
+  runQuiz(qs,'qf_done');
+}
+
+function renderConclusion(){
+  noExercise();
+  const sc=S.score;
+  setStage(`<div class="graph-wrap" style="max-width:780px;gap:16px">
+    <div class="banner">Félicitations ! Récapitulatif</div>
+    <div class="two-cols" style="gap:14px">
+      <div class="info-card"><h3>Préférences</h3>ρ (taux de préférence), δ = 1/(1+ρ), courbes d'indifférence dans (c₁,c₂), TMS = u′(c₁)/δu′(c₂)</div>
+      <div class="info-card"><h3>Contrainte</h3>C₁ = R₁+E, C₂ = R₂+(1+r)E, droite W, pente −(1+r), taux asymétriques</div>
+      <div class="info-card"><h3>Choix optimal</h3>TMS = −(1+r), épargnant (c₁*&lt;R₁), emprunteur (c₁*&gt;R₁), effets de r</div>
+      <div class="info-card"><h3>Extensions</h3>N périodes, équation d'Euler, incohérence temporelle, modèle β-δ</div>
+    </div>
+    <div class="result-statement">Score final : ${sc.p} réussites · ${sc.pr} du premier coup</div>
+    <div class="cover-author" style="text-align:center">Auteur : Tanguy van Ypersele · Programmation IA</div>
+  </div>`);
+}
+
+// ─── Generic quiz runner ───────────────────────────────────────────
+function runQuiz(qs,doneKey){
+  let qi=0, correct=0, firstAttempt=true;
+  function showQ(){
+    if(qi>=qs.length){
+      stage.innerHTML=`<div class="result-statement">Quiz terminé : ${correct}/${qs.length}</div>`;
+      interaction.innerHTML=`<div class="button-row"><button class="primary" onclick="quizDone()">Continuer →</button></div>`;
+      window.quizDone=()=>{S.answered.add(doneKey);updateNav();};
+      return;
+    }
+    const q=qs[qi];
+    stage.innerHTML=`<div class="graph-wrap" style="max-width:700px">
+      <div class="banner">Question ${qi+1}/${qs.length}</div>
+      <div class="formula-card"><p style="font-size:20px">${q.q}</p></div>
+    </div>`;
+    interaction.innerHTML=`<div class="quiz-wrap">
+      <div class="button-row">${q.opts.map((o,i)=>`<button onclick="qAns(${i})" style="text-align:left">${o}</button>`).join('')}</div>
+    </div>`;
+    firstAttempt=true;
+  }
+  window.qAns=function(i){
+    const q=qs[qi];
+    if(i===q.ok){
+      if(firstAttempt)correct++;
+      setFB(q.fb);
+      qi++;
+      setTimeout(()=>{feedback.textContent='';showQ();},1800);
+    } else {
+      firstAttempt=false;
+      setFB('Pas encore. Reconsidérez.',false);
+    }
+  };
+  showQ();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+updateNav();
+</script>
+</body>
+</html>

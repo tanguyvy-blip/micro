@@ -1,0 +1,2217 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chapitre 4 - Typologie des biens</title>
+  <style>
+    :root {
+      --paper: #f8f5ed;
+      --panel: #fffdf8;
+      --ink: #132536;
+      --muted: #66747d;
+      --line: #e4e2dc;
+      --green: #176b52;
+      --blue: #2156c5;
+      --red: #b6483b;
+      --gold: #c98c2d;
+      --violet: #7048a8;
+      --soft: #edf3f0;
+      --button: #e8edf0;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 20px;
+      line-height: 1.45;
+      overflow: hidden;
+    }
+
+    .app {
+      height: 100vh;
+      height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(330px, 34%) minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 22px;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .progress-strip {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+      overflow-x: auto;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 253, 248, 0.92);
+      box-shadow: 0 10px 26px rgba(19, 37, 54, 0.04);
+    }
+
+    .progress-step {
+      flex: 0 0 auto;
+      padding: 7px 13px;
+      border: 1px solid #d6ded9;
+      border-radius: 999px;
+      background: #fbfaf5;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .progress-step.done { color: var(--green); background: #edf6f2; }
+    .progress-step.current { color: white; background: var(--green); border-color: var(--green); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 18px 40px rgba(19, 37, 54, 0.06);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .app > aside.panel {
+      display: flex;
+      flex-direction: column;
+      overflow: auto;
+    }
+
+    h1, h2 {
+      margin: 0 0 18px;
+      color: #5f6e77;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      font-size: 30px;
+    }
+
+    .narration-text {
+      min-height: 210px;
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fffefa;
+      font-size: 25px;
+      overflow: auto;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 22px;
+      color: var(--ink);
+      background: var(--button);
+      font: 700 20px Georgia, "Times New Roman", serif;
+      cursor: pointer;
+    }
+
+    button.primary { background: var(--green); color: white; }
+    button.action-focus {
+      box-shadow: 0 0 0 4px rgba(23, 107, 82, 0.18), 0 10px 24px rgba(23, 107, 82, 0.22);
+      transform: translateY(-1px);
+    }
+    button:disabled { opacity: 0.5; cursor: default; }
+
+    select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid #cfd8dc;
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: white;
+      color: var(--ink);
+      font: 700 19px Georgia, "Times New Roman", serif;
+    }
+
+    .jump-nav { width: min(360px, 100%); margin-top: 18px; }
+    .main { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
+    .stage { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr); overflow: auto; }
+    #stage { min-height: 0; display: grid; place-items: center; width: 100%; }
+
+    .side-exercise {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fffefa;
+    }
+
+    .interaction {
+      min-height: 120px;
+      max-height: none;
+      overflow: auto;
+    }
+
+    .side-exercise.action-focus {
+      border-color: rgba(23, 107, 82, 0.55);
+      box-shadow: 0 0 0 4px rgba(23, 107, 82, 0.12), 0 18px 38px rgba(23, 107, 82, 0.12);
+    }
+
+    .action-hint {
+      margin: -2px 0 12px;
+      padding: 9px 13px;
+      border: 1px solid #c9d8d2;
+      border-radius: 999px;
+      width: fit-content;
+      max-width: 100%;
+      color: var(--green);
+      background: #edf6f2;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .graph-wrap { display: grid; place-items: center; gap: 14px; width: 100%; height: 100%; }
+    .banner {
+      width: min(900px, 100%);
+      padding: 14px 18px;
+      border: 1px solid #cbd9d5;
+      border-radius: 14px;
+      background: linear-gradient(90deg, #eef6f2, #eef3fb);
+      font-size: 22px;
+    }
+
+    svg {
+      width: min(900px, 100%, calc(100vh - 190px));
+      max-height: calc(100vh - 190px);
+      aspect-ratio: 1;
+      border: 1px solid #d5e0dc;
+      border-radius: 12px;
+      background: #fbfaf5;
+      touch-action: none;
+    }
+
+    .choice-prompt { margin: 0 0 14px; font-size: 22px; }
+    .button-row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .feedback { margin-top: 16px; color: var(--green); font-weight: 700; min-height: 32px; }
+    .feedback.error { color: var(--red); }
+
+    .formula-card, .cover-page, .table-card {
+      padding: 20px;
+      border: 1px solid #d5e0dc;
+      border-radius: 14px;
+      background: var(--soft);
+    }
+
+    .cover-page {
+      width: min(880px, 100%);
+      display: grid;
+      gap: 22px;
+      padding: 34px;
+      background: #fffefa;
+    }
+
+    .cover-author { color: var(--muted); font-size: 22px; font-weight: 700; }
+    .cover-title { color: var(--green); font-size: 42px; font-weight: 700; line-height: 1.15; }
+    .cover-list { display: grid; gap: 10px; margin: 0; padding-left: 24px; font-size: 24px; }
+
+    .formula {
+      margin-top: 12px;
+      color: var(--green);
+      font-size: 30px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .card-grid {
+      width: min(880px, 100%);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .mini-card {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffefa;
+    }
+
+    .mini-card strong { color: var(--green); font-size: 24px; }
+
+    table {
+      width: min(900px, 100%);
+      border-collapse: collapse;
+      background: #fffefa;
+      font-size: 20px;
+    }
+
+    th, td { border: 1px solid #d8e0dd; padding: 12px 14px; text-align: left; }
+    th { color: var(--green); background: #edf6f2; }
+
+    .btn-dev {
+      font-size: 13px;
+      padding: 5px 13px;
+      background: transparent;
+      border: 1px dashed #b0b8bc;
+      color: var(--muted);
+      border-radius: 999px;
+      font-family: Georgia, serif;
+      font-weight: 700;
+      cursor: pointer;
+      align-self: center;
+    }
+
+    .nav-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(19, 37, 54, 0.28);
+      z-index: 999;
+    }
+
+    .nav-panel {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(19, 37, 54, 0.18);
+      padding: 22px;
+      z-index: 1000;
+      max-height: 80vh;
+      overflow-y: auto;
+      width: min(380px, 92vw);
+    }
+
+    .nav-panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 14px;
+    }
+
+    .nav-panel-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 9px 13px;
+      margin-bottom: 4px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink);
+      font: 400 17px Georgia, serif;
+      cursor: pointer;
+    }
+
+    .nav-panel-item:hover { background: var(--soft); }
+
+    .nav-panel-item.nav-current {
+      background: #edf6f2;
+      color: var(--green);
+      border-color: #c0ddd4;
+      font-weight: 700;
+    }
+
+    .context-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      padding: 28px;
+    }
+
+    .context-box {
+      width: 180px;
+      border-radius: 16px;
+      padding: 18px 16px;
+      text-align: center;
+      border: 2px solid var(--line);
+      background: #fbfaf5;
+    }
+
+    .context-box.done {
+      border-color: #a8d4c2;
+      background: #edf6f2;
+    }
+
+    .context-box.upcoming {
+      opacity: 0.5;
+    }
+
+    .context-tag {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .context-box.done .context-tag { color: var(--green); }
+
+    .context-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 5px;
+    }
+
+    .context-sub {
+      font-size: 15px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .context-op {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .app { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+      .narration-text { min-height: auto; }
+      .card-grid { grid-template-columns: 1fr; }
+      svg { width: min(900px, 100%); max-height: none; }
+    }
+
+    @media (max-height: 850px) {
+      body { font-size: 18px; }
+      .app { gap: 14px; padding: 14px; }
+      .progress-strip { padding: 6px; gap: 6px; }
+      .progress-step { padding: 6px 10px; font-size: 14px; }
+      .panel { padding: 16px; }
+      h1, h2 { margin-bottom: 10px; font-size: 24px; }
+      .narration-text { min-height: 180px; padding: 18px; font-size: 21px; }
+      .controls { gap: 10px; margin-top: 14px; }
+      button { padding: 9px 16px; font-size: 17px; }
+      .interaction { min-height: 100px; }
+      .choice-prompt { margin-bottom: 10px; font-size: 20px; }
+      svg { width: min(820px, 100%, calc(100vh - 155px)); max-height: calc(100vh - 155px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="navBackdrop" class="nav-backdrop"></div>
+  <div id="navPanel" class="nav-panel">
+    <div class="nav-panel-title">Aller à la diapositive</div>
+    <div id="navPanelItems"></div>
+  </div>
+  <main class="app">
+    <nav id="progressStrip" class="progress-strip" aria-label="Progression dans la séquence"></nav>
+
+    <aside class="panel">
+      <h1 id="sequenceTitle">Progression</h1>
+      <div id="narration" class="narration-text"></div>
+      <section class="side-exercise">
+        <h2>Exercice</h2>
+        <div id="actionHint" class="action-hint"></div>
+        <div id="interaction" class="interaction"></div>
+        <div id="feedback" class="feedback"></div>
+      </section>
+      <div class="controls">
+        <button id="backButton">Retour</button>
+        <button id="nextButton" class="primary">Suivant</button>
+        <button id="devSkipButton" class="btn-dev" type="button" title="Avancer sans répondre (dev)">dev →</button>
+        <button id="navJumpButton" class="btn-dev" type="button" title="Aller à une diapositive">↗ aller à</button>
+      </div>
+    </aside>
+
+    <section class="main">
+      <section class="panel stage">
+        <div id="stage"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      step: 0,
+      answered: new Set(),
+      incomeDragProgress: 0,
+      incomeDragging: false,
+      incomeGlobalDragBound: false,
+      incomeInitialChoiceClicked: false,
+      incomeNewChoiceClicked: false,
+      incomeBudgetReleased: false,
+      cCaseP2Clicked: false,
+      shareCalcDone: false,
+      shareRayMoved: false,
+      shareRayUnderstood: false,
+      shareSClicked: false,
+      shareHigherBClicked: false,
+      shareHigherPoint: null,
+      shareRayT: 1.55,
+      shareRayDragging: false,
+      shareRayGlobalBound: false,
+      demandChoices: new Set(),
+      demandTransfers: new Set(),
+      demandDragging: false,
+      demandGlobalBound: false,
+      pendingRerender: null,
+      pendingRerenderStep: null
+    };
+
+    const config = {
+      size: 460,
+      margin: 74,
+      maxX: 10,
+      maxY: 10
+    };
+
+    const narration = document.getElementById("narration");
+    const stage = document.getElementById("stage");
+    const interaction = document.getElementById("interaction");
+    const feedback = document.getElementById("feedback");
+    const sequenceTitle = document.getElementById("sequenceTitle");
+    const progressStrip = document.getElementById("progressStrip");
+    const interactionPanel = document.querySelector(".side-exercise");
+    const actionHint = document.getElementById("actionHint");
+    const backButton = document.getElementById("backButton");
+    const nextButton = document.getElementById("nextButton");
+    const devSkipButton = document.getElementById("devSkipButton");
+    const navJumpButton = document.getElementById("navJumpButton");
+    const navBackdrop = document.getElementById("navBackdrop");
+    const navPanel = document.getElementById("navPanel");
+    const navPanelItems = document.getElementById("navPanelItems");
+
+    const steps = [
+      {
+        text: "Ce module présente une typologie des biens de consommation. L'objectif est de savoir nommer un bien à partir d'une observation : que devient la quantité demandée quand le revenu ou le prix varie ?",
+        render: renderCoverPage
+      },
+      {
+        text: "Commençons par une variation du revenu. Les prix des biens B et C restent constants : seule la somme disponible augmente. La droite de budget se déplace alors vers l'extérieur.",
+        render: renderIncomeVariation,
+        gate: () => state.answered.has("incomeParallel") && state.answered.has("incomeParallelReason")
+      },
+      {
+        text: "<strong>Définition importante.</strong> Un bien est dit <strong>normal</strong> lorsque sa consommation augmente quand le revenu augmente, les prix restant inchangés.",
+        render: renderBothNormalCase,
+        gate: () => state.answered.has("bothNormal")
+      },
+      {
+        text: "<strong>Définition :</strong> Un bien est dit <strong>inférieur</strong> si sa consommation diminue quand le revenu augmente, les prix restant inchangés.",
+        render: renderCNormalBInferiorCase,
+        gate: () => state.cCaseP2Clicked && state.answered.has("cNormal") && state.answered.has("bInferior")
+      },
+      {
+        text: "Même définition, autre configuration.",
+        render: renderBNormalCInferiorCase,
+        gate: () => state.answered.has("bNormal") && state.answered.has("cInferior")
+      },
+      {
+        text: "Nous venons de classer les biens selon l'évolution des <strong>quantités</strong> consommées quand le revenu varie. Il existe un second axe de classification : l'évolution de la <strong>dépense relative</strong>. La part du revenu consacrée à un bien est la dépense pour ce bien divisée par le revenu total.",
+        render: renderBudgetShare,
+        gate: () => state.answered.has("share")
+      },
+      {
+        text: "<strong>Définitions.</strong> <strong>Un bien est dit</strong> <strong>de luxe</strong> si sa part dans le revenu augmente quand le revenu augmente. <strong>Un bien est dit</strong> <strong>de nécessité</strong> si sa part dans le revenu diminue quand le revenu augmente.",
+        render: renderLuxuryNecessity,
+        gate: () => state.answered.has("luxuryNecessity")
+      },
+      {
+        text: "Passons maintenant à une variation du prix du bien lui-même. Le revenu et les préférences restent inchangés : seule la contrainte budgétaire pivote.",
+        render: renderPriceVariation,
+        gate: () => state.answered.has("priceDirection")
+      },
+      {
+        text: "<strong>Définitions.</strong> <strong>Un bien est dit</strong> <strong>ordinaire</strong> si sa consommation varie en sens inverse de son prix. <strong>Un bien est dit</strong> <strong>de Giffen</strong> si sa consommation varie dans le même sens que son prix.",
+        render: renderGiffen,
+        gate: () => state.answered.has("giffen")
+      },
+      {
+        text: "<strong>Définitions.</strong> Deux biens sont <strong>substituts</strong> si la hausse du prix de l'un augmente la demande de l'autre. Deux biens sont <strong>complémentaires</strong> si la hausse du prix de l'un diminue la demande de l'autre.",
+        render: renderSubstitutesComplements,
+        gate: () => state.answered.has("cross")
+      },
+      {
+        text: "<strong>Demande individuelle.</strong> Pour un individu, la quantité demandée d'un bien dépend du prix de ce bien, du revenu, des prix des autres biens et des préférences.",
+        render: renderIndividualDemand,
+        gate: () => state.answered.has("individualDemand")
+      },
+      {
+        text: "<strong>Demande agrégée.</strong> Pour chaque prix, on additionne les quantités demandées par tous les consommateurs.",
+        render: renderAggregateDemand,
+        gate: () => state.answered.has("aggregate")
+      },
+      {
+        text: "Le tableau récapitulatif organise les catégories : variation du revenu, part du revenu, variation du prix propre et variation du prix d'un autre bien.",
+        render: renderSummaryTable,
+        gate: () => state.answered.has("summary")
+      },
+      {
+        text: "Quiz final : vérifions que les catégories sont devenues des réflexes. Chaque question décrit une observation ; il faut retrouver le bon nom.",
+        render: renderFinalQuiz,
+        gate: () => state.answered.has("finalQuiz")
+      },
+      {
+        text: "Bilan : classer un bien, c'est toujours préciser la variable qui varie et le sens de réaction de la quantité demandée ou de la part budgétaire.",
+        render: renderClosing
+      },
+      {
+        text: "Félicitations ! Vous avez complété le chapitre 4 sur la typologie des biens. Vous disposez maintenant d'une grille de lecture complète pour analyser le comportement du consommateur.",
+        render: renderEndSlide
+      }
+    ];
+
+    const stepLabels = [
+      "Présentation",
+      "Hausse du revenu",
+      "Bien normal",
+      "Bien inférieur : cas 1",
+      "Bien inférieur : cas 2",
+      "Part du revenu",
+      "Luxe et nécessité",
+      "Variation du prix du bien",
+      "Bien ordinaire ou de Giffen",
+      "Substituts et compléments",
+      "Demande individuelle",
+      "Demande agrégée",
+      "Synthèse",
+      "Quiz final",
+      "Bilan",
+      "Fin"
+    ];
+
+    const progressSections = [
+      { label: "Présentation", start: 0, end: 0 },
+      { label: "Revenu et quantités", start: 1, end: 4 },
+      { label: "Parts du revenu", start: 5, end: 6 },
+      { label: "Prix du bien", start: 7, end: 8 },
+      { label: "Prix d'un autre bien", start: 9, end: 9 },
+      { label: "Demande individuelle", start: 10, end: 10 },
+      { label: "Demande agrégée", start: 11, end: 11 },
+      { label: "Synthèse", start: 12, end: 14 },
+      { label: "Fin", start: 15, end: steps.length - 1 }
+    ];
+
+
+    function renderProgressStrip() {
+      progressStrip.innerHTML = progressSections.map((section, index) => {
+        const status = state.step >= section.start && state.step <= section.end ? "current" : state.step > section.end ? "done" : "";
+        return `<span class="progress-step ${status}">${index + 1}. ${section.label}</span>`;
+      }).join("");
+      const currentStep = progressStrip.querySelector(".progress-step.current");
+      if (currentStep) currentStep.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+
+    function updateActionFocus() {
+      const current = steps[state.step];
+      const waitsForExercise = Boolean(current.gate && !current.gate());
+      interactionPanel.classList.toggle("action-focus", waitsForExercise);
+      nextButton.classList.toggle("action-focus", !waitsForExercise && state.step < steps.length - 1);
+      if (waitsForExercise) {
+        actionHint.style.display = "none";
+      } else if (state.step < steps.length - 1) {
+        actionHint.style.display = "none";
+      } else {
+        actionHint.style.display = "none";
+      }
+    }
+
+    function setFeedback(message, type = "success") {
+      feedback.innerHTML = message;
+      feedback.classList.toggle("error", type === "error");
+    }
+
+    function setStageWithGraph(title, svg, note = "") {
+      stage.innerHTML = `
+        <div class="graph-wrap">
+          <div class="banner">${title}</div>
+          ${svg}
+          ${note}
+        </div>
+      `;
+    }
+
+    function graphLegend(items) {
+      return `
+        <div class="formula-card" style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-size:17px;font-weight:700;color:#66747d">
+          ${items.map((item) => `
+            <span style="display:inline-flex;align-items:center;gap:8px">
+              <i style="display:inline-block;width:24px;height:4px;border-radius:99px;background:${item.color}"></i>${item.label}
+            </span>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function xScale(value) {
+      const inner = config.size - 2 * config.margin;
+      return config.margin + (value / config.maxX) * inner;
+    }
+
+    function yScale(value) {
+      const inner = config.size - 2 * config.margin;
+      return config.size - config.margin - (value / config.maxY) * inner;
+    }
+
+    function graphPointFromEvent(svg, event) {
+      const bounds = svg.getBoundingClientRect();
+      const view = svg.viewBox.baseVal;
+      const pixelX = view.x + ((event.clientX - bounds.left) / bounds.width) * view.width;
+      const pixelY = view.y + ((event.clientY - bounds.top) / bounds.height) * view.height;
+      const inner = config.size - 2 * config.margin;
+      return {
+        x: Math.max(0, Math.min(config.maxX, ((pixelX - config.margin) / inner) * config.maxX)),
+        y: Math.max(0, Math.min(config.maxY, ((config.size - config.margin - pixelY) / inner) * config.maxY))
+      };
+    }
+
+    function closeToGraphPoint(point, target, tolerance = 0.75) {
+      return Math.hypot(point.x - target.x, point.y - target.y) <= tolerance;
+    }
+
+    function axisSvg(xLabel, yLabel) {
+      const m = config.margin;
+      const s = config.size;
+      let grid = "";
+      for (let i = 0; i <= config.maxX; i += 1) {
+        grid += `<line x1="${xScale(i)}" y1="${yScale(0)}" x2="${xScale(i)}" y2="${yScale(config.maxY)}" stroke="#d7e0e4" stroke-width="1"/>`;
+        grid += `<text x="${xScale(i) - 5}" y="${yScale(0) + 22}" fill="#66747d" font-size="13" font-weight="700">${i}</text>`;
+      }
+      for (let i = 0; i <= config.maxY; i += 1) {
+        grid += `<line x1="${xScale(0)}" y1="${yScale(i)}" x2="${xScale(config.maxX)}" y2="${yScale(i)}" stroke="#d7e0e4" stroke-width="1"/>`;
+        grid += `<text x="${xScale(0) - 24}" y="${yScale(i) + 5}" fill="#66747d" font-size="13" font-weight="700">${i}</text>`;
+      }
+      return `
+        ${grid}
+        <line x1="${m}" y1="${s - m}" x2="${s - m + 16}" y2="${s - m}" stroke="#172838" stroke-width="3"/>
+        <line x1="${m}" y1="${s - m}" x2="${m}" y2="${m - 16}" stroke="#172838" stroke-width="3"/>
+        <polygon points="${s - m + 16},${s - m} ${s - m + 3},${s - m - 7} ${s - m + 3},${s - m + 7}" fill="#172838"/>
+        <polygon points="${m},${m - 16} ${m - 7},${m - 3} ${m + 7},${m - 3}" fill="#172838"/>
+        <text x="${s - m - 84}" y="${s - m + 42}" font-size="22" font-weight="700" fill="#172838">${xLabel}</text>
+        <text x="${m - 38}" y="${m + 34}" font-size="22" font-weight="700" fill="#172838" transform="rotate(-90 ${m - 38} ${m + 34})">${yLabel}</text>
+      `;
+    }
+
+    function polyline(points, color, width = 4, dash = "") {
+      const coords = points.map((point) => `${xScale(point.x)},${yScale(point.y)}`).join(" ");
+      return `<polyline points="${coords}" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" ${dash ? `stroke-dasharray="${dash}"` : ""}/>`;
+    }
+
+    function label(text, x, y, color = "#132536") {
+      return `<text x="${xScale(x)}" y="${yScale(y)}" font-size="17" font-weight="700" fill="${color}">${text}</text>`;
+    }
+
+    function point(x, y, text, color) {
+      return `<circle cx="${xScale(x)}" cy="${yScale(y)}" r="8" fill="${color}" stroke="white" stroke-width="3"/>${label(text, x + 0.18, y + 0.45, color)}`;
+    }
+
+    function drawBudgetIncomeCase(caseName = "both", options = {}) {
+      const showP2 = options.showP2 !== false;
+      const cases = {
+        both: {
+          title: "B et C augmentent",
+          p1: { x: 2.5, y: 2.5 },
+          p2: { x: 4, y: 4 },
+          normal: "B et C",
+          inferior: "aucun"
+        },
+        cNormal: {
+          title: "C augmente, B diminue",
+          p1: { x: 2.5, y: 2.5 },
+          p2: { x: 2, y: 6 },
+          normal: "C",
+          inferior: "B"
+        },
+        bNormal: {
+          title: "B augmente, C diminue",
+          p1: { x: 2.5, y: 2.5 },
+          p2: { x: 6, y: 2 },
+          normal: "B",
+          inferior: "C"
+        }
+      };
+      const current = cases[caseName] || cases.both;
+      const p1 = current.p1;
+      const p2 = current.p2;
+      const body = `
+        ${axisSvg("Bien B", "Bien C")}
+        ${drawChoiceCI(p1, "#176b52", 1.7, 0.88, "none")}
+        ${drawChoiceCI({ x: p2.x, y: p2.y - 1.2 }, "#8daea4", 1.05, 0.28, "6 6")}
+        ${drawChoiceCI(p2, showP2 ? "#6d4bc2" : "#8daea4", showP2 ? 1.7 : 1.05, showP2 ? 0.88 : 0.34, showP2 ? "none" : "6 6")}
+        ${drawChoiceCI({ x: p2.x, y: p2.y + 1.2 }, "#8daea4", 1.05, 0.25, "6 6")}
+        <line x1="${xScale(0)}" y1="${yScale(5)}" x2="${xScale(5)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="8 6" opacity="0.75"/>
+        <line x1="${xScale(0)}" y1="${yScale(8)}" x2="${xScale(8)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="${xScale(p1.x)}" cy="${yScale(p1.y)}" r="7" fill="#176b52" stroke="white" stroke-width="2.5"/>
+        ${label("P₁", p1.x + 0.18, p1.y + 0.45, "#176b52")}
+        ${showP2 ? `<circle cx="${xScale(p2.x)}" cy="${yScale(p2.y)}" r="7" fill="#6d4bc2" stroke="white" stroke-width="2.5"/>${label("P₂", p2.x + 0.18, p2.y + 0.45, "#6d4bc2")}` : ""}
+      `;
+      return `<svg id="${options.svgId || ""}" viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Hausse du revenu et déplacement de la droite de budget" style="${options.clickable ? "cursor: crosshair" : ""}">${body}</svg>`;
+    }
+
+    function indifferencePath(k, xMin = 0.75, xMax = 8.8) {
+      const points = [];
+      for (let x = xMin; x <= xMax; x += 0.18) {
+        const y = k / x;
+        if (y > 0.55 && y < 9.2) points.push(`${xScale(x)},${yScale(y)}`);
+      }
+      return points.length ? `M ${points.join(" L ")}` : "";
+    }
+
+    function drawIndifferenceCurve(k, color, width = 2, opacity = 0.45, dash = "6 6") {
+      return `<path d="${indifferencePath(k)}" fill="none" stroke="${color}" stroke-width="${width}" opacity="${opacity}" stroke-linecap="round" stroke-dasharray="${dash}"/>`;
+    }
+
+    function choiceCIPath(center, xMin = 0.7, xMax = 8.9, slopeAbs = 1) {
+      const d = 1.4;
+      const a = slopeAbs * Math.pow(center.x + d, 2);
+      const offset = a / (center.x + d);
+      const points = [];
+      for (let x = xMin; x <= xMax; x += 0.08) {
+        const y = center.y + a / (x + d) - offset;
+        if (y > 0.55 && y < 9.3) points.push(`${points.length ? "L" : "M"} ${xScale(x).toFixed(1)} ${yScale(y).toFixed(1)}`);
+      }
+      return points.join(" ");
+    }
+
+    function drawChoiceCI(center, color, width = 1.4, opacity = 0.55, dash = "6 6", slopeAbs = 1) {
+      return `<path d="${choiceCIPath(center, 0.7, 8.9, slopeAbs)}" fill="none" stroke="${color}" stroke-width="${width}" opacity="${opacity}" stroke-linecap="round" stroke-dasharray="${dash}"/>`;
+    }
+
+    function drawLocalChoiceCI(center, color, width = 1.4, opacity = 0.55, dash = "6 6", span = 1.65, slopeAbs = 1) {
+      const xMin = Math.max(0.7, center.x - span);
+      const xMax = Math.min(8.9, center.x + span);
+      return `<path d="${choiceCIPath(center, xMin, xMax, slopeAbs)}" fill="none" stroke="${color}" stroke-width="${width}" opacity="${opacity}" stroke-linecap="round" stroke-dasharray="${dash}"/>`;
+    }
+
+    function drawIncomeChoiceGraph(progress = 0, revealed = false, showNewPoint = revealed) {
+      const p = Math.max(0, Math.min(1, progress));
+      const initialIntercept = 5;
+      const finalIntercept = 8;
+      const currentIntercept = initialIntercept + (finalIntercept - initialIntercept) * p;
+      const p1 = { x: 2.5, y: 2.5 };
+      const p2 = { x: currentIntercept / 2, y: currentIntercept / 2 };
+      const newLevel = p2.x * p2.y;
+      let body = `
+        ${axisSvg("Bien B", "Bien C")}
+        ${drawIndifferenceCurve(2.4, "#7fae9e", 1.1, 0.34)}
+        ${drawIndifferenceCurve(6.25, "#176b52", 1.8, 0.9, "none")}
+        ${drawIndifferenceCurve(10.2, "#7fae9e", 1.1, 0.3)}
+        <line x1="${xScale(0)}" y1="${yScale(initialIntercept)}" x2="${xScale(initialIntercept)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="${revealed || p > 0.02 ? 2.2 : 3}" stroke-linecap="round" ${revealed || p > 0.02 ? `stroke-dasharray="8 6" opacity="0.75"` : ""}/>
+      `;
+
+      if (state.incomeInitialChoiceClicked) {
+        body += `
+          <circle cx="${xScale(p1.x)}" cy="${yScale(p1.y)}" r="7" fill="#176b52" stroke="white" stroke-width="2.5"/>
+          ${label("P₁", p1.x + 0.18, p1.y + 0.45, "#176b52")}
+        `;
+      }
+
+      if (p > 0.02 || revealed) {
+        body += `
+          <line id="incomeMovingBudget" x1="${xScale(0)}" y1="${yScale(currentIntercept)}" x2="${xScale(currentIntercept)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="3" stroke-linecap="round"/>
+        `;
+      }
+
+      if (revealed) {
+        body += `
+          ${drawIndifferenceCurve(newLevel * 0.62, "#8daea4", 1.1, 0.32)}
+          ${drawIndifferenceCurve(newLevel, showNewPoint ? "#6d4bc2" : "#8daea4", showNewPoint ? 1.8 : 1.1, showNewPoint ? 0.9 : 0.36, showNewPoint ? "none" : "6 6")}
+          ${drawIndifferenceCurve(newLevel * 1.42, "#8daea4", 1.1, 0.28)}
+        `;
+        if (showNewPoint) {
+          body += `
+            <circle cx="${xScale(p2.x)}" cy="${yScale(p2.y)}" r="7" fill="#6d4bc2" stroke="white" stroke-width="2.5"/>
+            ${label("P₂", p2.x + 0.18, p2.y + 0.45, "#6d4bc2")}
+          `;
+        }
+      } else {
+        body += "";
+      }
+
+      if (!revealed && state.incomeInitialChoiceClicked) {
+        body += `
+          <line id="incomeDragHandle" x1="${xScale(0)}" y1="${yScale(currentIntercept)}" x2="${xScale(currentIntercept)}" y2="${yScale(0)}" stroke="transparent" stroke-width="28" stroke-linecap="round" style="cursor: grab"/>
+        `;
+      }
+      const cursor = !state.incomeInitialChoiceClicked || revealed ? "crosshair" : "grab";
+      return `<svg id="incomeDragSvg" viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Choix optimal après hausse du revenu" style="touch-action: none; cursor: ${cursor}">${body}</svg>`;
+    }
+
+    function setupIncomeBudgetDrag() {
+      const svg = document.getElementById("incomeDragSvg");
+      if (!svg || state.answered.has("incomeParallel")) return;
+
+      const updateFromEvent = (event) => {
+        if (!state.incomeDragging) return;
+        const currentSvg = document.getElementById("incomeDragSvg");
+        if (!currentSvg) return;
+        const rect = currentSvg.getBoundingClientRect();
+        const clientX = event.clientX;
+        const clientY = event.clientY;
+        const sx = ((clientX - rect.left) / rect.width) * config.size;
+        const sy = ((clientY - rect.top) / rect.height) * config.size;
+        const b = ((sx - config.margin) / (config.size - 2 * config.margin)) * config.maxX;
+        const c = ((config.size - config.margin - sy) / (config.size - 2 * config.margin)) * config.maxY;
+        const intercept = Math.max(5, Math.min(8, b + c));
+        state.incomeDragProgress = (intercept - 5) / 3;
+        setStageWithGraph(
+          "Faites glisser la droite de budget vers un revenu plus élevé.",
+          drawIncomeChoiceGraph(state.incomeDragProgress, false),
+          `<div class="formula-card"><div class="formula">prix inchangés ⇒ pente inchangée</div></div>`
+        );
+        setupIncomeBudgetDrag();
+      };
+
+      const start = (event) => {
+        state.incomeDragging = true;
+        const currentSvg = document.getElementById("incomeDragSvg");
+        if (currentSvg) {
+          currentSvg.style.cursor = "grabbing";
+          currentSvg.setPointerCapture?.(event.pointerId);
+        }
+        event.preventDefault();
+        updateFromEvent(event);
+      };
+      const move = (event) => {
+        updateFromEvent(event);
+      };
+      const stop = () => {
+        if (state.incomeDragging && state.incomeDragProgress > 0.08) {
+          state.incomeBudgetReleased = true;
+          state.answered.add("incomeParallel");
+          state.incomeNewChoiceClicked = false;
+          state.incomeDragging = false;
+          renderIncomeVariation();
+          updateNav();
+          return;
+        }
+        state.incomeDragging = false;
+      };
+
+      if (!svg.dataset.dragReady) {
+        svg.dataset.dragReady = "true";
+        svg.addEventListener("pointerdown", start);
+      }
+      if (!state.incomeGlobalDragBound) {
+        state.incomeGlobalDragBound = true;
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", stop);
+      }
+    }
+
+    function setupIncomeChoiceClick(kind) {
+      const svg = document.getElementById("incomeDragSvg");
+      if (!svg) return;
+      const currentIntercept = 5 + 3 * Math.max(0, Math.min(1, state.incomeDragProgress));
+      const target = kind === "initial" ? { x: 2.5, y: 2.5 } : { x: currentIntercept / 2, y: currentIntercept / 2 };
+      svg.style.cursor = "crosshair";
+      svg.addEventListener("click", (event) => {
+        const point = graphPointFromEvent(svg, event);
+        if (!closeToGraphPoint(point, target)) {
+          setFeedback(kind === "initial"
+            ? "Pas encore. Regardez le panier que le consommateur préfère parmi les paniers accessibles."
+            : "Pas encore. Comparez les CI proposées et la nouvelle contrainte budgétaire.", "error");
+          return;
+        }
+        if (kind === "initial") {
+          state.incomeInitialChoiceClicked = true;
+          setFeedback("Exact. P₁ est le choix initial.");
+        } else {
+          state.incomeNewChoiceClicked = true;
+          setFeedback("Exact. P₂ est le nouveau choix : il se situe sur la meilleure CI accessible.");
+        }
+        renderIncomeVariation();
+        updateNav();
+      });
+    }
+
+    function setupCNormalP2Click() {
+      const svg = document.getElementById("cNormalGraph");
+      if (!svg) return;
+      const target = { x: 2, y: 6 };
+      svg.addEventListener("click", (event) => {
+        const point = graphPointFromEvent(svg, event);
+        if (!closeToGraphPoint(point, target, 0.85)) {
+          setFeedback("Pas encore. Cherchez, parmi les paniers accessibles sur la nouvelle contrainte, celui qui atteint la meilleure CI proposée.", "error");
+          return;
+        }
+        state.cCaseP2Clicked = true;
+        setFeedback("Exact. P₂ est le panier choisi avec le nouveau revenu.");
+        renderCNormalBInferiorCase();
+        updateNav();
+      });
+    }
+
+    function shareRayStats() {
+      const b = state.shareRayT;
+      const c = 1.5 * b;
+      const income = b + c;
+      return {
+        b,
+        c,
+        ratio: c / b,
+        shareB: b / income,
+        shareC: c / income
+      };
+    }
+
+    function formatPct(value) {
+      return `${(value * 100).toFixed(1).replace(".", ",").replace(",0", "")} %`;
+    }
+
+    function setupShareRayDrag() {
+      const svg = document.getElementById("shareGraph");
+      const handle = document.getElementById("shareRayHandle");
+      if (!svg || !handle) return;
+
+      const updateFromEvent = (event) => {
+        if (!state.shareRayDragging) return;
+        const currentSvg = document.getElementById("shareGraph");
+        if (!currentSvg) return;
+        const point = graphPointFromEvent(currentSvg, event);
+        const projected = (point.x + 1.5 * point.y) / 3.25;
+        state.shareRayT = Math.max(0.9, Math.min(5.6, projected));
+        state.shareRayMoved = true;
+        renderBudgetShare();
+      };
+
+      if (!svg.dataset.shareDragReady) {
+        svg.dataset.shareDragReady = "true";
+        svg.addEventListener("pointerdown", (event) => {
+          const point = graphPointFromEvent(svg, event);
+          const m = { x: state.shareRayT, y: 1.5 * state.shareRayT };
+          if (!closeToGraphPoint(point, m, 0.75)) return;
+          state.shareRayDragging = true;
+          svg.setPointerCapture?.(event.pointerId);
+          event.preventDefault();
+          updateFromEvent(event);
+        });
+      }
+
+      if (!state.shareRayGlobalBound) {
+        state.shareRayGlobalBound = true;
+        window.addEventListener("pointermove", updateFromEvent);
+        window.addEventListener("pointerup", () => {
+          state.shareRayDragging = false;
+        });
+        window.addEventListener("pointercancel", () => {
+          state.shareRayDragging = false;
+        });
+      }
+    }
+
+    function setupShareSClick() {
+      const svg = document.getElementById("shareGraph");
+      if (!svg) return;
+      const target = { x: 3.2, y: 4.8 };
+      svg.addEventListener("click", (event) => {
+        const point = graphPointFromEvent(svg, event);
+        if (!closeToGraphPoint(point, target, 0.85)) {
+          setFeedback("Pas encore. Cherchez le panier de la nouvelle contrainte qui reste sur la droite issue de l'origine.", "error");
+          return;
+        }
+        state.shareSClicked = true;
+        setFeedback("Exact. S est sur la nouvelle contrainte et sur la même droite issue de l'origine que P₁. Il garde donc les mêmes proportions de B et C, et comme les prix ne changent pas, il garde les mêmes parts de revenu.");
+        renderBudgetShare();
+        updateNav();
+      });
+    }
+
+    function setupShareHigherBClick() {
+      const svg = document.getElementById("shareGraph");
+      if (!svg) return;
+      svg.addEventListener("click", (event) => {
+        const point = graphPointFromEvent(svg, event);
+        const onNewBudget = Math.abs(point.x + point.y - 8) <= 0.35;
+        const toRightOfS = point.x > 3.55;
+        if (!onNewBudget || !toRightOfS) {
+          setFeedback("Pas encore. Le panier doit être sur la nouvelle contrainte et consacrer une part plus grande du revenu à B que S, donc que P₁.", "error");
+          return;
+        }
+        const projectedX = Math.max(3.65, Math.min(7.4, point.x));
+        state.shareHigherPoint = { x: projectedX, y: 8 - projectedX };
+        state.shareHigherBClicked = true;
+        state.answered.add("share");
+        setFeedback("Exact. Ce panier est sur la nouvelle contrainte et il est situé à droite de S. Par rapport à S, il contient plus de B et moins de C : la part du revenu consacrée à B est donc plus élevée que dans P₁. La CI tracée en ce point est tangente à la contrainte budgétaire.");
+        renderBudgetShare();
+        updateNav();
+      });
+    }
+
+    function drawIncomeGraph(mode = "normal") {
+      const normal = [{ x: 1, y: 1.6 }, { x: 3, y: 3.2 }, { x: 5, y: 4.7 }, { x: 8, y: 6.6 }];
+      const inferior = [{ x: 1, y: 6.8 }, { x: 3, y: 5.8 }, { x: 5, y: 4.6 }, { x: 8, y: 3.2 }];
+      const necessity = [{ x: 1, y: 1.2 }, { x: 3, y: 2.5 }, { x: 5, y: 3.3 }, { x: 8, y: 4.1 }];
+      const luxury = [{ x: 1, y: 0.7 }, { x: 3, y: 1.4 }, { x: 5, y: 3.4 }, { x: 8, y: 7.2 }];
+      let body = axisSvg("Revenu R", "Quantité q");
+      if (mode === "both") {
+        body += polyline(normal, "#176b52") + polyline(inferior, "#b6483b");
+        body += label("bien normal", 6.2, 6.7, "#176b52") + label("bien inférieur", 5.2, 3.4, "#b6483b");
+      } else if (mode === "shares") {
+        body += polyline(necessity, "#2156c5") + polyline(luxury, "#7048a8");
+        body += label("nécessité", 6.5, 4.4, "#2156c5") + label("luxe", 6.3, 7.4, "#7048a8");
+      } else {
+        const points = mode === "inferior" ? inferior : normal;
+        body += polyline(points, mode === "inferior" ? "#b6483b" : "#176b52");
+        body += point(2, mode === "inferior" ? 6.3 : 2.4, "R₁", "#c98c2d");
+        body += point(7, mode === "inferior" ? 3.7 : 6.0, "R₂", "#c98c2d");
+      }
+      return `<svg viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Courbe revenu consommation">${body}</svg>`;
+    }
+
+    function drawShareGraph() {
+      const body = axisSvg("Revenu R", "Part du revenu")
+        + polyline([{ x: 1, y: 6.8 }, { x: 3, y: 5.0 }, { x: 5, y: 3.9 }, { x: 8, y: 2.8 }], "#2156c5")
+        + polyline([{ x: 1, y: 1.2 }, { x: 3, y: 2.2 }, { x: 5, y: 3.8 }, { x: 8, y: 6.8 }], "#7048a8")
+        + label("part décroissante", 5.4, 3.2, "#2156c5")
+        + label("part croissante", 5.0, 6.9, "#7048a8");
+      return `<svg viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Part du revenu dépensée">${body}</svg>`;
+    }
+
+    function drawShareChoiceGraph(mode = "single") {
+      const p1 = { x: 2, y: 3 };
+      const p2 = state.shareHigherPoint || { x: 5, y: 3 };
+      const sameShare = { x: 3.2, y: 4.8 };
+      const m = { x: state.shareRayT, y: 1.5 * state.shareRayT };
+      let body = axisSvg("Bien B", "Bien C");
+
+      body += drawLocalChoiceCI(p1, "#176b52", 1.6, 0.86, "none");
+      body += `<line x1="${xScale(0)}" y1="${yScale(5)}" x2="${xScale(5)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="${mode === "single" ? 3 : 2.2}" stroke-linecap="round" ${mode === "single" ? "" : `stroke-dasharray="8 6" opacity="0.75"`}/>`;
+      body += `<circle cx="${xScale(p1.x)}" cy="${yScale(p1.y)}" r="7" fill="#176b52" stroke="white" stroke-width="2.5"/>${label("P₁", p1.x + 0.18, p1.y + 0.45, "#176b52")}`;
+
+      if (mode === "explore" || mode === "ray" || mode === "compare") {
+        body += `<line x1="${xScale(0)}" y1="${yScale(0)}" x2="${xScale(5.85)}" y2="${yScale(8.78)}" stroke="#66747d" stroke-width="1.8" stroke-dasharray="7 6" opacity="0.9"/>`;
+      }
+
+      if (mode === "explore") {
+        body += `<circle id="shareRayHandle" cx="${xScale(m.x)}" cy="${yScale(m.y)}" r="8" fill="#fffefa" stroke="#66747d" stroke-width="2.4" style="cursor: grab"/>${label("M", m.x + 0.18, m.y + 0.45, "#66747d")}`;
+      }
+
+      if (mode === "ray") {
+        body += `<line x1="${xScale(0)}" y1="${yScale(8)}" x2="${xScale(8)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="3" stroke-linecap="round"/>`;
+        if (state.shareSClicked) {
+          body += `<circle cx="${xScale(sameShare.x)}" cy="${yScale(sameShare.y)}" r="6" fill="#fffefa" stroke="#66747d" stroke-width="2.2"/>${label("S", sameShare.x + 0.18, sameShare.y + 0.45, "#66747d")}`;
+        }
+        if (state.shareHigherBClicked) {
+          body += drawLocalChoiceCI(p2, "#6d4bc2", 1.6, 0.86, "none");
+          body += `<circle cx="${xScale(p2.x)}" cy="${yScale(p2.y)}" r="7" fill="#6d4bc2" stroke="white" stroke-width="2.5"/>${label("P₂", p2.x + 0.18, p2.y + 0.45, "#6d4bc2")}`;
+        }
+      }
+
+      if (mode === "compare") {
+        body += drawLocalChoiceCI({ x: p2.x - 0.95, y: p2.y + 0.95 }, "#8daea4", 1.05, 0.24, "6 6", 1.2);
+        body += drawLocalChoiceCI(p2, "#6d4bc2", 1.6, 0.86, "none");
+        body += drawLocalChoiceCI({ x: p2.x + 0.8, y: p2.y - 0.8 }, "#8daea4", 1.05, 0.22, "6 6", 1.2);
+        body += `<line x1="${xScale(0)}" y1="${yScale(8)}" x2="${xScale(8)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="3" stroke-linecap="round"/>`;
+        body += `<circle cx="${xScale(sameShare.x)}" cy="${yScale(sameShare.y)}" r="6" fill="#fffefa" stroke="#66747d" stroke-width="2.2"/>${label("S", sameShare.x + 0.18, sameShare.y + 0.45, "#66747d")}`;
+        body += `<circle cx="${xScale(p2.x)}" cy="${yScale(p2.y)}" r="7" fill="#6d4bc2" stroke="white" stroke-width="2.5"/>${label("P₂", p2.x + 0.18, p2.y + 0.45, "#6d4bc2")}`;
+      }
+
+      return `<svg id="shareGraph" viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Paniers choisis et part du revenu" style="touch-action:none;${mode === "ray" && !state.shareSClicked ? "cursor:crosshair" : ""}">${body}</svg>`;
+    }
+
+    function drawPriceGraph(mode = "ordinary") {
+      const ordinary = [{ x: 1.5, y: 8 }, { x: 3, y: 6.2 }, { x: 5, y: 4.6 }, { x: 8, y: 2.7 }];
+      const giffen = [{ x: 1.5, y: 2.2 }, { x: 3, y: 3.2 }, { x: 5, y: 4.8 }, { x: 8, y: 6.4 }];
+      let body = axisSvg("Quantité q", "Prix p");
+      if (mode === "both") {
+        body += polyline(ordinary, "#176b52") + polyline(giffen, "#b6483b");
+        body += label("ordinaire", 5.7, 3.5, "#176b52") + label("Giffen", 6.3, 6.2, "#b6483b");
+      } else {
+        body += polyline(mode === "giffen" ? giffen : ordinary, mode === "giffen" ? "#b6483b" : "#176b52");
+      }
+      return `<svg viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Courbe de demande">${body}</svg>`;
+    }
+
+    function drawEngelGraph() {
+      const body = axisSvg("Revenu", "Part du revenu")
+        + polyline([{ x: 1, y: 7.5 }, { x: 3, y: 5.5 }, { x: 5.5, y: 4.0 }, { x: 8.5, y: 2.9 }], "#b6483b", 2.2)
+        + polyline([{ x: 1, y: 4.4 }, { x: 3, y: 4.35 }, { x: 5.5, y: 4.3 }, { x: 8.5, y: 4.25 }], "#66747d", 2.2, "7 6")
+        + polyline([{ x: 1, y: 1.2 }, { x: 3, y: 2.0 }, { x: 5.5, y: 3.2 }, { x: 8.5, y: 5.4 }], "#176b52", 2.2);
+      return `<svg viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Lois d'Engel">${body}</svg>`;
+    }
+
+    function drawPriceChoiceGraph(kind = "ordinary") {
+      const initial = { x: 2.5, y: 2.5 };
+      const p2 = kind === "ordinary" ? { x: 2.0, y: 4.8 } : { x: 4.2, y: 1.28 };
+      const initialSpan = kind === "giffen" ? 0.95 : 1.45;
+      const p2Span = kind === "giffen" ? 1.45 : 1.35;
+      const candidateSpan = kind === "giffen" ? 1.0 : 1.05;
+      const body = `
+        ${axisSvg("Bien B", "Bien C")}
+        ${drawLocalChoiceCI(initial, "#176b52", 1.45, 0.84, "none", initialSpan)}
+        ${drawLocalChoiceCI({ x: Math.min(7.6, p2.x + 0.7), y: Math.max(0.8, p2.y - 1.12) }, "#8daea4", 1.0, 0.24, "6 6", candidateSpan, 1.6)}
+        ${kind === "giffen" ? drawLocalChoiceCI({ x: p2.x - 0.65, y: p2.y + 1.04 }, "#8daea4", 1.0, 0.22, "6 6", 0.95, 1.6) : ""}
+        <line x1="${xScale(0)}" y1="${yScale(5)}" x2="${xScale(5)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="8 6" opacity="0.75"/>
+        <line x1="${xScale(0)}" y1="${yScale(8)}" x2="${xScale(5)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="3" stroke-linecap="round"/>
+        ${drawLocalChoiceCI(p2, "#6d4bc2", kind === "giffen" ? 2.25 : 1.65, 0.96, "none", p2Span, 1.6)}
+        <circle cx="${xScale(initial.x)}" cy="${yScale(initial.y)}" r="7" fill="#176b52" stroke="white" stroke-width="2.5"/>
+        ${label("P₁", initial.x + 0.18, initial.y + 0.45, "#176b52")}
+        <circle cx="${xScale(p2.x)}" cy="${yScale(p2.y)}" r="7" fill="#6d4bc2" stroke="white" stroke-width="2.5"/>
+        ${label("P₂", p2.x + 0.18, p2.y + 0.45, "#6d4bc2")}
+      `;
+      return `<svg viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Variation du prix du bien C">${body}</svg>`;
+    }
+
+    function drawCrossGoodGraph(kind = "substitutes") {
+      const initial = { x: 2.8, y: 3.2 };
+      const p2 = kind === "substitutes" ? { x: 5.0, y: 0.5 } : { x: 2.0, y: 2.0 };
+      const body = `
+        ${axisSvg("Bien B", "Bien C")}
+        ${drawLocalChoiceCI(initial, "#176b52", 1.55, 0.84, "none")}
+        ${drawLocalChoiceCI(p2, "#6d4bc2", 1.55, 0.84, "none", 1.35, 0.5)}
+        <line x1="${xScale(0)}" y1="${yScale(6)}" x2="${xScale(6)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="8 6" opacity="0.75"/>
+        <line x1="${xScale(0)}" y1="${yScale(3)}" x2="${xScale(6)}" y2="${yScale(0)}" stroke="#b6483b" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="${xScale(initial.x)}" cy="${yScale(initial.y)}" r="7" fill="#176b52" stroke="white" stroke-width="2.5"/>
+        ${label("P₁", initial.x + 0.18, initial.y + 0.45, "#176b52")}
+        <circle cx="${xScale(p2.x)}" cy="${yScale(p2.y)}" r="7" fill="#6d4bc2" stroke="white" stroke-width="2.5"/>
+        ${label("P₂", p2.x + 0.18, p2.y + 0.45, "#6d4bc2")}
+      `;
+      return `<svg viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Variation du prix de C et demande de B">${body}</svg>`;
+    }
+
+    function demandCases() {
+      return [
+        { key: "demandP4", label: "A", p: 4, bIntercept: 2, choice: { x: 1, y: 4 }, color: "#176b52", slopeAbs: 4 },
+        { key: "demandP2", label: "B", p: 2, bIntercept: 4, choice: { x: 2.5, y: 3 }, color: "#6d4bc2", slopeAbs: 2 },
+        { key: "demandP1", label: "C", p: 1, bIntercept: 8, choice: { x: 5.5, y: 2.5 }, color: "#c98c2d", slopeAbs: 1 }
+      ];
+    }
+
+    function drawIndividualDemandGraph() {
+      const cases = demandCases();
+      const left = { x: 48, y: 36, w: 184, h: 206 };
+      const right = { x: 268, y: 36, w: 158, h: 206 };
+      const sxL = (v) => left.x + (v / 9) * left.w;
+      const syL = (v) => left.y + left.h - (v / 9) * left.h;
+      const sxR = (v) => right.x + (v / 9) * right.w;
+      const syR = (v) => right.y + right.h - (v / 4) * right.h;
+      const waitingTransfer = cases.find((item) => state.demandChoices.has(item.key) && !state.demandTransfers.has(item.key));
+      const current = waitingTransfer || cases.find((item) => !state.demandChoices.has(item.key)) || cases[cases.length - 1];
+      const allTransferred = state.demandTransfers.size === cases.length;
+      let body = `
+        <rect x="0" y="0" width="${config.size}" height="${config.size}" fill="#fbfaf5"/>
+        <defs>
+          <marker id="axisArrowDemand" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="strokeWidth">
+            <path d="M 0 0 L 5 2.5 L 0 5 Z" fill="#172838"/>
+          </marker>
+        </defs>
+        <line x1="${left.x}" y1="${left.y + left.h}" x2="${left.x + left.w + 12}" y2="${left.y + left.h}" stroke="#172838" stroke-width="2.1" marker-end="url(#axisArrowDemand)"/>
+        <line x1="${left.x}" y1="${left.y + left.h}" x2="${left.x}" y2="${left.y - 12}" stroke="#172838" stroke-width="2.1" marker-end="url(#axisArrowDemand)"/>
+        <text x="${left.x + left.w - 56}" y="${left.y + left.h + 31}" font-size="16" font-weight="700" fill="#172838">Bien B</text>
+        <text x="${left.x - 30}" y="${left.y + 44}" font-size="16" font-weight="700" fill="#172838" transform="rotate(-90 ${left.x - 30} ${left.y + 44})">Bien C</text>
+        <line x1="${right.x}" y1="${right.y + right.h}" x2="${right.x + right.w + 12}" y2="${right.y + right.h}" stroke="#172838" stroke-width="2.1" marker-end="url(#axisArrowDemand)"/>
+        <line x1="${right.x}" y1="${right.y + right.h}" x2="${right.x}" y2="${right.y - 12}" stroke="#172838" stroke-width="2.1" marker-end="url(#axisArrowDemand)"/>
+        <text x="${right.x + right.w - 76}" y="${right.y + right.h + 31}" font-size="16" font-weight="700" fill="#172838">Quantité B</text>
+        <text x="${right.x - 30}" y="${right.y + 36}" font-size="16" font-weight="700" fill="#172838" transform="rotate(-90 ${right.x - 30} ${right.y + 36})">Prix B</text>
+      `;
+
+      for (let i = 0; i <= 8; i += 2) {
+        body += `<line x1="${sxL(i)}" y1="${syL(0)}" x2="${sxL(i)}" y2="${syL(8)}" stroke="#d7e0e4" stroke-width="1"/>`;
+        body += `<line x1="${sxL(0)}" y1="${syL(i)}" x2="${sxL(8)}" y2="${syL(i)}" stroke="#d7e0e4" stroke-width="1"/>`;
+        body += `<line x1="${sxR(i)}" y1="${syR(0)}" x2="${sxR(i)}" y2="${syR(4)}" stroke="#d7e0e4" stroke-width="1"/>`;
+      }
+      for (let p = 0; p <= 4; p += 1) {
+        body += `<line x1="${sxR(0)}" y1="${syR(p)}" x2="${sxR(8)}" y2="${syR(p)}" stroke="#d7e0e4" stroke-width="1"/>`;
+      }
+
+      cases.forEach((item) => {
+        const isKnown = state.demandTransfers.has(item.key);
+        const isCurrent = item === current && !isKnown;
+        if (!isKnown && !isCurrent && !allTransferred) return;
+        body += `<line x1="${sxR(0)}" y1="${syR(item.p)}" x2="${sxR(8.6)}" y2="${syR(item.p)}" stroke="#b6483b" stroke-width="${isCurrent ? 2.2 : 1.5}" opacity="${isCurrent ? 0.86 : 0.36}" ${isCurrent ? "" : `stroke-dasharray="6 6"`}/>`;
+      });
+
+      cases.forEach((item) => {
+        const chosen = state.demandChoices.has(item.key);
+        const visible = allTransferred || chosen || item === current;
+        if (!visible) return;
+        const old = item !== current || state.demandTransfers.has(item.key);
+        body += `<line x1="${sxL(0)}" y1="${syL(8)}" x2="${sxL(item.bIntercept)}" y2="${syL(0)}" stroke="#b6483b" stroke-width="${item === current && !state.demandTransfers.has(item.key) ? 2.4 : 1.8}" stroke-linecap="round" ${old ? `stroke-dasharray="8 6" opacity="0.7"` : ""}/>`;
+        body += drawMiniCI(sxL, syL, item.choice, item.color, chosen ? 2.2 : 1.5, chosen ? 0.95 : 0.5, chosen ? "none" : "6 6", item.slopeAbs);
+        if (chosen) {
+          body += `<circle cx="${sxL(item.choice.x)}" cy="${syL(item.choice.y)}" r="6.5" fill="${item.color}" stroke="white" stroke-width="2.3"/>`;
+          body += `<text x="${sxL(item.choice.x) + 8}" y="${syL(item.choice.y) - 8}" font-size="15" font-weight="700" fill="${item.color}">P${item.label}</text>`;
+          body += `<line x1="${sxL(0)}" y1="${syL(item.choice.y)}" x2="${sxL(item.choice.x)}" y2="${syL(item.choice.y)}" stroke="${item.color}" stroke-width="2" opacity="0.58" ${state.demandTransfers.has(item.key) ? "" : `stroke-dasharray="5 5"`}/>`;
+          if (state.demandTransfers.has(item.key)) {
+            body += `<line x1="${sxR(0)}" y1="${syR(item.p)}" x2="${sxR(item.choice.x)}" y2="${syR(item.p)}" stroke="${item.color}" stroke-width="2" opacity="0.45"/>`;
+            body += `<circle cx="${sxR(item.choice.x)}" cy="${syR(item.p)}" r="6.5" fill="${item.color}" stroke="white" stroke-width="2.3"/>`;
+            body += `<text x="${sxR(item.choice.x) + 8}" y="${syR(item.p) - 8}" font-size="15" font-weight="700" fill="${item.color}">${item.label}</text>`;
+          }
+        }
+      });
+
+      const transferCases = cases.filter((item) => state.demandTransfers.has(item.key));
+      if (transferCases.length === cases.length) {
+        const a = cases[0];
+        const b = cases[1];
+        const c = cases[2];
+        body += `<path d="M ${sxR(0.72)} ${syR(4.35)} C ${sxR(0.85)} ${syR(4.15)}, ${sxR(0.95)} ${syR(4.05)}, ${sxR(a.choice.x)} ${syR(a.p)} S ${sxR(2.2)} ${syR(2.1)}, ${sxR(b.choice.x)} ${syR(b.p)} S ${sxR(4.7)} ${syR(1.15)}, ${sxR(c.choice.x)} ${syR(c.p)} S ${sxR(7.1)} ${syR(0.62)}, ${sxR(8.7)} ${syR(0.35)}" fill="none" stroke="#176b52" stroke-width="2.8" opacity="0.82" stroke-linecap="round"/>`;
+      }
+
+      return `<svg id="individualDemandSvg" viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Construction de la demande individuelle" style="touch-action:none;cursor:crosshair">${body}</svg>`;
+    }
+
+    function drawMiniCI(sx, sy, center, color, width = 1.3, opacity = 0.45, dash = "6 6", slopeAbs = 1) {
+      const d = 1.1;
+      const a = slopeAbs * Math.pow(center.x + d, 2);
+      const offset = a / (center.x + d);
+      const points = [];
+      for (let x = Math.max(0.45, center.x - 1.25); x <= Math.min(7.6, center.x + 1.25); x += 0.08) {
+        const y = center.y + a / (x + d) - offset;
+        if (y > 0.3 && y < 7.8) points.push(`${points.length ? "L" : "M"} ${sx(x).toFixed(1)} ${sy(y).toFixed(1)}`);
+      }
+      return `<path d="${points.join(" ")}" fill="none" stroke="${color}" stroke-width="${width}" opacity="${opacity}" stroke-linecap="round" stroke-dasharray="${dash}"/>`;
+    }
+
+    function setupIndividualDemandClick() {
+      const svg = document.getElementById("individualDemandSvg");
+      if (!svg) return;
+      const cases = demandCases().map((item) => ({ key: item.key, target: item.choice }));
+      const current = cases.find((item) => !state.demandChoices.has(item.key));
+      if (!current) return;
+      if (state.demandChoices.has(current.key)) return;
+
+      svg.addEventListener("click", (event) => {
+        const bounds = svg.getBoundingClientRect();
+        const view = svg.viewBox.baseVal;
+        const px = view.x + ((event.clientX - bounds.left) / bounds.width) * view.width;
+        const py = view.y + ((event.clientY - bounds.top) / bounds.height) * view.height;
+        const left = { x: 48, y: 36, w: 184, h: 206 };
+        const point = {
+          x: ((px - left.x) / left.w) * 9,
+          y: ((left.y + left.h - py) / left.h) * 9
+        };
+        if (Math.hypot(point.x - current.target.x, point.y - current.target.y) > 0.45) {
+          setFeedback("Pas encore. Cherchez le panier choisi dans le graphique de gauche, en utilisant la contrainte et les CI.", "error");
+          return;
+        }
+        state.demandChoices.add(current.key);
+        setFeedback("Exact. Le segment horizontal indique la quantité de B demandée. Faites maintenant glisser cette quantité vers le graphique de droite.");
+        renderIndividualDemand();
+        updateNav();
+      });
+    }
+
+    function setupDemandTransferDrag() {
+      const svg = document.getElementById("individualDemandSvg");
+      if (!svg) return;
+      const current = demandCases().find((item) => state.demandChoices.has(item.key) && !state.demandTransfers.has(item.key));
+      if (!current) return;
+      const left = { x: 48, y: 36, w: 184, h: 206 };
+      const right = { x: 268, y: 36, w: 158, h: 206 };
+      const sxL = (v) => left.x + (v / 9) * left.w;
+      const syL = (v) => left.y + left.h - (v / 9) * left.h;
+      const sxR = (v) => right.x + (v / 9) * right.w;
+      const syR = (v) => right.y + right.h - (v / 4) * right.h;
+
+      const removeDragGuide = () => {
+        const guide = document.getElementById("demandDragGuide");
+        if (guide) guide.remove();
+      };
+
+      svg.addEventListener("pointerdown", (event) => {
+        const bounds = svg.getBoundingClientRect();
+        const view = svg.viewBox.baseVal;
+        const px = view.x + ((event.clientX - bounds.left) / bounds.width) * view.width;
+        const py = view.y + ((event.clientY - bounds.top) / bounds.height) * view.height;
+        const nearSegment = px >= sxL(0) - 8 && px <= sxL(current.choice.x) + 8 && Math.abs(py - syL(current.choice.y)) < 12;
+        if (!nearSegment) return;
+        state.demandDragging = true;
+        removeDragGuide();
+        const guide = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        guide.setAttribute("id", "demandDragGuide");
+        const length = Math.max(28, sxL(current.choice.x) - sxL(0));
+        guide.setAttribute("data-length", length);
+        guide.setAttribute("x1", px - length);
+        guide.setAttribute("y1", py);
+        guide.setAttribute("x2", px);
+        guide.setAttribute("y2", py);
+        guide.setAttribute("stroke", current.color);
+        guide.setAttribute("stroke-width", "3");
+        guide.setAttribute("stroke-dasharray", "5 5");
+        guide.setAttribute("opacity", "0.7");
+        guide.setAttribute("stroke-linecap", "round");
+        svg.appendChild(guide);
+        event.preventDefault();
+      });
+
+      svg.addEventListener("pointermove", (event) => {
+        if (!state.demandDragging) return;
+        const guide = document.getElementById("demandDragGuide");
+        if (!guide) return;
+        const activeSvg = document.getElementById("individualDemandSvg");
+        const bounds = activeSvg.getBoundingClientRect();
+        const view = activeSvg.viewBox.baseVal;
+        const px = view.x + ((event.clientX - bounds.left) / bounds.width) * view.width;
+        const py = view.y + ((event.clientY - bounds.top) / bounds.height) * view.height;
+        const length = Number(guide.getAttribute("data-length")) || 40;
+        guide.setAttribute("x1", px - length);
+        guide.setAttribute("y1", py);
+        guide.setAttribute("x2", px);
+        guide.setAttribute("y2", py);
+      });
+
+      if (!state.demandGlobalBound) {
+        state.demandGlobalBound = true;
+        window.addEventListener("pointerup", (event) => {
+          if (!state.demandDragging) return;
+          state.demandDragging = false;
+          removeDragGuide();
+          const latest = demandCases().find((item) => state.demandChoices.has(item.key) && !state.demandTransfers.has(item.key));
+          if (!latest) return;
+          const activeSvg = document.getElementById("individualDemandSvg");
+          if (!activeSvg) return;
+          const bounds = activeSvg.getBoundingClientRect();
+          const view = activeSvg.viewBox.baseVal;
+          const px = view.x + ((event.clientX - bounds.left) / bounds.width) * view.width;
+          const py = view.y + ((event.clientY - bounds.top) / bounds.height) * view.height;
+          const close = Math.hypot(px - sxR(latest.choice.x), py - syR(latest.p)) < 34;
+          if (close) {
+            state.demandTransfers.add(latest.key);
+            const done = state.demandTransfers.size === demandCases().length;
+            setFeedback(done
+              ? "Exact. Les trois couples prix de B, quantité de B sont placés. En les reliant et en prolongeant la relation, on obtient la fonction de demande individuelle de B."
+              : "Exact. C'est la même quantité de B : elle est lue dans le panier choisi à gauche, puis reportée à droite au prix de B correspondant.");
+            renderIndividualDemand();
+            updateNav();
+          } else {
+            setFeedback("Pas encore. Faites glisser la quantité de B vers le point du graphique de droite qui correspond au même prix de B.", "error");
+          }
+        });
+      }
+    }
+
+    function drawCrossPriceGraph() {
+      const body = axisSvg("Prix de A", "Demande de B")
+        + polyline([{ x: 1, y: 2 }, { x: 3, y: 3.2 }, { x: 5, y: 4.9 }, { x: 8, y: 7.2 }], "#176b52")
+        + polyline([{ x: 1, y: 7.3 }, { x: 3, y: 6.0 }, { x: 5, y: 4.1 }, { x: 8, y: 2.3 }], "#b6483b")
+        + label("substituts", 5.7, 7.2, "#176b52")
+        + label("compléments", 5.1, 2.4, "#b6483b");
+      return `<svg viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Prix croisé et demande">${body}</svg>`;
+    }
+
+    function drawAggregateGraph() {
+      const a = [{ x: 1, y: 8 }, { x: 2.5, y: 6 }, { x: 4, y: 4 }, { x: 5, y: 2.5 }];
+      const b = [{ x: 1.5, y: 8 }, { x: 3.5, y: 6 }, { x: 5.5, y: 4 }, { x: 7, y: 2.5 }];
+      const market = [{ x: 2.5, y: 8 }, { x: 6, y: 6 }, { x: 9.5, y: 4 }, { x: 10, y: 3.6 }];
+      const body = axisSvg("Quantité q", "Prix p")
+        + polyline(a, "#2156c5", 3, "7 7")
+        + polyline(b, "#c98c2d", 3, "7 7")
+        + polyline(market, "#176b52", 5)
+        + label("individu 1", 1.2, 5.3, "#2156c5")
+        + label("individu 2", 4.7, 5.0, "#c98c2d")
+        + label("marché", 7.1, 6.4, "#176b52");
+      return `<svg viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Demande agrégée">${body}</svg>`;
+    }
+
+    function renderCoverPage() {
+      stage.innerHTML = `
+        <div class="cover-page">
+          <div class="cover-author">Auteur : Tanguy van Ypersele · © Tous droits réservés</div>
+          <div class="cover-author">Programmation effectuée à l'aide de l'IA.</div>
+          <div class="cover-title">Chapitre 4 : une typologie des biens de consommation</div>
+          <div class="formula-card">
+            <p>Dans ce module, nous allons apprendre à classer les biens selon :</p>
+            <ul class="cover-list">
+              <li>la réaction à une variation du revenu ;</li>
+              <li>la part du revenu consacrée au bien ;</li>
+              <li>la réaction à une variation du prix ;</li>
+              <li>la réaction de la demande d'un bien au prix d'un autre bien.</li>
+            </ul>
+          </div>
+        </div>
+      `;
+      interaction.innerHTML = `<div class="formula-card"><p>Cliquez sur Suivant pour commencer.</p></div>`;
+    }
+
+    function renderIncomeVariation() {
+      const completed = state.answered.has("incomeParallel");
+      const showNewPoint = state.incomeNewChoiceClicked;
+      setStageWithGraph(
+        completed ? "La hausse de revenu donne accès à des paniers nouveaux." : "Choix initial : trouvez le panier choisi par le consommateur.",
+        drawIncomeChoiceGraph(state.incomeDragProgress, completed, showNewPoint),
+        `
+        ${graphLegend([
+          { color: "#b6483b", label: "Contrainte budgétaire" },
+          { color: "#176b52", label: "Choix initial P₁" },
+          { color: "#6d4bc2", label: "Nouveau choix P₂" }
+        ])}
+        <div class="formula-card">
+          <div class="formula">p<sub>B</sub>B + p<sub>C</sub>C = R</div>
+        </div>
+      `);
+
+      if (!state.incomeInitialChoiceClicked) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Quel panier le consommateur choisit-il au départ ?</p>
+          <div class="formula-card">
+            <p>Cliquez sur le panier choisi par le consommateur.</p>
+          </div>
+        `;
+        setupIncomeChoiceClick("initial");
+        return;
+      }
+
+      if (!completed) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Déplacez la contrainte budgétaire vers un niveau de revenu plus élevé.</p>
+          <div class="formula-card">
+            <p>Cliquez directement sur la droite de budget, faites-la glisser vers le nord-est, puis relâchez-la au niveau de revenu que vous voulez étudier.</p>
+          </div>
+        `;
+        setupIncomeBudgetDrag();
+        return;
+      }
+
+      if (!state.incomeNewChoiceClicked) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Avec cette nouvelle contrainte, quel panier est choisi ?</p>
+          <div class="formula-card">
+            <p>Les CI proposées apparaissent maintenant. Cliquez sur le meilleur panier accessible.</p>
+          </div>
+        `;
+        setupIncomeChoiceClick("new");
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">Pourquoi la droite de budget s'est-elle déplacée parallèlement ?</p>
+        <div class="button-row">
+          <button data-answer="prices">Les prix relatifs n'ont pas changé</button>
+          <button data-answer="priceB">Le prix de B a augmenté</button>
+          <button data-answer="taste">Les préférences ont changé</button>
+        </div>
+      `;
+      bindChoice("incomeParallelReason", "prices", "Exact. La pente dépend du rapport des prix. Ici seul R augmente : les interceptions augmentent, mais la pente ne change pas.", "Pas encore. Un déplacement parallèle signifie que la pente ne change pas : regardez donc ce qui arrive aux prix relatifs.", renderIncomeVariation);
+    }
+
+    function renderBothNormalCase() {
+      setStageWithGraph("Cas 1 : P₂ contient plus de B et plus de C que P₁.", drawIncomeChoiceGraph(state.incomeDragProgress || 1, true, true), graphLegend([
+        { color: "#b6483b", label: "Contrainte budgétaire" },
+        { color: "#176b52", label: "P₁" },
+        { color: "#6d4bc2", label: "P₂" }
+      ]));
+      interaction.innerHTML = `
+        <p class="choice-prompt">De P₁ à P₂, la consommation de B et de C augmente. Que peut-on en conclure ?</p>
+        <div class="button-row">
+          <button data-answer="b">B seulement</button>
+          <button data-answer="c">C seulement</button>
+          <button data-answer="both">B et C</button>
+        </div>
+      `;
+      bindChoice("bothNormal", "both", "Exact. Le revenu augmente, les prix ne changent pas, et les quantités de B et de C augmentent toutes les deux : B et C sont donc des biens normaux dans cette situation.", "Pas encore. Appliquez la définition : un bien normal est un bien dont la quantité consommée augmente quand le revenu augmente.", renderBothNormalCase);
+    }
+
+    function renderCNormalBInferiorCase() {
+      const p2Found = state.cCaseP2Clicked;
+      setStageWithGraph(
+        p2Found ? "Cas 2 : P₂ contient plus de C mais moins de B que P₁." : "Cas 2 : trouvez le nouveau panier choisi.",
+        drawBudgetIncomeCase("cNormal", { showP2: p2Found, svgId: "cNormalGraph", clickable: !p2Found }),
+        graphLegend([
+        { color: "#b6483b", label: "Contrainte budgétaire" },
+        { color: "#176b52", label: "P₁" },
+        { color: "#6d4bc2", label: "P₂" }
+      ]));
+      if (!p2Found) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Quel panier est choisi après la hausse du revenu ?</p>
+          <div class="formula-card">
+            <p>Cliquez sur le meilleur panier accessible avec la nouvelle contrainte budgétaire.</p>
+          </div>
+        `;
+        setupCNormalP2Click();
+        return;
+      }
+      if (!state.answered.has("cNormal")) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Le bien C est-il normal ou inférieur ?</p>
+          <div class="button-row">
+            <button data-answer="c">C est normal</button>
+            <button data-answer="b">C est inférieur</button>
+            <button data-answer="neither">On ne peut pas conclure</button>
+          </div>
+        `;
+        bindChoice("cNormal", "c", "Exact. Entre P₁ et P₂, la quantité de C augmente alors que le revenu augmente et que les prix ne changent pas. C vérifie donc la définition d'un bien normal.", "Pas encore. Comparez seulement la quantité de C dans P₁ et dans P₂, puis appliquez la définition.", renderCNormalBInferiorCase, true);
+        return;
+      }
+      interaction.innerHTML = `
+        <p class="choice-prompt">Le bien B est-il normal ou inférieur ?</p>
+        <div class="button-row">
+          <button data-answer="c">B est normal</button>
+          <button data-answer="b">B est inférieur</button>
+          <button data-answer="none">On ne peut pas conclure</button>
+        </div>
+      `;
+      bindChoice("bInferior", "b", "Exact. Entre P₁ et P₂, la quantité de B diminue alors que le revenu augmente. C'est précisément le cas d'un bien inférieur.", "Pas encore. Regardez le déplacement horizontal de P₁ à P₂ : la quantité de B augmente-t-elle ou diminue-t-elle ?", renderCNormalBInferiorCase);
+    }
+
+    function renderBNormalCInferiorCase() {
+      setStageWithGraph("Cas 3 : P₂ contient plus de B mais moins de C que P₁.", drawBudgetIncomeCase("bNormal"), graphLegend([
+        { color: "#b6483b", label: "Contrainte budgétaire" },
+        { color: "#176b52", label: "P₁" },
+        { color: "#6d4bc2", label: "P₂" }
+      ]));
+      if (!state.answered.has("bNormal")) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">De P₁ à P₂, B augmente alors que le revenu augmente. Que peut-on conclure pour B ?</p>
+          <div class="button-row">
+            <button data-answer="b">B est normal</button>
+            <button data-answer="c">B est inférieur</button>
+            <button data-answer="both">On ne peut pas conclure</button>
+          </div>
+        `;
+        bindChoice("bNormal", "b", "Exact. Le revenu augmente et la quantité de B augmente : B est un bien normal dans cette situation.", "Pas encore. Appliquez la définition du bien normal à la quantité de B.", renderBNormalCInferiorCase, true);
+        return;
+      }
+      interaction.innerHTML = `
+        <p class="choice-prompt">De P₁ à P₂, C diminue alors que le revenu augmente. Que peut-on conclure pour C ?</p>
+        <div class="button-row">
+          <button data-answer="b">C est normal</button>
+          <button data-answer="c">C est inférieur</button>
+          <button data-answer="none">On ne peut pas conclure</button>
+        </div>
+      `;
+      bindChoice("cInferior", "c", "Exact. Le revenu augmente, mais la quantité de C diminue : C est un bien inférieur dans cette situation.", "Pas encore. Pour repérer le bien inférieur, cherchez le bien dont la quantité baisse quand le revenu augmente.", renderBNormalCInferiorCase);
+    }
+
+    function renderBudgetShare() {
+      const showRay = state.shareCalcDone;
+      const graphMode = !showRay ? "single" : state.shareRayUnderstood ? "ray" : "explore";
+      setStageWithGraph(showRay ? "Explorez les paniers situés sur la droite issue de l'origine." : "Un panier choisi permet de calculer la part du revenu consacrée à chaque bien.", drawShareChoiceGraph(graphMode), `
+        ${graphLegend([
+          { color: "#b6483b", label: "Contrainte budgétaire" },
+          { color: "#176b52", label: "Panier choisi" },
+          ...(showRay ? [{ color: "#66747d", label: "Même proportion B/C" }] : [])
+        ])}
+        <div class="formula-card"><div class="formula">part = dépense pour le bien / revenu</div></div>
+      `);
+
+      if (state.shareCalcDone && !state.shareRayUnderstood) {
+        const stats = shareRayStats();
+        interaction.innerHTML = `
+          <p class="choice-prompt">Déplacez M sur la droite issue de l'origine. Que remarquez-vous ?</p>
+          <div class="formula-card">
+            <p>B = ${stats.b.toFixed(1).replace(".", ",")} ; C = ${stats.c.toFixed(1).replace(".", ",")}</p>
+            <p>C / B = ${stats.ratio.toFixed(1).replace(".", ",")}</p>
+            <p>part de B = ${formatPct(stats.shareB)} ; part de C = ${formatPct(stats.shareC)}</p>
+          </div>
+          <div class="button-row">
+            <button data-answer="proportions">Les proportions et les parts restent constantes</button>
+            <button data-answer="quantities">Les quantités restent constantes</button>
+            <button data-answer="budget">La contrainte budgétaire reste constante</button>
+          </div>
+        `;
+        setupShareRayDrag();
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "proportions") {
+              state.shareRayUnderstood = true;
+              setFeedback("Exact. Sur cette droite, les quantités changent mais les proportions restent constantes. Utilisons maintenant cette idée avec un revenu plus élevé.");
+              renderBudgetShare();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. Les quantités changent quand M bouge ; regardez plutôt le rapport C/B et les parts du revenu.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      if (state.shareRayUnderstood && !state.shareSClicked) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Sur la nouvelle contrainte, quel panier garde les mêmes parts de revenu que P₁ ?</p>
+          <div class="formula-card">
+            <p>Cliquez sur le panier correspondant.</p>
+          </div>
+        `;
+        setupShareSClick();
+        return;
+      }
+
+      if (state.shareSClicked) {
+        if (!state.shareHigherBClicked) {
+          interaction.innerHTML = `
+            <p class="choice-prompt">Sur la nouvelle contrainte, choisissez un panier qui consacre une part plus grande du revenu à B que P₁.</p>
+            <div class="formula-card">
+              <p>Cliquez sur un panier correspondant.</p>
+            </div>
+          `;
+          setupShareHigherBClick();
+          return;
+        }
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>S garde les mêmes proportions que P₁. Le panier choisi est à droite de S sur la nouvelle contrainte : il consacre donc une part plus grande du revenu à B.</p>
+          </div>
+        `;
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">Dans P₁, le revenu vaut 5, le prix de B vaut 1 et la quantité de B vaut 2. Quelle part du revenu est consacrée à B ?</p>
+        <div class="button-row">
+          <button data-answer="20">20 %</button>
+          <button data-answer="40">40 %</button>
+          <button data-answer="60">60 %</button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === "40") {
+            state.shareCalcDone = true;
+            setFeedback("Exact. La dépense en B est 1 × 2 = 2. La part du revenu consacrée à B est donc 2 / 5 = 0,4, soit 40 %. Regardons maintenant comment repérer graphiquement une part inchangée.");
+            renderBudgetShare();
+            updateNav();
+          } else {
+            setFeedback("Pas encore. Calculez d'abord la dépense en B, puis divisez cette dépense par le revenu total.", "error");
+          }
+        });
+      });
+    }
+
+    function renderLuxuryNecessity() {
+      setStageWithGraph("Comparons la part du revenu consacrée à chaque bien entre P₁ et P₂.", drawShareChoiceGraph("compare"), `
+        ${graphLegend([
+          { color: "#b6483b", label: "Contrainte budgétaire" },
+          { color: "#176b52", label: "P₁" },
+          { color: "#6d4bc2", label: "P₂" }
+        ])}
+        <div class="formula-card"><div class="formula">part = dépense pour le bien / revenu</div></div>
+      `);
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">Comment qualifier B et C dans cette situation ?</p>
+        <div class="button-row">
+          <button data-answer="correct">B est un bien de luxe ; C est un bien de nécessité</button>
+          <button data-answer="reverse">B est un bien de nécessité ; C est un bien de luxe</button>
+          <button data-answer="bothLuxury">B et C sont des biens de luxe</button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === "correct") {
+            state.answered.add("luxuryNecessity");
+            setFeedback("Exact. S garde les mêmes parts de revenu que P₁. P₂ est à droite de S sur la nouvelle contrainte : la part consacrée à B augmente, donc B est un bien de luxe. La part consacrée à C diminue, donc C est un bien de nécessité.");
+            renderLuxuryNecessity();
+            updateNav();
+          } else {
+            setFeedback("Pas encore. Comparez P₂ à S : à droite de S, la part consacrée à B augmente, tandis que la part consacrée à C diminue.", "error");
+          }
+        });
+      });
+    }
+
+    function renderEngelLaws() {
+      setStageWithGraph("Trois régularités observées par Engel.", drawEngelGraph(), graphLegend([
+        { color: "#b6483b", label: "Part décroissante" },
+        { color: "#66747d", label: "Part stable" },
+        { color: "#176b52", label: "Part croissante" }
+      ]));
+      interaction.innerHTML = `
+        <p class="choice-prompt">Dans les observations d'Engel, que devient la part du revenu consacrée aux besoins alimentaires quand le revenu augmente ?</p>
+        <div class="button-row">
+          <button data-answer="rise">augmenter fortement</button>
+          <button data-answer="fall">diminuer</button>
+          <button data-answer="none">disparaître totalement</button>
+        </div>
+      `;
+      bindChoice("engel", "fall", "Exact. La dépense alimentaire peut augmenter en niveau, mais sa part dans le revenu tend à baisser.", "Pas encore. Engel raisonne en part du revenu.", renderEngelLaws);
+    }
+
+    function renderPriceVariation() {
+      setStageWithGraph("Le prix de C diminue : la contrainte pivote vers l'extérieur.", drawPriceChoiceGraph("ordinary"), graphLegend([
+        { color: "#b6483b", label: "Contrainte budgétaire" },
+        { color: "#176b52", label: "P₁" },
+        { color: "#6d4bc2", label: "P₂" }
+      ]));
+      interaction.innerHTML = `
+        <p class="choice-prompt">Entre P₁ et P₂, que devient la consommation de C quand son prix diminue ?</p>
+        <div class="button-row">
+          <button data-answer="falls">diminue</button>
+          <button data-answer="rises">augmente</button>
+          <button data-answer="same">reste constante</button>
+        </div>
+      `;
+      bindChoice("priceDirection", "rises", "Exact. Le prix de C diminue et la quantité consommée de C augmente : la quantité varie en sens inverse du prix.", "Pas encore. Comparez la coordonnée verticale de P₁ et de P₂ : elle mesure la quantité de C.", renderPriceVariation);
+    }
+
+    function renderGiffen() {
+      setStageWithGraph("Autre réaction possible à une baisse du prix de C.", drawPriceChoiceGraph("giffen"), graphLegend([
+        { color: "#b6483b", label: "Contrainte budgétaire" },
+        { color: "#176b52", label: "P₁" },
+        { color: "#6d4bc2", label: "P₂" }
+      ]));
+      interaction.innerHTML = `
+        <p class="choice-prompt">Dans ce nouveau cas, le prix de C diminue. Comment qualifier C ?</p>
+        <div class="button-row">
+          <button data-answer="ordinary">C est ordinaire</button>
+          <button data-answer="giffen">C est de Giffen</button>
+          <button data-answer="none">On ne peut pas conclure</button>
+        </div>
+      `;
+      bindChoice("giffen", "giffen", "Exact. Le prix de C diminue et la quantité consommée de C diminue aussi : la quantité varie dans le même sens que le prix. D'après la définition, C est un bien de Giffen dans cette situation.", "Pas encore. Appliquez la définition : regardez le sens de variation du prix de C et de la quantité de C.", renderGiffen);
+    }
+
+    function renderSubstitutesComplements() {
+      setStageWithGraph("Le prix de C augmente : observons la réaction de B.", drawCrossGoodGraph("substitutes"), graphLegend([
+        { color: "#b6483b", label: "Contrainte budgétaire" },
+        { color: "#176b52", label: "P₁" },
+        { color: "#6d4bc2", label: "P₂" }
+      ]));
+      if (!state.answered.has("crossChange")) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Entre la contrainte pointillée et la contrainte en trait plein, qu'est-ce qui a changé ?</p>
+          <div class="button-row">
+            <button data-answer="priceC">Le prix de C a augmenté</button>
+            <button data-answer="income">Le revenu a augmenté</button>
+            <button data-answer="priceB">Le prix de B a augmenté</button>
+          </div>
+        `;
+        bindChoice("crossChange", "priceC", "Exact. L'interception sur l'axe C diminue, tandis que l'interception sur l'axe B ne change pas : c'est le prix de C qui augmente.", "Pas encore. Regardez quel point extrême de la contrainte bouge entre la droite pointillée et la droite pleine.", renderSubstitutesComplements, true);
+        return;
+      }
+      interaction.innerHTML = `
+        <p class="choice-prompt">B et C sont-ils substituts ou complémentaires ?</p>
+        <div class="button-row">
+          <button data-answer="substitutes">substituts</button>
+          <button data-answer="complements">complémentaires</button>
+          <button data-answer="none">on ne peut pas conclure</button>
+        </div>
+      `;
+      bindChoice("cross", "substitutes", "Exact. Quand C devient plus cher, le consommateur se reporte vers B : la demande de B augmente. D'après la définition, B et C sont substituts.", "Pas encore. La définition porte sur l'effet du prix d'un bien sur la demande de l'autre.", renderSubstitutesComplements);
+    }
+
+    function renderIndividualDemand() {
+      const waitingTransfer = demandCases().find((item) => state.demandChoices.has(item.key) && !state.demandTransfers.has(item.key));
+      setStageWithGraph("Pour construire la demande individuelle de B, on garde R et le prix de C fixes, puis on fait varier le prix de B.", drawIndividualDemandGraph(), `
+        <div class="formula-card"><div class="formula">q<sub>B</sub> = D<sub>B</sub>(p<sub>B</sub>, R, p<sub>C</sub>, préférences)</div></div>
+      `);
+      if (waitingTransfer) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Déplacez le segment horizontal de quantité de B vers le graphique de droite au niveau du prix en vigueur.</p>
+          <div class="formula-card">
+            <p>Le prix de B se lit sur l'axe vertical du graphique de droite. La quantité de B est la même que celle du panier choisi à gauche.</p>
+          </div>
+        `;
+        setupDemandTransferDrag();
+        return;
+      }
+      if (state.demandChoices.size < demandCases().length) {
+        const nextCase = demandCases().find((item) => !state.demandChoices.has(item.key));
+        interaction.innerHTML = `
+          <p class="choice-prompt">Revenu R = 8, prix de C = 1, prix de B = ${nextCase.p}. Cliquez sur le panier que le consommateur choisit.</p>
+        `;
+        setupIndividualDemandClick();
+        return;
+      }
+      interaction.innerHTML = `
+        <p class="choice-prompt">Dans le graphique de droite, que représente l'axe vertical ?</p>
+        <div class="button-row">
+          <button data-answer="qB">La quantité de B</button>
+          <button data-answer="pB">Le prix de B</button>
+          <button data-answer="R">Le revenu</button>
+        </div>
+      `;
+      bindChoice("individualDemand", "pB", "Exact. La demande de B relie chaque prix de B à la quantité de B demandée. On peut donc prolonger la relation pour représenter la fonction de demande définie pour les différents niveaux de pB.", "Pas encore. Ici on construit la demande de B : la quantité de B est en abscisse et le prix de B en ordonnée.", renderIndividualDemand);
+    }
+
+    function renderAggregateDemand() {
+      setStageWithGraph("La demande de marché additionne les quantités individuelles à chaque prix.", drawAggregateGraph());
+      interaction.innerHTML = `
+        <p class="choice-prompt">Au prix p = 6, Inès demande 2 unités et Nora demande 3 unités. Quelle est la demande agrégée à ce prix ?</p>
+        <div class="button-row">
+          <button data-answer="1">1 unité</button>
+          <button data-answer="5">5 unités</button>
+          <button data-answer="6">6 unités</button>
+        </div>
+      `;
+      bindChoice("aggregate", "5", "Exact. Pour un prix donné, on additionne les quantités : 2 + 3 = 5.", "Pas encore. La demande agrégée est une somme horizontale des quantités.", renderAggregateDemand);
+    }
+
+    function renderSummaryTable() {
+      stage.innerHTML = `
+        <div class="table-card">
+          <table>
+            <thead><tr><th>Variable observée</th><th>Réaction</th><th>Nom du bien ou du lien</th></tr></thead>
+            <tbody>
+              <tr><td>Revenu ↑</td><td>Quantité demandée ↑</td><td>Bien normal</td></tr>
+              <tr><td>Revenu ↑</td><td>Quantité demandée ↓</td><td>Bien inférieur</td></tr>
+              <tr><td>Revenu ↑</td><td>Part du revenu ↑</td><td>Bien de luxe</td></tr>
+              <tr><td>Revenu ↑</td><td>Part du revenu ↓</td><td>Bien de nécessité</td></tr>
+              <tr><td>Prix du bien ↑</td><td>Quantité demandée ↓</td><td>Bien ordinaire</td></tr>
+              <tr><td>Prix du bien ↑</td><td>Quantité demandée ↑</td><td>Bien de Giffen</td></tr>
+              <tr><td>Prix de A ↑</td><td>Demande de B ↑</td><td>Substituts</td></tr>
+              <tr><td>Prix de A ↑</td><td>Demande de B ↓</td><td>Compléments</td></tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+      interaction.innerHTML = `
+        <p class="choice-prompt">Dans le tableau, quel cas correspond à une demande qui augmente quand le prix du bien augmente ?</p>
+        <div class="button-row">
+          <button data-answer="ordinary">bien ordinaire</button>
+          <button data-answer="giffen">bien de Giffen</button>
+          <button data-answer="necessity">bien de nécessité</button>
+        </div>
+      `;
+      bindChoice("summary", "giffen", "Exact. C'est l'entrée exceptionnelle du tableau : prix propre en hausse, demande en hausse.", "Pas encore. Cherchez la ligne où le prix du bien augmente et la quantité demandée augmente.", renderSummaryTable);
+    }
+
+    function renderFinalQuiz() {
+      const questions = [
+        {
+          key: "quizNormal",
+          prompt: "Quand son revenu augmente, Leïla achète davantage de livres. Les livres sont ici :",
+          options: [{ id: "ordinary", text: "un bien ordinaire" }, { id: "normal", text: "un bien normal" }, { id: "giffen", text: "un bien de Giffen" }, { id: "necessity", text: "un bien de nécessité" }],
+          correct: "normal",
+          feedback: "Exact. Revenu plus élevé, quantité plus élevée : bien normal.",
+          badFeedback: "Pas encore. Un bien normal est un bien dont la consommation augmente quand le revenu augmente, les prix restant inchangés."
+        },
+        {
+          key: "quizClickIncomeP2",
+          prompt: "Sur le graphique, le revenu augmente et les prix restent inchangés. Comment qualifier le bien B ?",
+          instruction: "Cliquez sur le panier qui permet de comparer la quantité de B après la hausse du revenu.",
+          type: "click",
+          target: { x: 2, y: 6 },
+          feedback: "Exact. De P₁ à P₂, la quantité de B diminue alors que le revenu augmente : B est inférieur.",
+          badFeedback: "Pas encore. Pour qualifier B, il faut cliquer sur le nouveau panier choisi, puis comparer son abscisse à celle de P₁.",
+          graph: () => drawBudgetIncomeCase("cNormal", { svgId: "finalQuizGraph" })
+        },
+        {
+          key: "quizInferior",
+          prompt: "Quand son revenu augmente, un étudiant consomme moins de nouilles premier prix. Ce bien est :",
+          options: [{ id: "necessity", text: "un bien de nécessité" }, { id: "ordinary", text: "un bien ordinaire" }, { id: "inferior", text: "un bien inférieur" }, { id: "giffen", text: "un bien de Giffen" }],
+          correct: "inferior",
+          feedback: "Exact. Revenu plus élevé, quantité plus faible : bien inférieur.",
+          badFeedback: "Pas encore. Un bien inférieur est un bien dont la consommation diminue quand le revenu augmente, les prix restant inchangés."
+        },
+        {
+          key: "quizClickSameShare",
+          prompt: "Sur la nouvelle contrainte, quel panier garde la même part du revenu consacrée à B que P₁ ?",
+          instruction: "Cliquez sur le panier correspondant.",
+          type: "click",
+          target: { x: 3.2, y: 4.8 },
+          feedback: "Exact. Le point S est sur la même droite issue de l'origine que P₁ : le rapport C/B est inchangé. Comme les prix ne changent pas, la part du revenu consacrée à B reste la même.",
+          badFeedback: "Pas encore. Le panier recherché doit être sur la nouvelle contrainte et conserver les mêmes proportions entre B et C que P₁.",
+          graph: () => drawShareChoiceGraph("compare")
+        },
+        {
+          key: "quizLuxuryNecessity",
+          prompt: "Quand le revenu augmente, la part du revenu consacrée à B augmente et celle consacrée à C diminue. Comment qualifier B et C ?",
+          options: [
+            { id: "normalInferior", text: "B normal, C inférieur" },
+            { id: "luxuryNecessity", text: "B de luxe, C de nécessité" },
+            { id: "ordinaryGiffen", text: "B ordinaire, C de Giffen" },
+            { id: "subComp", text: "B substitut, C complément" }
+          ],
+          correct: "luxuryNecessity",
+          feedback: "Exact. Une part qui augmente indique un bien de luxe ; une part qui diminue indique un bien de nécessité.",
+          badFeedback: "Pas encore. Un bien est dit de luxe si sa part dans le revenu augmente ; un bien est dit de nécessité si sa part dans le revenu diminue."
+        },
+        {
+          key: "quizOrdinary",
+          prompt: "Quand le prix d'un bien augmente, la quantité demandée de ce bien diminue. Ce bien est :",
+          options: [{ id: "normal", text: "un bien normal" }, { id: "ordinary", text: "un bien ordinaire" }, { id: "luxury", text: "un bien de luxe" }, { id: "complements", text: "un complément" }],
+          correct: "ordinary",
+          feedback: "Exact. Prix plus élevé, quantité plus faible : bien ordinaire.",
+          badFeedback: "Pas encore. Un bien ordinaire est un bien dont la consommation varie en sens inverse de son prix."
+        },
+        {
+          key: "quizClickPriceP2",
+          prompt: "Sur le graphique, le prix de C diminue. Que faut-il comparer à P₁ pour qualifier le bien C ?",
+          instruction: "Cliquez sur le nouveau panier choisi.",
+          type: "click",
+          target: { x: 2.0, y: 4.8 },
+          feedback: "Exact. En comparant P₂ à P₁, on voit que la quantité de C augmente quand son prix diminue : C est ici un bien ordinaire.",
+          badFeedback: "Pas encore. Pour qualifier le bien C, il faut identifier le panier choisi après la variation de prix.",
+          graph: () => drawPriceChoiceGraph("ordinary").replace("<svg ", "<svg id=\"finalQuizGraph\" ")
+        },
+        {
+          key: "quizGiffen",
+          prompt: "Quand le prix d'un bien diminue et que sa quantité demandée diminue aussi, ce bien est :",
+          options: [{ id: "ordinary", text: "un bien ordinaire" }, { id: "inferior", text: "un bien inférieur" }, { id: "giffen", text: "un bien de Giffen" }, { id: "necessity", text: "un bien de nécessité" }],
+          correct: "giffen",
+          feedback: "Exact. Prix et quantité varient dans le même sens : c'est un bien de Giffen.",
+          badFeedback: "Pas encore. Un bien de Giffen est un bien dont la consommation varie dans le même sens que son prix."
+        },
+        {
+          key: "quizClickSubstitutes",
+          prompt: "Sur le graphique, le prix de C augmente. Quel panier montre la réaction de la demande de B ?",
+          instruction: "Cliquez sur le panier après variation du prix de C.",
+          type: "click",
+          target: { x: 5.0, y: 0.5 },
+          feedback: "Exact. De P₁ à P₂, la quantité demandée de B augmente quand C devient plus cher : B et C sont substituts.",
+          badFeedback: "Pas encore. On cherche le panier choisi après la hausse du prix de C, puis on compare la quantité de B.",
+          graph: () => drawCrossGoodGraph("substitutes").replace("<svg ", "<svg id=\"finalQuizGraph\" ")
+        },
+        {
+          key: "quizComplements",
+          prompt: "Quand le prix des imprimantes augmente, la demande de cartouches diminue. Ces biens sont :",
+          options: [{ id: "substitutes", text: "substituts" }, { id: "normal", text: "des biens normaux" }, { id: "complements", text: "complémentaires" }, { id: "ordinary", text: "des biens ordinaires" }],
+          correct: "complements",
+          feedback: "Exact. La hausse du prix de l'un réduit la demande de l'autre : les biens sont complémentaires.",
+          badFeedback: "Pas encore. Deux biens sont complémentaires si la hausse du prix de l'un diminue la demande de l'autre."
+        },
+        {
+          key: "quizClickDemandPoint",
+          prompt: "Sur la demande individuelle de B, quel point correspond au prix pB = 4 et à une quantité demandée de B égale à 2 ?",
+          instruction: "Cliquez sur le point correspondant.",
+          type: "click",
+          target: { x: 2, y: 4 },
+          feedback: "Exact. Une fonction de demande individuelle associe à chaque prix de B la quantité de B demandée par un consommateur.",
+          badFeedback: "Pas encore. Sur une demande de B, la quantité de B est en abscisse et le prix de B en ordonnée.",
+          graph: () => drawFinalDemandQuizGraph()
+        }
+      ];
+
+      const currentIndex = questions.findIndex((question) => !state.answered.has(question.key));
+      if (currentIndex === -1) {
+        state.answered.add("finalQuiz");
+        stage.innerHTML = `
+          <div class="table-card">
+            <h2>Quiz final terminé</h2>
+            <p>Les quatre familles de classement sont validées.</p>
+          </div>
+        `;
+        interaction.innerHTML = `<div class="formula-card"><p>Très bien. Les quatre familles de classement sont validées.</p></div>`;
+        updateNav();
+        return;
+      }
+
+      const question = questions[currentIndex];
+      if (question.graph) {
+        setStageWithGraph(`Question ${currentIndex + 1}/${questions.length}`, question.graph());
+      } else {
+        stage.innerHTML = `
+          <div class="table-card">
+            <h2>Question ${currentIndex + 1}/${questions.length}</h2>
+            <p>Identifiez la variable qui change, puis le sens de réaction observé.</p>
+          </div>
+        `;
+      }
+
+      if (question.type === "click") {
+        interaction.innerHTML = `
+          <p class="choice-prompt">${question.prompt}</p>
+          <div class="formula-card"><p>${question.instruction}</p></div>
+        `;
+        const svg = document.getElementById("finalQuizGraph") || stage.querySelector("svg");
+        if (svg) {
+          svg.style.cursor = "crosshair";
+          svg.addEventListener("click", (event) => {
+            const point = graphPointFromEvent(svg, event);
+            if (closeToGraphPoint(point, question.target, question.tolerance || 0.85)) {
+              finishFinalQuizQuestion(question);
+            } else {
+              setFeedback(question.badFeedback || "Pas encore. Repérez la variable qui change, puis comparez le panier avant et après.", "error");
+            }
+          });
+        }
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">${question.prompt}</p>
+        <div class="button-row">
+          ${question.options.map((option) => `<button data-answer="${option.id}">${option.text}</button>`).join("")}
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === question.correct) {
+            finishFinalQuizQuestion(question);
+          } else {
+            setFeedback(question.badFeedback || "Pas encore. Identifiez d'abord la variable qui varie : revenu, prix propre ou prix d'un autre bien.", "error");
+          }
+        });
+      });
+    }
+
+    function finishFinalQuizQuestion(question) {
+      state.answered.add(question.key);
+      setFeedback(question.feedback);
+      state.pendingRerender = renderFinalQuiz;
+      state.pendingRerenderStep = state.step;
+      interaction.querySelectorAll("button").forEach((btn) => { btn.disabled = true; });
+      const svg = stage.querySelector("svg");
+      if (svg) svg.style.cursor = "default";
+      updateNav();
+    }
+
+    function drawFinalDemandQuizGraph() {
+      const body = `
+        ${axisSvg("Quantité de B", "Prix de B")}
+        ${polyline([{ x: 1.1, y: 6.4 }, { x: 2, y: 4 }, { x: 3.1, y: 2.4 }, { x: 4.3, y: 1.35 }], "#176b52", 3)}
+        <circle cx="${xScale(1.1)}" cy="${yScale(6.4)}" r="7" fill="#176b52" stroke="white" stroke-width="2.5"/>
+        <circle cx="${xScale(2)}" cy="${yScale(4)}" r="7" fill="#6d4bc2" stroke="white" stroke-width="2.5"/>
+        <circle cx="${xScale(3.1)}" cy="${yScale(2.4)}" r="7" fill="#176b52" stroke="white" stroke-width="2.5"/>
+        <circle cx="${xScale(4.3)}" cy="${yScale(1.35)}" r="7" fill="#176b52" stroke="white" stroke-width="2.5"/>
+      `;
+      return `<svg id="finalQuizGraph" viewBox="0 0 ${config.size} ${config.size}" role="img" aria-label="Fonction de demande individuelle de B">${body}</svg>`;
+    }
+
+    function renderClosing() {
+      setStageWithGraph("Une typologie est une grille de lecture : variable, sens de variation, nom.", drawIncomeGraph("both"), `
+        <div class="formula-card">
+          <p>À retenir : avant de nommer un bien, demandez toujours quelle variable change.</p>
+          <div class="formula">revenu, prix propre, prix d'un autre bien, part du revenu</div>
+        </div>
+      `);
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Le module s'arrête avant l'effet substitution et l'effet revenu, qui sont traités séparément.</p>
+        </div>
+      `;
+    }
+
+    function bindChoice(key, correct, goodFeedback, badFeedback, rerender, waitForNext = false) {
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === correct) {
+            state.answered.add(key);
+            setFeedback(goodFeedback);
+            if (waitForNext) {
+              state.pendingRerender = rerender;
+              state.pendingRerenderStep = state.step;
+              interaction.querySelectorAll("button").forEach((btn) => { btn.disabled = true; });
+            } else {
+              rerender();
+            }
+            updateNav();
+          } else {
+            setFeedback(badFeedback, "error");
+          }
+        });
+      });
+    }
+
+    function renderEndSlide() {
+      stage.innerHTML = `
+        <div class="context-diagram">
+          <div class="context-box done">
+            <div class="context-tag">Chapitre 1–3 ✓</div>
+            <div class="context-name">Programme du consommateur</div>
+            <div class="context-sub">préférences · budget · choix optimal</div>
+          </div>
+          <div class="context-op">→</div>
+          <div class="context-box done">
+            <div class="context-tag">Chapitre 4 ✓</div>
+            <div class="context-name">Typologie des biens</div>
+            <div class="context-sub">normal · inférieur · Giffen · substituts</div>
+          </div>
+        </div>
+      `;
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Vous savez maintenant classer un bien selon quatre axes :</p>
+          <ul style="margin: 10px 0 0 0; padding-left: 20px; line-height: 1.8;">
+            <li><strong>Revenu</strong> → normal ou inférieur</li>
+            <li><strong>Part du revenu</strong> → luxe ou nécessité</li>
+            <li><strong>Prix propre</strong> → ordinaire ou Giffen</li>
+            <li><strong>Prix croisé</strong> → substituts ou compléments</li>
+          </ul>
+        </div>
+      `;
+    }
+
+    function update() {
+      const current = steps[state.step];
+      sequenceTitle.textContent = stepLabels[state.step] || `Diapositive ${state.step + 1}`;
+      narration.innerHTML = current.text;
+      feedback.textContent = "";
+      feedback.classList.remove("error");
+      renderProgressStrip();
+      current.render();
+      updateNav();
+    }
+
+    function updateNav() {
+      const current = steps[state.step];
+      backButton.disabled = state.step === 0;
+      const waitsForInlineNext = Boolean(state.pendingRerender && state.pendingRerenderStep === state.step);
+      nextButton.disabled = !waitsForInlineNext && current.gate && !current.gate();
+      updateActionFocus();
+    }
+
+    backButton.addEventListener("click", () => {
+      if (state.step > 0) {
+        state.pendingRerender = null;
+        state.pendingRerenderStep = null;
+        state.step -= 1;
+        update();
+      }
+    });
+
+    nextButton.addEventListener("click", () => {
+      if (state.pendingRerender && state.pendingRerenderStep === state.step) {
+        const rerender = state.pendingRerender;
+        state.pendingRerender = null;
+        state.pendingRerenderStep = null;
+        feedback.textContent = "";
+        feedback.classList.remove("error");
+        rerender();
+        updateNav();
+        return;
+      }
+      const current = steps[state.step];
+      if (current.gate && !current.gate()) return;
+      if (state.step < steps.length - 1) {
+        state.pendingRerender = null;
+        state.pendingRerenderStep = null;
+        state.step += 1;
+        update();
+      }
+    });
+
+    function openNavPanel() {
+      navPanelItems.innerHTML = steps.map((_, i) => {
+        const label = stepLabels[i] || `Diapositive ${i + 1}`;
+        return `<button class="nav-panel-item${i === state.step ? " nav-current" : ""}" data-step="${i}">${i + 1}. ${label}</button>`;
+      }).join("");
+      navPanelItems.querySelectorAll("[data-step]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.pendingRerender = null;
+          state.pendingRerenderStep = null;
+          state.step = Number(btn.dataset.step);
+          update();
+          closeNavPanel();
+        });
+      });
+      navPanel.style.display = "block";
+      navBackdrop.style.display = "block";
+    }
+
+    function closeNavPanel() {
+      navPanel.style.display = "none";
+      navBackdrop.style.display = "none";
+    }
+
+    navJumpButton.addEventListener("click", () => {
+      navPanel.style.display === "none" ? openNavPanel() : closeNavPanel();
+    });
+    navBackdrop.addEventListener("click", closeNavPanel);
+
+    devSkipButton.addEventListener("click", () => {
+      state.pendingRerender = null;
+      state.pendingRerenderStep = null;
+      if (state.step < steps.length - 1) {
+        state.step += 1;
+        update();
+      }
+    });
+
+    update();
+  </script>
+</body>
+</html>

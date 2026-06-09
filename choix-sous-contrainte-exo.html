@@ -1,0 +1,2955 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Choix sous contrainte</title>
+  <style>
+    :root {
+      --paper: #f8f5ed;
+      --panel: #fffdf8;
+      --ink: #132536;
+      --muted: #66747d;
+      --line: #e4e2dc;
+      --green: #176b52;
+      --blue: #1737ff;
+      --red: #b6483b;
+      --gold: #c98c2d;
+      --soft: #edf3f0;
+      --button: #e8edf0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 20px;
+      line-height: 1.45;
+      overflow: hidden;
+    }
+
+    .app {
+      height: 100vh;
+      height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(300px, 34%) 1fr;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 22px;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .progress-strip {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+      overflow-x: auto;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 253, 248, 0.92);
+      box-shadow: 0 10px 26px rgba(19, 37, 54, 0.04);
+    }
+
+    .progress-step {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 7px 13px;
+      border: 1px solid #d6ded9;
+      border-radius: 10px;
+      background: #fbfaf5;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      white-space: normal;
+    }
+
+    .progress-step.done {
+      color: var(--green);
+      background: #edf6f2;
+    }
+
+    .progress-step.current {
+      color: white;
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 18px 40px rgba(19, 37, 54, 0.06);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .app > .panel:first-child {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    h1, h2 {
+      margin: 0 0 18px;
+      color: #5f6e77;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      font-size: 30px;
+    }
+
+    .narration-text {
+      min-height: 270px;
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fffefa;
+      font-size: 25px;
+      overflow: auto;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 22px;
+      color: var(--ink);
+      background: var(--button);
+      font: 700 20px Georgia, "Times New Roman", serif;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: var(--green);
+      color: white;
+    }
+
+    button.action-focus {
+      box-shadow: 0 0 0 4px rgba(23, 107, 82, 0.18), 0 10px 24px rgba(23, 107, 82, 0.22);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    select {
+      min-width: 150px;
+      border: 1px solid #cfd8dc;
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: white;
+      color: var(--ink);
+      font: 700 20px Georgia, "Times New Roman", serif;
+    }
+
+    .jump-nav {
+      width: min(360px, 100%);
+      margin-top: 18px;
+    }
+
+    .jump-nav select {
+      width: 100%;
+      min-width: 0;
+      font-size: 19px;
+    }
+
+    .score-card {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border: 1px solid #d5e0dc;
+      border-radius: 14px;
+      background: #f5f9f7;
+    }
+
+    .score-title {
+      color: var(--green);
+      font-weight: 700;
+      font-size: 21px;
+      margin-bottom: 10px;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .score-item {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: white;
+      border: 1px solid #dfe8e4;
+    }
+
+    .score-label {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .score-value {
+      color: var(--ink);
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.05;
+    }
+
+    .main {
+      display: grid;
+      gap: 18px;
+      grid-template-rows: minmax(0, 1fr) auto;
+      min-height: 0;
+    }
+
+    .main.no-exercise {
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .main.no-exercise .interaction {
+      display: none;
+    }
+
+    .main > .panel:first-child {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .stage {
+      min-height: 0;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .interaction {
+      min-height: 150px;
+      max-height: 31vh;
+      overflow: auto;
+    }
+
+    .interaction.titleless h2 {
+      display: none;
+    }
+
+    .interaction.action-focus {
+      border-color: rgba(23, 107, 82, 0.55);
+      box-shadow: 0 0 0 4px rgba(23, 107, 82, 0.12), 0 18px 38px rgba(23, 107, 82, 0.12);
+    }
+
+    .action-hint {
+      margin: -2px 0 12px;
+      padding: 9px 13px;
+      border: 1px solid #c9d8d2;
+      border-radius: 999px;
+      width: fit-content;
+      max-width: 100%;
+      color: var(--green);
+      background: #edf6f2;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .interaction.action-focus h2 {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .graph-wrap {
+      width: min(980px, 100%);
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+    }
+
+    .banner,
+    .formula-card {
+      width: 100%;
+      padding: 18px 22px;
+      border: 1px solid #d5e0dc;
+      border-radius: 14px;
+      background: var(--soft);
+    }
+
+    .banner {
+      color: var(--green);
+      font-size: 26px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .formula-card {
+      background: #fbfaf5;
+    }
+
+    .formula {
+      margin-top: 10px;
+      color: var(--green);
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .exercise-statement {
+      width: min(880px, 100%);
+      display: grid;
+      gap: 14px;
+    }
+
+    .token-build {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border: 1px solid #cfd8dc;
+      border-radius: 14px;
+      background: white;
+      min-height: 74px;
+    }
+
+    .token-slot {
+      min-width: 52px;
+      min-height: 44px;
+      display: inline-grid;
+      place-items: center;
+      padding: 8px 12px;
+      border: 2px dashed #a8bbc3;
+      border-radius: 10px;
+      color: var(--green);
+      font-weight: 700;
+      background: #f5fbf8;
+    }
+
+    .token-palette,
+    .small-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .token-palette button {
+      min-width: 58px;
+      padding: 10px 16px;
+    }
+
+    .note-box {
+      margin-top: 12px;
+      padding: 14px 16px;
+      border: 1px solid #d5e0dc;
+      border-radius: 12px;
+      background: #fbfaf5;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .draw-mode {
+      outline: 3px solid rgba(23, 107, 82, 0.22);
+    }
+
+    .result-summary {
+      width: min(940px, 100%);
+      display: grid;
+      gap: 22px;
+    }
+
+    .result-highlight {
+      justify-self: start;
+      padding: 30px;
+      border: 1px solid #c9d8d2;
+      border-left: 10px solid var(--green);
+      border-radius: 16px;
+      background: linear-gradient(90deg, #edf6f2 0%, #fbfaf5 100%);
+      box-shadow: 0 20px 42px rgba(34, 55, 64, 0.08);
+    }
+
+    .result-highlight .result-label {
+      color: var(--green);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .result-highlight .result-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+      gap: 24px;
+      align-items: center;
+    }
+
+    .result-highlight .result-statement {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font-size: clamp(24px, 2.2vw, 34px);
+      line-height: 1.28;
+    }
+
+    .result-highlight .equation-stack .formula-card {
+      background: rgba(255, 255, 255, 0.72);
+      border-color: #c9d8d2;
+      box-shadow: 0 10px 22px rgba(34, 55, 64, 0.06);
+    }
+
+    .cover-page {
+      width: min(880px, 100%);
+      display: grid;
+      gap: 22px;
+      padding: 34px;
+      border: 1px solid #c9d8d2;
+      border-radius: 18px;
+      background: #fffefa;
+    }
+
+    .cover-author {
+      color: var(--muted);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .cover-title {
+      color: var(--green);
+      font-size: 42px;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .cover-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding-left: 24px;
+      font-size: 24px;
+    }
+
+    .result-statement {
+      padding: 28px 32px;
+      border: 1px solid #c9d8d2;
+      border-radius: 16px;
+      background: #edf6f2;
+      color: var(--green);
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .equation-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .frac {
+      display: inline-grid;
+      grid-template-rows: auto auto;
+      align-items: center;
+      line-height: 1;
+      vertical-align: middle;
+      margin: 0 3px;
+    }
+
+    .frac .top {
+      border-bottom: 2px solid currentColor;
+      padding: 0 5px 3px;
+    }
+
+    .frac .bottom {
+      padding: 3px 5px 0;
+    }
+
+    .choice-prompt {
+      margin: 0 0 14px;
+      font-size: 24px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .feedback {
+      min-height: 34px;
+      margin-top: 14px;
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    svg {
+      width: min(680px, 100%, 68vh);
+      height: auto;
+      border: 1px solid #d5e0dc;
+      border-radius: 16px;
+      background: #f7fafb;
+      touch-action: manipulation;
+    }
+
+    svg.zoomed-graph {
+      width: 100%;
+      max-height: 660px;
+    }
+
+    .graph-wrap.zoomed-wrap {
+      width: 100%;
+      justify-items: stretch;
+    }
+
+    .graph-wrap.zoomed-wrap #graphMount {
+      width: 100%;
+      display: grid;
+      justify-items: stretch;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto minmax(0, 1fr);
+        padding: 14px;
+      }
+
+      .narration-text {
+        min-height: 190px;
+      }
+    }
+
+    @media (max-height: 850px) {
+      body {
+        font-size: 18px;
+      }
+
+      .app {
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .progress-strip {
+        padding: 6px;
+        gap: 6px;
+      }
+
+      .progress-step {
+        padding: 6px 10px;
+        font-size: 14px;
+      }
+
+      .panel {
+        padding: 16px;
+      }
+
+      h1, h2 {
+        margin-bottom: 10px;
+        font-size: 24px;
+      }
+
+      .narration-text {
+        min-height: 180px;
+        padding: 18px;
+        font-size: 21px;
+      }
+
+      .controls {
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      button {
+        padding: 9px 16px;
+        font-size: 17px;
+      }
+
+      select {
+        padding: 9px 12px;
+        font-size: 17px;
+      }
+
+      .jump-nav,
+      .score-card {
+        margin-top: 12px;
+      }
+
+      .score-card {
+        padding: 12px 14px;
+      }
+
+      .score-title {
+        margin-bottom: 8px;
+        font-size: 18px;
+      }
+
+      .score-item {
+        padding: 8px 10px;
+      }
+
+      .score-value {
+        font-size: 23px;
+      }
+
+      .main {
+        gap: 12px;
+      }
+
+      .interaction {
+        min-height: 128px;
+        max-height: 28vh;
+      }
+
+      .banner,
+      .formula-card {
+        padding: 12px 16px;
+      }
+
+      .banner {
+        font-size: 22px;
+      }
+
+      .choice-prompt {
+        margin-bottom: 10px;
+        font-size: 20px;
+      }
+
+      .feedback {
+        margin-top: 10px;
+        min-height: 26px;
+      }
+
+      svg {
+        width: min(610px, 100%, 62vh);
+      }
+    }
+
+    @media (max-height: 720px) {
+      .app {
+        gap: 10px;
+        padding: 10px;
+      }
+
+      .progress-step {
+        padding: 5px 9px;
+        font-size: 13px;
+      }
+
+      .panel {
+        padding: 12px;
+        border-radius: 14px;
+      }
+
+      h1, h2 {
+        font-size: 21px;
+        margin-bottom: 8px;
+      }
+
+      .narration-text {
+        min-height: 150px;
+        padding: 14px;
+        font-size: 18px;
+      }
+
+      .controls {
+        margin-top: 10px;
+      }
+
+      .score-card {
+        padding: 10px;
+      }
+
+      .score-title {
+        display: none;
+      }
+
+      .score-label {
+        font-size: 13px;
+      }
+
+      .score-value {
+        font-size: 20px;
+      }
+
+      .interaction {
+        min-height: 112px;
+        max-height: 26vh;
+      }
+
+      .graph-wrap {
+        gap: 8px;
+      }
+
+      .result-statement {
+        padding: 18px 22px;
+        font-size: 24px;
+      }
+
+      .cover-page {
+        gap: 14px;
+        padding: 22px;
+      }
+
+      .cover-title {
+        font-size: 32px;
+      }
+
+      .cover-list {
+        font-size: 20px;
+      }
+
+      .formula {
+        font-size: 23px;
+      }
+
+      .token-build {
+        min-height: 58px;
+        padding: 10px 12px;
+      }
+
+      .token-slot {
+        min-height: 36px;
+        padding: 6px 10px;
+      }
+
+      svg {
+        width: min(540px, 100%, 58vh);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <nav id="progressStrip" class="progress-strip" aria-label="Progression dans la séquence"></nav>
+
+    <section class="panel">
+      <h1 id="sequenceTitle">Progression</h1>
+      <div id="narration" class="narration-text"></div>
+      <div class="controls">
+        <button id="backButton" type="button">Retour</button>
+        <button id="nextButton" class="primary" type="button">Suivant</button>
+      </div>
+      <div class="jump-nav">
+        <select id="jumpSelect" aria-label="Aller à une diapositive"></select>
+      </div>
+      <div class="score-card" aria-live="polite">
+        <div class="score-title">Score</div>
+        <div class="score-grid">
+          <div class="score-item">
+            <div class="score-label">Réussites</div>
+            <div id="progressScore" class="score-value">0</div>
+          </div>
+          <div class="score-item">
+            <div class="score-label">Du premier coup</div>
+            <div id="precisionScore" class="score-value">0</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="main">
+      <section class="panel">
+        <div id="stage" class="stage"></div>
+      </section>
+      <section class="panel interaction">
+        <h2>Exercice</h2>
+        <div id="actionHint" class="action-hint"></div>
+        <div id="interaction"></div>
+        <div id="feedback" class="feedback"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      step: 0,
+      answered: new Set(),
+      completedChallenges: new Set(),
+      missedChallenges: new Set(),
+      activeChallenge: null,
+      score: {
+        progress: 0,
+        precision: 0
+      }
+    };
+
+    const config = {
+      max: 10,
+      size: 460,
+      margin: 54,
+      income: 100,
+      pB: 10,
+      pC: 20
+    };
+
+    const target = { b: 5, c: 2.5 };
+    const interiorPoint = { b: 2, c: 2 };
+    const boundaryPoint = { b: 2, c: 4 };
+
+    const narration = document.getElementById("narration");
+    const stage = document.getElementById("stage");
+    const interaction = document.getElementById("interaction");
+    const feedback = document.getElementById("feedback");
+    const mainPanel = document.querySelector(".main");
+    const interactionPanel = document.querySelector(".panel.interaction");
+    const interactionTitle = interactionPanel.querySelector("h2");
+    const actionHint = document.getElementById("actionHint");
+    const sequenceTitle = document.getElementById("sequenceTitle");
+    const progressStrip = document.getElementById("progressStrip");
+    const backButton = document.getElementById("backButton");
+    const nextButton = document.getElementById("nextButton");
+    const jumpSelect = document.getElementById("jumpSelect");
+    const progressScore = document.getElementById("progressScore");
+    const precisionScore = document.getElementById("precisionScore");
+
+    const steps = [
+      {
+        text: "Ce module porte sur le choix du consommateur sous contrainte. Nous allons comprendre comment le choix se fait en mettant en relation la contrainte budgétaire et les préférences.",
+        render: renderCoverPage
+      },
+      {
+        text: "Nous réunissons maintenant les deux éléments vus précédemment : les préférences, représentées par des courbes d'indifférence, et la contrainte de budget. Le consommateur choisira le panier qu'il préfère parmi ceux qu'il peut atteindre.",
+        render: renderIntro
+      },
+      {
+        text: "Commençons avec un panier situé à l'intérieur de l'ensemble de budget. Il est atteignable, mais cela suffit-il pour être le panier choisi ?",
+        render: renderInteriorQuestion,
+        gate: () => state.answered.has("dominatesInterior")
+      },
+      {
+        text: "Nous pouvons donc conclure qu'un panier strictement à l'intérieur de l'ensemble de budget ne peut pas être optimal : il reste du revenu non dépensé et il est possible d'augmenter la quantité d'au moins un bien sans réduire celle de l'autre.",
+        render: renderSpendAllBudget
+      },
+      {
+        text: "Il faut donc chercher le meilleur panier sur la droite de budget. Prenons maintenant un panier situé au croisement d'une courbe d'indifférence et de la contrainte de budget. Est-ce forcément le panier choisi ?",
+        render: renderBoundaryQuestion,
+        gate: () => state.answered.has("betterOnBudget")
+      },
+      {
+        text: "Au panier optimal, la courbe d'indifférence la plus élevée atteignable est tangente à la droite de budget. C'est le point où le taux marginal de substitution est égal au taux d'échange du marché.",
+        render: renderTangencyChoice,
+        gate: () => state.answered.has("tangency")
+      },
+      {
+        text: "Le choix sous contrainte consiste donc à chercher, dans l'ensemble de budget, le panier situé sur la courbe d'indifférence la plus élevée possible. Avec des préférences convexes, ce panier se trouve au point de tangence entre une courbe d'indifférence et la droite de budget.",
+        render: renderConclusion,
+        panelTitle: "Propriété"
+      },
+      {
+        text: "Comprenons maintenant pourquoi un panier situé au croisement d'une courbe d'indifférence et de la contrainte budgétaire ne peut pas être choisi. Au point de croisement, les deux courbes n'ont pas la même pente : le TMS, qui mesure le taux auquel le consommateur est prêt à échanger les deux biens tout en restant indifférent, est différent du rapport des prix, qui mesure le taux d'échange proposé par le marché.",
+        render: renderNoEquality,
+        gate: () => state.answered.has("noEqualityDone")
+      },
+      {
+        text: "Faisons le même raisonnement en un autre point de la contrainte de budget. Ici aussi, le TMS est différent du rapport des prix. Nous allons voir ce que cela implique en reconstruisant l'argument étape par étape.",
+        render: renderRightNoEquality,
+        gate: () => state.answered.has("rightNoEqualityDone")
+      },
+      {
+        text: "Nous pouvons maintenant formuler le résultat important du choix sous contrainte lorsque le consommateur choisit des quantités positives des deux biens.",
+        render: renderInteriorResult
+      },
+      {
+        text: `Dans le résultat précédent, il y a un point qui mérite qu'on se penche dessus : "Lorsque le consommateur choisit des quantités positives des deux biens". Pour bien le comprendre, voyons le cas suivant :`,
+        render: renderCornerChoice,
+        gate: () => state.answered.has("cornerChoiceDone")
+      },
+      {
+        text: "Regardons de plus près pourquoi le TMS n'est pas forcément égalisé au rapport des prix dans un choix extrême.",
+        render: renderCornerZoom,
+        gate: () => state.answered.has("cornerDone"),
+        panelTitle: "Explication"
+      },
+      {
+        text: "Terminons par un exercice complet. L'objectif est de retrouver la contrainte budgétaire, de la représenter, puis d'utiliser les courbes d'indifférence pour placer le panier préféré.",
+        render: renderFinalExercise,
+        gate: () => state.answered.has("finalExerciseDone")
+      }
+    ];
+
+    const stepLabels = [
+      "Présentation",
+      "Préférences et budget",
+      "Panier intérieur",
+      "Tout le budget",
+      "Sur la contrainte",
+      "Tangence",
+      "Bilan",
+      "TMS et marché",
+      "Autre côté",
+      "Résultat",
+      "Allons plus loin",
+      "Choix de coin",
+      "Exercice final"
+    ];
+
+    const progressSections = [
+      { label: "Découvrir", from: 0, to: 1 },
+      { label: "Budget et choix", from: 2, to: 6 },
+      { label: "TMS", from: 7, to: 9 },
+      { label: "Choix de coin", from: 10, to: 11 },
+      { label: "Exercice", from: 12, to: steps.length - 1 }
+    ];
+
+    jumpSelect.innerHTML = steps.map((_, index) => {
+      const label = stepLabels[index] || "Diapositive " + (index + 1);
+      return `<option value="${index}">${index + 1}. ${label}</option>`;
+    }).join("");
+
+    function renderProgressStrip() {
+      progressStrip.innerHTML = progressSections.map((section, index) => {
+        const status = state.step >= section.from && state.step <= section.to
+          ? "current"
+          : state.step > section.to
+            ? "done"
+            : "";
+        return `<span class="progress-step ${status}">${index + 1}. ${section.label}</span>`;
+      }).join("");
+    }
+
+    function sx(x) {
+      const inner = config.size - 2 * config.margin;
+      return config.margin + (x / config.max) * inner;
+    }
+
+    function sy(y) {
+      const inner = config.size - 2 * config.margin;
+      return config.size - config.margin - (y / config.max) * inner;
+    }
+
+    function toUnitX(pixelX) {
+      const inner = config.size - 2 * config.margin;
+      return Math.max(0, Math.min(config.max, ((pixelX - config.margin) / inner) * config.max));
+    }
+
+    function toUnitY(pixelY) {
+      const inner = config.size - 2 * config.margin;
+      return Math.max(0, Math.min(config.max, ((config.size - config.margin - pixelY) / inner) * config.max));
+    }
+
+    function svgEl(tag, attrs = {}) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      return el;
+    }
+
+    function appendSvgPriceSymbol(parent, good) {
+      const p = svgEl("tspan", {});
+      p.textContent = "p";
+      parent.appendChild(p);
+      const sub = svgEl("tspan", { "baseline-shift": "sub", "font-size": "70%" });
+      sub.textContent = good;
+      parent.appendChild(sub);
+    }
+
+    function setSvgMathText(element, text) {
+      element.textContent = "";
+      const re = /pB|pC/g;
+      let lastIndex = 0;
+      String(text).replace(re, (match, offset) => {
+        if (offset > lastIndex) {
+          const plain = svgEl("tspan", {});
+          plain.textContent = text.slice(lastIndex, offset);
+          element.appendChild(plain);
+        }
+        appendSvgPriceSymbol(element, match.includes("B") ? "B" : "C");
+        lastIndex = offset + match.length;
+        return match;
+      });
+      if (lastIndex < text.length) {
+        const plain = svgEl("tspan", {});
+        plain.textContent = text.slice(lastIndex);
+        element.appendChild(plain);
+      }
+    }
+
+    function budgetC(b) {
+      return (config.income - config.pB * b) / config.pC;
+    }
+
+    function utility(point) {
+      return point.b * point.c;
+    }
+
+    function isAffordable(point, tolerance = 0.001) {
+      return config.pB * point.b + config.pC * point.c <= config.income + tolerance;
+    }
+
+    function isOnBudget(point, tolerance = 0.22) {
+      return Math.abs(point.c - budgetC(point.b)) <= tolerance && point.b >= 0 && point.c >= 0;
+    }
+
+    function drawBaseGraph(options = {}) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", `0 0 ${config.size} ${config.size}`);
+      svg.setAttribute("aria-label", "Plan des biens B et C");
+
+      for (let i = 0; i <= config.max; i += 1) {
+        svg.appendChild(svgEl("line", { x1: sx(i), y1: sy(0), x2: sx(i), y2: sy(config.max), stroke: "#d7e0e4", "stroke-width": 1 }));
+        svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(i), x2: sx(config.max), y2: sy(i), stroke: "#d7e0e4", "stroke-width": 1 }));
+      }
+
+      if (options.budgetArea) {
+        drawBudgetArea(svg, Boolean(options.budgetAreaLabel));
+      }
+
+      if (options.preferredRegions) {
+        drawPreferredRegions(svg, options.preferredRegions, options.preferredRegionOptions || {});
+      }
+
+      svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(0), x2: sx(config.max) + 12, y2: sy(0), stroke: "#132536", "stroke-width": 3 }));
+      svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(0), x2: sx(0), y2: sy(config.max) - 12, stroke: "#132536", "stroke-width": 3 }));
+      svg.appendChild(svgEl("polygon", { points: `${sx(config.max) + 12},${sy(0)} ${sx(config.max)},${sy(0) - 7} ${sx(config.max)},${sy(0) + 7}`, fill: "#132536" }));
+      svg.appendChild(svgEl("polygon", { points: `${sx(0)},${sy(config.max) - 12} ${sx(0) - 7},${sy(config.max)} ${sx(0) + 7},${sy(config.max)}`, fill: "#132536" }));
+
+      const labelB = svgEl("text", { x: sx(config.max) - 100, y: sy(0) + 34, fill: "#132536", "font-size": 22, "font-weight": 700 });
+      labelB.textContent = "Bien B";
+      svg.appendChild(labelB);
+      const labelC = svgEl("text", { x: sx(0) - 30, y: sy(config.max) + 86, fill: "#132536", "font-size": 22, "font-weight": 700, transform: `rotate(-90 ${sx(0) - 30} ${sy(config.max) + 86})` });
+      labelC.textContent = "Bien C";
+      svg.appendChild(labelC);
+
+      drawBudgetLine(svg);
+
+      if (options.curves) {
+        options.curves.forEach((level) => drawIndifferenceCurve(svg, level, options.tangentLevel === level));
+      }
+
+      if (options.points) {
+        options.points.forEach((point) => drawPoint(svg, point));
+      }
+
+      if (options.hintText) {
+        const text = svgEl("text", { x: sx(2.6), y: sy(0.9), fill: "#176b52", "font-size": 17, "font-weight": 700 });
+        text.textContent = options.hintText;
+        svg.appendChild(text);
+      }
+
+      return svg;
+    }
+
+    function lightenZoomedGraph(svg) {
+      svg.querySelectorAll("path").forEach((path) => {
+        const current = Number(path.getAttribute("stroke-width") || 2);
+        path.setAttribute("stroke-width", String(Math.max(0.9, current * 0.55)));
+        path.setAttribute("opacity", "0.78");
+      });
+      svg.querySelectorAll("line").forEach((line) => {
+        const current = Number(line.getAttribute("stroke-width") || 1);
+        line.setAttribute("stroke-width", String(Math.max(0.55, current * 0.7)));
+      });
+    }
+
+    function drawBudgetArea(svg, showLabel = false) {
+      const maxB = config.income / config.pB;
+      const maxC = config.income / config.pC;
+      svg.appendChild(svgEl("polygon", {
+        points: `${sx(0)},${sy(0)} ${sx(0)},${sy(maxC)} ${sx(maxB)},${sy(0)}`,
+        fill: "#dceee7",
+        opacity: 0.78
+      }));
+      if (showLabel) {
+        const label = svgEl("text", { x: sx(2.05), y: sy(1.1), fill: "#176b52", "font-size": 17, "font-weight": 700 });
+        label.textContent = "ensemble de budget";
+        svg.appendChild(label);
+      }
+    }
+
+    function drawBudgetLine(svg) {
+      const maxB = config.income / config.pB;
+      const maxC = config.income / config.pC;
+      svg.appendChild(svgEl("path", {
+        d: `M ${sx(0)} ${sy(maxC)} L ${sx(maxB)} ${sy(0)}`,
+        fill: "none",
+        stroke: "#b6483b",
+        "stroke-width": 4,
+        "stroke-linecap": "round"
+      }));
+    }
+
+    function drawPreferredRegions(svg, referencePoint, options = {}) {
+      const level = utility(referencePoint);
+      const referenceLabel = options.referenceLabel || "P₃";
+      const showIntersection = options.showIntersection !== false;
+      const topPoints = [];
+      const curvePoints = [];
+      const minB = Math.max(level / config.max, 0.2);
+      for (let b = minB; b <= config.max; b += 0.08) {
+        const c = level / b;
+        if (c <= config.max) {
+          topPoints.push(`${sx(b)},${sy(config.max)}`);
+          curvePoints.push(`${sx(b)},${sy(c)}`);
+        }
+      }
+      const preferredPolygon = [...topPoints, ...curvePoints.reverse()].join(" ");
+      svg.appendChild(svgEl("polygon", {
+        points: preferredPolygon,
+        fill: "#dbe7ff",
+        opacity: 0.52
+      }));
+
+      const intersections = budgetCurveIntersections(level);
+      if (showIntersection && intersections.length === 2 && Math.abs(intersections[1] - intersections[0]) > 0.05) {
+        const [left, right] = intersections;
+        const budgetTop = [];
+        const curveBottom = [];
+        for (let b = left; b <= right; b += 0.06) {
+          budgetTop.push(`${sx(b)},${sy(budgetC(b))}`);
+          curveBottom.push(`${sx(b)},${sy(level / b)}`);
+        }
+        svg.appendChild(svgEl("polygon", {
+          points: [...budgetTop, ...curveBottom.reverse()].join(" "),
+          fill: "#98d8bd",
+          opacity: 0.82
+        }));
+      }
+
+      const preferredLabel = svgEl("text", { x: sx(4.2), y: sy(8.4), fill: "#1737ff", "font-size": 16, "font-weight": 700 });
+      preferredLabel.textContent = `paniers préférés à ${referenceLabel}`;
+      svg.appendChild(preferredLabel);
+
+      if (showIntersection) {
+        const intersectionLabel = svgEl("text", { x: sx(3.2), y: sy(3.25), fill: "#176b52", "font-size": 16, "font-weight": 700 });
+        intersectionLabel.textContent = "préférés et atteignables";
+        svg.appendChild(intersectionLabel);
+      }
+    }
+
+    function budgetCurveIntersections(level) {
+      const a = config.pB;
+      const b = -config.income;
+      const c = config.pC * level;
+      const discriminant = b * b - 4 * a * c;
+      if (discriminant < 0) return [];
+      const sqrt = Math.sqrt(discriminant);
+      return [(-b - sqrt) / (2 * a), (-b + sqrt) / (2 * a)]
+        .filter((x) => x >= 0 && x <= config.max)
+        .sort((x, y) => x - y);
+    }
+
+    function drawIndifferenceCurve(svg, level, isTangent = false) {
+      const points = [];
+      for (let b = 0.7; b <= config.max; b += 0.06) {
+        const c = level / b;
+        if (c >= 0.45 && c <= 7.6) {
+          points.push(`${points.length ? "L" : "M"} ${sx(b).toFixed(1)} ${sy(c).toFixed(1)}`);
+        }
+      }
+      svg.appendChild(svgEl("path", {
+        d: points.join(" "),
+        fill: "none",
+        stroke: isTangent ? "#1737ff" : "#6c85ff",
+        "stroke-width": isTangent ? 4 : 2.6,
+        "stroke-linecap": "round",
+        opacity: isTangent ? 0.95 : 0.62
+      }));
+    }
+
+    function drawPoint(svg, point) {
+      svg.appendChild(svgEl("circle", {
+        cx: sx(point.b),
+        cy: sy(point.c),
+        r: point.r || 8,
+        fill: point.color || "#176b52",
+        stroke: "white",
+        "stroke-width": 3
+      }));
+      const label = svgEl("text", {
+        x: sx(point.b) + (point.dx ?? 12),
+        y: sy(point.c) + (point.dy ?? -12),
+        fill: point.color || "#176b52",
+        "font-size": point.fontSize || 18,
+        "font-weight": 700
+      });
+      label.textContent = point.label;
+      svg.appendChild(label);
+    }
+
+    function drawSegment(svg, from, to, color, options = {}) {
+      svg.appendChild(svgEl("line", {
+        x1: sx(from.b),
+        y1: sy(from.c),
+        x2: sx(to.b),
+        y2: sy(to.c),
+        stroke: color,
+        "stroke-width": options.width || 3.2,
+        "stroke-linecap": "round",
+        "stroke-dasharray": options.dash || ""
+      }));
+    }
+
+    function drawMovingPixelSegment(svg, from, to, color, options = {}) {
+      const line = svgEl("line", {
+        x1: from.x1,
+        y1: from.y1,
+        x2: from.x2,
+        y2: from.y2,
+        stroke: color,
+        "stroke-width": options.width || 2.4,
+        "stroke-linecap": "round",
+        "stroke-dasharray": options.dash || ""
+      });
+      ["x1", "y1", "x2", "y2"].forEach((attribute) => {
+        const animation = svgEl("animate", {
+          attributeName: attribute,
+          from: from[attribute],
+          to: to[attribute],
+          dur: options.duration || "0.9s",
+          fill: "freeze",
+          begin: "0.15s",
+          calcMode: "spline",
+          keyTimes: "0;1",
+          keySplines: "0.2 0 0.2 1"
+        });
+        line.appendChild(animation);
+      });
+      svg.appendChild(line);
+    }
+
+    function drawGraphText(svg, text, point, color, size = 16) {
+      const label = svgEl("text", {
+        x: sx(point.b),
+        y: sy(point.c),
+        fill: color,
+        "font-size": size,
+        "font-weight": 700
+      });
+      setSvgMathText(label, text);
+      svg.appendChild(label);
+    }
+
+    function drawDeltaComparison(svg, data, includeMarket = false) {
+      const blueLength = Math.abs(sy(data.sameCI.c) - sy(data.start.c));
+      const orangeLength = Math.abs(sy(data.market.c) - sy(data.start.c));
+      const blueX = 120;
+      const orangeX = 131;
+      const bottom = 308;
+      const blueFinal = { x1: blueX, y1: bottom, x2: blueX, y2: bottom - blueLength };
+
+      if (includeMarket) {
+        svg.appendChild(svgEl("line", {
+          ...blueFinal,
+          stroke: "#1737ff",
+          "stroke-width": 2.4,
+          "stroke-linecap": "round"
+        }));
+        drawMovingPixelSegment(
+          svg,
+          {
+            x1: sx(data.market.b + 0.08),
+            y1: sy(data.start.c),
+            x2: sx(data.market.b + 0.08),
+            y2: sy(data.market.c)
+          },
+          { x1: orangeX, y1: bottom, x2: orangeX, y2: bottom - orangeLength },
+          "#d18a2d",
+          { width: 1.8 }
+        );
+        return;
+      }
+
+      drawMovingPixelSegment(
+        svg,
+        {
+          x1: sx(data.sameCI.b - 0.08),
+          y1: sy(data.start.c),
+          x2: sx(data.sameCI.b - 0.08),
+          y2: sy(data.sameCI.c)
+        },
+        blueFinal,
+        "#1737ff",
+        { width: 1.8 }
+      );
+    }
+
+    function drawRightCComparison(svg, data, includeMarket = false) {
+      const blueLength = Math.abs(sy(data.sameCIWithMoreB.c) - sy(data.start.c));
+      const orangeLength = Math.abs(sy(data.marketWithMoreB.c) - sy(data.start.c));
+      const blueX = 118;
+      const orangeX = 130;
+      const bottom = 328;
+      const blueFinal = { x1: blueX, y1: bottom, x2: blueX, y2: bottom - blueLength };
+
+      if (includeMarket) {
+        svg.appendChild(svgEl("line", {
+          ...blueFinal,
+          stroke: "#1737ff",
+          "stroke-width": 2.2,
+          "stroke-linecap": "round"
+        }));
+        svg.appendChild(svgEl("line", {
+          x1: orangeX,
+          y1: bottom,
+          x2: orangeX,
+          y2: bottom - orangeLength,
+          stroke: "#d18a2d",
+          "stroke-width": 1.7,
+          "stroke-linecap": "round"
+        }));
+        return;
+      }
+
+      svg.appendChild(svgEl("line", {
+        ...blueFinal,
+        stroke: "#1737ff",
+        "stroke-width": 1.7,
+        "stroke-linecap": "round"
+      }));
+    }
+
+    function drawRightBComparison(svg, data, includeMarket = false) {
+      const blueLength = Math.abs(sx(data.sameCIWithMoreC.b) - sx(data.start.b));
+      const orangeLength = Math.abs(sx(data.marketWithMoreC.b) - sx(data.start.b));
+      const left = 118;
+      const blueY = 328;
+      const orangeY = 316;
+      const blueFinal = { x1: left, y1: blueY, x2: left + blueLength, y2: blueY };
+
+      if (includeMarket) {
+        svg.appendChild(svgEl("line", {
+          ...blueFinal,
+          stroke: "#1737ff",
+          "stroke-width": 2.2,
+          "stroke-linecap": "round"
+        }));
+        svg.appendChild(svgEl("line", {
+          x1: left,
+          y1: orangeY,
+          x2: left + orangeLength,
+          y2: orangeY,
+          stroke: "#d18a2d",
+          "stroke-width": 1.7,
+          "stroke-linecap": "round"
+        }));
+        return;
+      }
+
+      svg.appendChild(svgEl("line", {
+        ...blueFinal,
+        stroke: "#1737ff",
+        "stroke-width": 1.7,
+        "stroke-linecap": "round"
+      }));
+    }
+
+    function setStageWithGraph(title, graph, extra = "") {
+      const banner = title ? `<div class="banner">${title}</div>` : "";
+      stage.innerHTML = `<div class="graph-wrap">${banner}<div id="graphMount"></div>${extra}</div>`;
+      document.getElementById("graphMount").appendChild(graph);
+      if (graph.classList.contains("zoomed-graph")) {
+        stage.querySelector(".graph-wrap").classList.add("zoomed-wrap");
+      }
+    }
+
+    function setChallenge(key) {
+      state.activeChallenge = key;
+    }
+
+    function updateActionFocus() {
+      const current = steps[state.step];
+      const waitsForExercise = Boolean(current.gate && !current.gate());
+      const hasExerciseContent = Boolean(waitsForExercise || interaction.textContent.trim() || feedback.textContent.trim());
+      mainPanel.classList.toggle("no-exercise", !hasExerciseContent);
+      interactionTitle.textContent = current.panelTitle || "Exercice";
+      interactionPanel.classList.toggle("titleless", interaction.dataset.titleless === "true");
+      interactionPanel.classList.toggle("action-focus", waitsForExercise);
+      nextButton.classList.toggle("action-focus", !waitsForExercise && state.step < steps.length - 1);
+      if (waitsForExercise) {
+        actionHint.textContent = "";
+        actionHint.style.display = "none";
+      } else {
+        actionHint.textContent = "";
+        actionHint.style.display = "none";
+      }
+    }
+
+    function updateScoreboard() {
+      progressScore.textContent = String(state.score.progress);
+      precisionScore.textContent = String(state.score.precision);
+    }
+
+    function registerMistake() {
+      if (!state.activeChallenge || state.completedChallenges.has(state.activeChallenge)) return;
+      state.missedChallenges.add(state.activeChallenge);
+      updateScoreboard();
+    }
+
+    function registerSuccess() {
+      if (!state.activeChallenge || state.completedChallenges.has(state.activeChallenge)) return;
+      state.completedChallenges.add(state.activeChallenge);
+      state.score.progress += 1;
+      if (!state.missedChallenges.has(state.activeChallenge)) {
+        state.score.precision += 1;
+      }
+      updateScoreboard();
+    }
+
+    function setFeedback(text, type = "ok") {
+      feedback.innerHTML = text;
+      feedback.style.color = type === "ok" ? "var(--green)" : "var(--red)";
+      if (type === "error") {
+        registerMistake();
+      } else if (/^(Exact|Très bien|Oui)/.test(String(text))) {
+        registerSuccess();
+      }
+    }
+
+    function renderCoverPage() {
+      setChallenge(null);
+      stage.innerHTML = `
+        <div class="cover-page">
+          <div class="cover-title">Le choix sous contrainte</div>
+          <div class="formula-card">
+            <p>Dans ce module, nous allons apprendre à :</p>
+            <ul class="cover-list">
+              <li>Déterminer le panier optimal</li>
+              <li>Résoudre un problème sous contrainte</li>
+              <li>Caractériser la condition de tangence</li>
+              <li>Expliquer l'intuition économique</li>
+            </ul>
+          </div>
+          <div class="cover-author">Auteur : Tanguy van Ypersele · © Tous droits réservés</div>
+          <div class="cover-author">Programmation effectuée à l'aide de l'IA.</div>
+        </div>
+      `;
+      interaction.innerHTML = "";
+    }
+
+    function graphClick(handler) {
+      const svg = document.querySelector("#graphMount svg");
+      svg.addEventListener("click", (event) => {
+        const bounds = svg.getBoundingClientRect();
+        const view = svg.viewBox.baseVal;
+        const pixelX = view.x + ((event.clientX - bounds.left) / bounds.width) * view.width;
+        const pixelY = view.y + ((event.clientY - bounds.top) / bounds.height) * view.height;
+        const b = toUnitX(pixelX);
+        const c = toUnitY(pixelY);
+        handler({ b, c });
+      });
+    }
+
+    function renderIntro() {
+      setChallenge(null);
+      setStageWithGraph(
+        "Choisir sous contrainte : préférences + budget",
+        drawBaseGraph({
+          budgetArea: true,
+          budgetAreaLabel: true
+        }),
+        `<div class="formula-card">
+          <p>Le consommateur ne choisit pas parmi tous les paniers imaginables, mais seulement parmi les paniers atteignables.</p>
+          <div class="formula">maximiser la satisfaction sous contrainte de budget</div>
+        </div>`
+      );
+      interaction.innerHTML = `
+      `;
+    }
+
+    function renderInteriorQuestion() {
+      const answeredNo = state.answered.has("interiorNo");
+      const clickedBetter = state.answered.has("interiorBetterPoint");
+      const hypothesisDone = state.answered.has("dominatesInterior");
+      setChallenge(
+        !answeredNo
+          ? "interior-choice"
+          : !clickedBetter
+          ? "interior-better-click"
+          : !hypothesisDone
+          ? "interior-hypothesis"
+          : null
+      );
+      const points = [{ ...interiorPoint, label: "P₁", color: "#c98c2d" }];
+      if (clickedBetter && state.interiorBetterPoint) {
+        points.push({ ...state.interiorBetterPoint, label: "P₂", color: "#176b52" });
+      }
+      setStageWithGraph(
+        answeredNo
+          ? "Pointez un panier atteignable et préféré à P₁"
+          : "Un panier atteignable à l'intérieur du budget",
+        drawBaseGraph({
+          budgetArea: true,
+          points
+        }),
+        hypothesisDone
+          ? `<div class="formula-card">
+              <p>Avec la non-satiété, un panier qui contient plus de bien B et plus de bien C est certainement préféré.</p>
+            </div>`
+          : ""
+      );
+
+      if (answeredNo && !clickedBetter) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Cliquez sur un panier atteignable et préféré à P₁.</p>
+        `;
+        graphClick((point) => {
+          if (point.b > interiorPoint.b + 0.18 && point.c > interiorPoint.c + 0.18 && isAffordable(point)) {
+            state.interiorBetterPoint = point;
+            state.answered.add("interiorBetterPoint");
+            setFeedback("Très bien. Ce panier est atteignable et il est préféré à P₁.");
+            renderInteriorQuestion();
+            updateNav();
+          } else {
+            setFeedback("Cherchez un panier atteignable que nous pouvons conclure préféré à P₁.", "error");
+          }
+        });
+        return;
+      }
+
+      if (answeredNo && clickedBetter && !hypothesisDone) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Quelle hypothèse sur les préférences avez-vous mobilisée pour arriver à cette conclusion ?</p>
+          <div class="button-row">
+            <button data-answer="complete">Complétude</button>
+            <button data-answer="transitive">Transitivité</button>
+            <button data-answer="nonsatiation">Non-satiété</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "nonsatiation") {
+              state.answered.add("dominatesInterior");
+              setFeedback("Exact. Comme P₂ contient plus de bien B et plus de bien C que P₁, la non-satiété permet de conclure que P₂ est préféré à P₁.");
+              renderInteriorQuestion();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. Ici, la conclusion vient du fait que le panier contient plus des deux biens.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      if (hypothesisDone) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Nous avons donc trouvé un panier atteignable et préféré à P₁.</p>
+        `;
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">Le panier P₁ pourrait-il être le panier choisi par le consommateur ?</p>
+        <div class="button-row">
+          <button data-answer="yes">Oui, car il est atteignable</button>
+          <button data-answer="no">Non</button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === "no") {
+            state.answered.add("interiorNo");
+            setFeedback("Exact. Il est atteignable, mais il reste du budget : il existe des paniers atteignables avec plus de B et plus de C.");
+            renderInteriorQuestion();
+            updateNav();
+          } else {
+            setFeedback("Pas encore. Être atteignable ne suffit pas : il faut aussi être le panier préféré parmi les paniers atteignables.", "error");
+          }
+        });
+      });
+    }
+
+    function drawClickedPoint(point, label) {
+      const svg = document.querySelector("#graphMount svg");
+      drawPoint(svg, { ...point, label, color: "#176b52" });
+    }
+
+    function renderSpendAllBudget() {
+      setChallenge(null);
+      setStageWithGraph(
+        "À l'optimum, le budget est entièrement dépensé",
+        drawBaseGraph({
+          budgetArea: true,
+          points: [{ ...interiorPoint, label: "P₁", color: "#c98c2d" }]
+        })
+      );
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Avec non-satiété, un panier strictement à l'intérieur du budget laisse toujours une possibilité d'amélioration.</p>
+          <p>Nous pouvons donc concentrer la recherche du choix optimal sur la droite de budget.</p>
+        </div>
+      `;
+    }
+
+    function renderBoundaryQuestion() {
+      const answeredNo = state.answered.has("boundaryNo");
+      const answeredBetter = state.answered.has("betterOnBudget");
+      setChallenge(!answeredNo ? "boundary-choice" : !answeredBetter ? "boundary-better-click" : null);
+      setStageWithGraph(
+        answeredBetter
+          ? "Les paniers préférés et atteignables"
+          : answeredNo
+          ? "Cherchez un panier atteignable préféré à P₃"
+          : "Un panier sur la contrainte de budget",
+        drawBaseGraph({
+          budgetArea: true,
+          preferredRegions: answeredBetter ? boundaryPoint : null,
+          curves: answeredNo || answeredBetter ? [utility(boundaryPoint), 10.5, 12.5] : [utility(boundaryPoint)],
+          points: [
+            { ...boundaryPoint, label: "P₃", color: "#c98c2d" },
+            ...(answeredBetter && state.betterOnBudgetPoint ? [{ ...state.betterOnBudgetPoint, label: "P₄", color: "#176b52" }] : [])
+          ]
+        }),
+        answeredBetter
+          ? `<div class="formula-card">
+              <p>La zone bleue rassemble les paniers situés au-dessus de la courbe d'indifférence de P₃ : ils sont préférés à P₃.</p>
+              <p>La zone verte foncée est l'intersection entre ces paniers préférés et l'ensemble de budget. Tous les paniers dans cette zone sont atteignables et préférés à P₃.</p>
+            </div>`
+          : answeredNo
+          ? `<div class="formula-card">
+              <p>La courbe d'indifférence de P₃ coupe la contrainte. Il existe donc des paniers atteignables sur une courbe d'indifférence plus élevée.</p>
+            </div>`
+          : `<div class="formula-card">
+              <p>P₃ utilise tout le budget et se trouve sur une courbe d'indifférence qui coupe la droite de budget.</p>
+            </div>`
+      );
+
+      if (answeredBetter) {
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>Les paniers qui peuvent battre P₃ doivent appartenir à deux ensembles à la fois :</p>
+            <p>ils doivent être préférés à P₃ et ils doivent être atteignables.</p>
+            <p>Graphiquement, ce sont donc les paniers dans l'intersection des deux zones.</p>
+          </div>
+        `;
+        updateNav();
+        return;
+      }
+
+      if (answeredNo) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Cliquez avec votre curseur sur un panier dans l'ensemble de budget qui serait préféré à P₃.</p>
+        `;
+        graphClick((point) => {
+          if (isAffordable(point) && utility(point) > utility(boundaryPoint) + 0.6) {
+            state.answered.add("betterOnBudget");
+            state.betterOnBudgetPoint = point;
+            setFeedback("Exact. Ce panier est atteignable et se situe au-dessus de la courbe d'indifférence de P₃ : il est donc préféré à P₃.");
+            renderBoundaryQuestion();
+            updateNav();
+          } else {
+            setFeedback("Cherchez un panier dans l'ensemble de budget, mais au-dessus de la courbe d'indifférence de P₃.", "error");
+          }
+        });
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">Pensez-vous que le consommateur pourrait choisir P₃ ?</p>
+        <div class="button-row">
+          <button data-answer="yes">Oui, car il dépense tout le budget</button>
+          <button data-answer="no">Non, il y a au moins un panier préféré à P₃ qui est atteignable pour ce consommateur</button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === "no") {
+            state.answered.add("boundaryNo");
+            setFeedback("Exact. Dépenser tout le budget est nécessaire, mais cela ne suffit pas à garantir le meilleur panier.");
+            renderBoundaryQuestion();
+            updateNav();
+          } else {
+            setFeedback("Pas encore. Plusieurs paniers peuvent être sur la droite de budget ; il faut chercher lequel est préféré.", "error");
+          }
+        });
+      });
+    }
+
+    function renderTangencyChoice() {
+      const answered = state.answered.has("tangency");
+      setChallenge(answered ? null : "tangency-choice");
+      setStageWithGraph(
+        "Choisir le panier atteignable sur la courbe d'indifférence la plus élevée",
+        drawBaseGraph({
+          budgetArea: true,
+          preferredRegions: answered ? target : null,
+          preferredRegionOptions: { referenceLabel: "P*", showIntersection: false },
+          curves: [7.5, 10, 12.5, 15.5],
+          tangentLevel: answered ? 12.5 : null,
+          points: answered
+            ? [{ ...target, label: "P*", color: "#1737ff", r: 9 }]
+            : [{ ...boundaryPoint, label: "P₃", color: "#c98c2d" }],
+          hintText: answered ? "" : "Cliquez sur le meilleur panier"
+        }),
+        answered
+          ? `<div class="formula-card">
+              <p>La zone bleue rassemble les paniers préférés au panier choisi.</p>
+              <p>Elle ne recoupe pas l'ensemble de budget : l'intersection entre les paniers préférés et les paniers atteignables est vide.</p>
+            </div>`
+          : ""
+      );
+      if (answered) {
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>Aucun panier atteignable ne se situe sur une courbe d'indifférence plus élevée.</p>
+          </div>
+        `;
+        return;
+      }
+      interaction.innerHTML = `
+        <p class="choice-prompt">Quel panier le consommateur choisit-il ?</p>
+      `;
+      graphClick((point) => {
+        if (Math.hypot(point.b - target.b, point.c - target.c) <= 0.35) {
+          state.answered.add("tangency");
+          setFeedback("Exact. Le consommateur choisit le panier situé sur la courbe d'indifférence la plus élevée atteignable.");
+          renderTangencyChoice();
+          updateNav();
+        } else {
+          setFeedback("Pas encore. Cherchez la courbe d'indifférence la plus élevée qui touche la droite de budget.", "error");
+        }
+      });
+    }
+
+    function renderConclusion() {
+      setChallenge(null);
+      setStageWithGraph(
+        "Le choix optimal est au point de tangence",
+        drawBaseGraph({
+          budgetArea: true,
+          curves: [7.5, 10, 12.5, 15.5],
+          tangentLevel: 12.5,
+          points: [{ ...target, label: "P*", color: "#1737ff", r: 9 }]
+        })
+      );
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Le panier P* est atteignable et aucun autre panier atteignable ne se situe sur une courbe d'indifférence plus élevée.</p>
+          <div class="formula">TMS = <span class="frac"><span class="top">p<sub>B</sub></span><span class="bottom">p<sub>C</sub></span></span></div>
+          <p>À ce point, la pente de la courbe d'indifférence et la pente de la droite de budget coïncident.</p>
+        </div>
+      `;
+    }
+
+    function noEqualityPoints() {
+      const level = 10;
+      const [left] = budgetCurveIntersections(level);
+      const start = { b: left, c: budgetC(left) };
+      const deltaB = 1;
+      const afterB = start.b + deltaB;
+      const sameCI = { b: afterB, c: level / afterB };
+      const market = { b: afterB, c: budgetC(afterB) };
+      return {
+        level,
+        start,
+        sameCI,
+        market,
+        deltaB,
+        deltaCIndifference: start.c - sameCI.c,
+        deltaCMarket: start.c - market.c
+      };
+    }
+
+    function drawNoEqualityGraph(phase) {
+      const data = noEqualityPoints();
+      const svg = drawBaseGraph({
+        budgetArea: true,
+        curves: [data.level],
+        points: [{ ...data.start, label: "P₅", color: "#c98c2d", r: 5, dx: -26, dy: -10, fontSize: 13 }]
+      });
+
+      if (phase >= 1) {
+        const slope = data.start.c / data.start.b;
+        drawSegment(
+          svg,
+          { b: data.start.b - 0.62, c: data.start.c + slope * 0.62 },
+          { b: data.start.b + 0.72, c: data.start.c - slope * 0.72 },
+          "#176b52",
+          { width: 1.15 }
+        );
+      }
+
+      if (phase >= 2) {
+        drawSegment(svg, data.start, { b: data.sameCI.b, c: data.start.c }, "#1737ff", { width: 1.15, dash: "4 4" });
+        drawGraphText(svg, "ΔB", { b: data.start.b + 0.4, c: data.start.c + 0.16 }, "#1737ff", 12);
+      }
+
+      if (phase >= 3) {
+        drawDeltaComparison(svg, data, phase >= 4);
+      }
+
+      if (phase >= 4) {
+        drawSegment(svg, data.start, data.market, "#d18a2d", { width: 1.25 });
+        drawPoint(svg, { ...data.market, label: "P₆", color: "#176b52", r: 5, dx: 9, dy: -9, fontSize: 13 });
+      }
+
+      svg.classList.add("zoomed-graph");
+      lightenZoomedGraph(svg);
+      svg.setAttribute("viewBox", "35 155 360 275");
+      return svg;
+    }
+
+    function renderNoEquality() {
+      const phase = state.noEqualityPhase || 0;
+      setChallenge(phase >= 4 ? null : `no-equality-${phase}`);
+      setStageWithGraph(
+        "",
+        drawNoEqualityGraph(phase)
+      );
+
+      if (phase === 0) {
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>Partons du panier P₅. La courbe d'indifférence coupe la contrainte de budget : les deux pentes ne sont pas égales en ce point.</p>
+            <p>Le TMS mesure la quantité de bien C que le consommateur est prêt à sacrifier pour obtenir un peu plus de bien B, tout en restant indifférent.</p>
+            <p>Le rapport des prix mesure la quantité de bien C que le marché demande pour obtenir ce supplément de bien B.</p>
+          </div>
+          <div class="button-row">
+            <button data-action="next">Comparer les deux taux</button>
+          </div>
+        `;
+        interaction.querySelector("button").addEventListener("click", () => {
+          state.noEqualityPhase = 1;
+          renderNoEquality();
+        });
+        return;
+      }
+
+      if (phase === 1) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">En P₅, que peut-on dire du TMS par rapport au rapport des prix ?</p>
+          <div class="button-row">
+            <button data-answer="more">TMS > p<sub>B</sub> / p<sub>C</sub></button>
+            <button data-answer="equal">TMS = p<sub>B</sub> / p<sub>C</sub></button>
+            <button data-answer="less">TMS < p<sub>B</sub> / p<sub>C</sub></button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "more") {
+              state.noEqualityPhase = 2;
+              setFeedback("Exact. La CI est plus pentue que la droite de budget : le consommateur est prêt à céder plus de C que ce que le marché demande.");
+              renderNoEquality();
+            } else {
+              setFeedback("Pas encore. Comparez les pentes en valeur absolue : la CI est plus pentue que la droite de budget en P₅.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      if (phase === 2) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Pour recevoir ΔB, cliquez sur le graphique au niveau de C le plus bas que le consommateur accepterait en échange de ΔB.</p>
+        `;
+        graphClick((point) => {
+          const data = noEqualityPoints();
+          if (Math.abs(point.b - data.sameCI.b) > 0.25) {
+            setFeedback("Attention : notre agent a maintenant B + ΔB de bien B dans son panier. Il faut donc chercher le niveau de C pour cette quantité de B.", "error");
+          } else if (Math.abs(point.c - data.sameCI.c) <= 0.2) {
+            state.noEqualityPhase = 3;
+            setFeedback("Exact. Ce point est sur la même courbe d'indifférence : c'est la baisse maximale de C que le consommateur accepterait.");
+            renderNoEquality();
+          } else if (point.c > data.sameCI.c) {
+            setFeedback("Ce panier est au-dessus de la courbe d'indifférence de P₅ : il est préféré à P₅. Le consommateur accepterait donc de céder encore plus de C.", "error");
+          } else if (point.c < data.sameCI.c) {
+            setFeedback("Pas si bas : avec ce panier, le consommateur serait moins bien qu'avec le panier P₅.", "error");
+          } else {
+            setFeedback("Pas encore. Le consommateur pourrait accepter de céder davantage de C tout en restant aussi satisfait qu'en P₅.", "error");
+          }
+        });
+        return;
+      }
+
+      if (phase === 3) {
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>Effectivement, pour recevoir ΔB, le consommateur est prêt à céder ΔC : cela le laisse sur la même courbe d'indifférence.</p>
+          </div>
+          <p class="choice-prompt">À combien de C le consommateur doit-il renoncer pour obtenir ce même ΔB sur le marché ? Cliquez sur le panier correspondant sur la droite de budget.</p>
+        `;
+        graphClick((point) => {
+          const data = noEqualityPoints();
+          if (Math.abs(point.b - data.market.b) > 0.18) {
+            setFeedback("Attention : nous regardons toujours le même supplément ΔB. Le panier doit donc contenir B + ΔB de bien B.", "error");
+          } else if (Math.abs(point.c - data.market.c) <= 0.12) {
+            state.noEqualityPhase = 4;
+            state.answered.add("noEqualityDone");
+            setFeedback("Exact. Le marché demande une baisse de C plus faible : l'échange permet donc d'atteindre un panier préféré.");
+            renderNoEquality();
+            updateNav();
+          } else if (point.c > data.market.c) {
+            setFeedback("Ce panier est au-dessus de la contrainte de budget : il est trop cher. Le marché demande de renoncer à plus de C.", "error");
+          } else {
+            setFeedback("Ce panier est sous la contrainte de budget : tu renonces à trop de C. Le marché demande de renoncer à moins de C.", "error");
+          }
+        });
+        return;
+      }
+
+      interaction.dataset.titleless = "true";
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Pour recevoir ΔB, le consommateur accepterait de céder davantage de bien C que ce que le marché demande.</p>
+          <p>Le panier P₆ est donc bien atteignable, et il est préféré au panier précédent.</p>
+        </div>
+      `;
+      feedback.innerHTML = "";
+      updateNav();
+    }
+
+    function rightNoEqualityPoints() {
+      const level = 10;
+      const intersections = budgetCurveIntersections(level);
+      const startB = intersections[1];
+      const start = { b: startB, c: budgetC(startB) };
+      const deltaB = 1;
+      const moreB = start.b + deltaB;
+      const sameCIWithMoreB = { b: moreB, c: level / moreB };
+      const marketWithMoreB = { b: moreB, c: budgetC(moreB) };
+      const deltaC = 0.5;
+      const moreC = start.c + deltaC;
+      const sameCIWithMoreC = { b: level / moreC, c: moreC };
+      const marketWithMoreC = { b: start.b - (config.pC / config.pB) * deltaC, c: moreC };
+      return {
+        level,
+        start,
+        deltaB,
+        deltaC,
+        sameCIWithMoreB,
+        marketWithMoreB,
+        sameCIWithMoreC,
+        marketWithMoreC
+      };
+    }
+
+    function drawRightNoEqualityGraph(phase) {
+      const data = rightNoEqualityPoints();
+      const svg = drawBaseGraph({
+        budgetArea: true,
+        curves: [data.level],
+        points: [{ ...data.start, label: "P₇", color: "#c98c2d", r: 5, dx: 9, dy: -9, fontSize: 13 }]
+      });
+
+      if (phase >= 1) {
+        const slope = data.start.c / data.start.b;
+        drawSegment(
+          svg,
+          { b: data.start.b - 0.72, c: data.start.c + slope * 0.72 },
+          { b: data.start.b + 0.72, c: data.start.c - slope * 0.72 },
+          "#176b52",
+          { width: 1.15 }
+        );
+      }
+
+      if (phase >= 2 && phase <= 4) {
+        drawSegment(svg, data.start, { b: data.sameCIWithMoreB.b, c: data.start.c }, "#1737ff", { width: 1.15, dash: "4 4" });
+        drawGraphText(svg, "ΔB", { b: data.start.b + 0.42, c: data.start.c + 0.13 }, "#1737ff", 12);
+      }
+
+      if (phase >= 3 && phase <= 4) {
+        drawRightCComparison(svg, data, phase >= 4);
+      }
+
+      if (phase >= 4) {
+        drawSegment(svg, data.start, data.marketWithMoreB, "#d18a2d", { width: 1.25 });
+      }
+
+      if (phase >= 5) {
+        drawSegment(svg, { b: data.start.b - 0.08, c: data.start.c + 0.08 }, { b: data.start.b - 0.08, c: data.sameCIWithMoreC.c }, "#1737ff", { width: 1.15, dash: "4 4" });
+        drawGraphText(svg, "ΔC", { b: data.start.b - 0.42, c: data.start.c + 0.36 }, "#1737ff", 12);
+      }
+
+      if (phase >= 6) {
+        drawSegment(svg, { b: data.start.b, c: data.sameCIWithMoreC.c }, data.sameCIWithMoreC, "#1737ff", { width: 1.15, dash: "4 4" });
+        drawRightBComparison(svg, data, phase >= 7);
+      }
+
+      if (phase >= 7) {
+        drawSegment(svg, data.start, data.marketWithMoreC, "#d18a2d", { width: 1.25 });
+        drawPoint(svg, { ...data.marketWithMoreC, label: "P₈", color: "#176b52", r: 5, dx: 8, dy: -8, fontSize: 13 });
+      }
+
+      svg.classList.add("zoomed-graph");
+      lightenZoomedGraph(svg);
+      svg.setAttribute("viewBox", "80 215 380 245");
+      return svg;
+    }
+
+    function renderRightNoEquality() {
+      const phase = state.rightNoEqualityPhase || 0;
+      setChallenge(phase >= 7 ? null : `right-no-equality-${phase}`);
+      if (phase < 2) {
+        narration.innerHTML = "Faisons le même raisonnement en un autre point de la contrainte de budget. Ici aussi, le TMS est différent du rapport des prix. Nous allons commencer par comparer ces deux taux.";
+      } else if (phase < 4) {
+        narration.innerHTML = "Nous venons de voir que le TMS est inférieur au rapport des prix. C'est différent du cas précédent. Essayons tout de même le même type d'échange : obtenir plus de bien B en cédant du bien C.";
+      } else if (phase < 7) {
+        narration.innerHTML = "Cette première tentative ne fonctionne pas : pour obtenir plus de bien B, le marché demande trop de bien C. Il faut donc essayer l'échange dans l'autre sens : obtenir plus de bien C en cédant du bien B.";
+      } else {
+        narration.innerHTML = "Dans ce sens, l'échange fonctionne : le marché demande de céder moins de bien B que ce que le consommateur était prêt à céder. Le panier obtenu est donc atteignable et préféré.";
+      }
+      setStageWithGraph(
+        "",
+        drawRightNoEqualityGraph(phase)
+      );
+
+      if (phase === 0) {
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>Partons de P₇, à droite du choix optimal. La courbe d'indifférence coupe encore la contrainte de budget.</p>
+            <p>Cette fois, la courbe d'indifférence est moins pentue que la droite de budget.</p>
+          </div>
+          <div class="button-row">
+            <button data-action="next">Comparer les deux taux</button>
+          </div>
+        `;
+        interaction.querySelector("button").addEventListener("click", () => {
+          state.rightNoEqualityPhase = 1;
+          renderRightNoEquality();
+        });
+        return;
+      }
+
+      if (phase === 1) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">En P₇, que peut-on dire du TMS par rapport au rapport des prix ?</p>
+          <div class="button-row">
+            <button data-answer="more">TMS > p<sub>B</sub> / p<sub>C</sub></button>
+            <button data-answer="equal">TMS = p<sub>B</sub> / p<sub>C</sub></button>
+            <button data-answer="less">TMS < p<sub>B</sub> / p<sub>C</sub></button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "less") {
+              state.rightNoEqualityPhase = 2;
+              setFeedback("Exact. La CI est moins pentue que la droite de budget : le consommateur est prêt à céder peu de C pour obtenir plus de B.");
+              renderRightNoEquality();
+            } else {
+              setFeedback("Pas encore. Comparez les pentes en valeur absolue : la CI est moins pentue que la droite de budget en P₇.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      if (phase === 2) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Essayons d'abord le même raisonnement que tout à l'heure. Pour recevoir ΔB, cliquez sur le niveau de C le plus bas que le consommateur accepterait en échange de ΔB.</p>
+        `;
+        graphClick((point) => {
+          const data = rightNoEqualityPoints();
+          if (Math.abs(point.b - data.sameCIWithMoreB.b) > 0.6) {
+            setFeedback("Attention : nous testons un panier avec B + ΔB de bien B.", "error");
+          } else if (Math.abs(point.c - data.sameCIWithMoreB.c) <= 0.45) {
+            state.rightNoEqualityPhase = 3;
+            setFeedback("Exact. Ce point garde le consommateur sur la même courbe d'indifférence que P₇.");
+            renderRightNoEquality();
+          } else if (point.c > data.sameCIWithMoreB.c) {
+            setFeedback("Ce panier est encore préféré à P₇ : le consommateur accepterait de céder un peu plus de C.", "error");
+          } else {
+            setFeedback("Pas si bas : avec ce panier, le consommateur serait moins bien qu'avec P₇.", "error");
+          }
+        });
+        return;
+      }
+
+      if (phase === 3) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">À combien de C le consommateur doit-il renoncer pour obtenir ce même ΔB sur le marché ? Cliquez sur le panier correspondant sur la droite de budget.</p>
+        `;
+        graphClick((point) => {
+          const data = rightNoEqualityPoints();
+          if (Math.abs(point.b - data.marketWithMoreB.b) > 0.75) {
+            setFeedback("Attention : nous gardons le même supplément ΔB. Le panier doit contenir B + ΔB de bien B.", "error");
+          } else if (Math.abs(point.c - data.marketWithMoreB.c) <= 0.42) {
+            state.rightNoEqualityPhase = 4;
+            setFeedback("Exact. Ici, le marché demande de céder plus de C que ce que le consommateur acceptait.");
+            renderRightNoEquality();
+          } else if (point.c > data.marketWithMoreB.c) {
+            setFeedback("Ce panier est au-dessus de la contrainte de budget : il est trop cher. Le marché demande de renoncer à plus de C.", "error");
+          } else {
+            setFeedback("Ce panier est sous la contrainte de budget : tu renonces à trop de C. Le marché demande de renoncer à moins de C.", "error");
+          }
+        });
+        return;
+      }
+
+      if (phase === 4) {
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>Cette fois, obtenir plus de B ne fonctionne pas : le marché demande de céder plus de C que ce que le consommateur accepterait.</p>
+            <p>Essayons donc l'échange inverse : obtenir plus de bien C en cédant du bien B.</p>
+          </div>
+          <div class="button-row">
+            <button data-action="reverse">Essayer l'autre sens</button>
+          </div>
+        `;
+        interaction.querySelector("button").addEventListener("click", () => {
+          state.rightNoEqualityPhase = 5;
+          renderRightNoEquality();
+        });
+        return;
+      }
+
+      if (phase === 5) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Pour recevoir ΔC, cliquez sur le niveau de B le plus bas que le consommateur accepterait en échange de ΔC.</p>
+        `;
+        graphClick((point) => {
+          const data = rightNoEqualityPoints();
+          if (Math.abs(point.c - data.sameCIWithMoreC.c) > 0.6) {
+            setFeedback("Attention : nous cherchons un panier avec C + ΔC de bien C.", "error");
+          } else if (Math.abs(point.b - data.sameCIWithMoreC.b) <= 0.55) {
+            state.rightNoEqualityPhase = 6;
+            setFeedback("Exact. Ce point est sur la même courbe d'indifférence : il indique combien de B le consommateur accepterait de céder.");
+            renderRightNoEquality();
+          } else if (point.b > data.sameCIWithMoreC.b) {
+            setFeedback("Ce panier est préféré à P₇ : le consommateur accepterait de céder encore plus de B.", "error");
+          } else {
+            setFeedback("Pas si loin : avec ce panier, le consommateur serait moins bien qu'avec P₇.", "error");
+          }
+        });
+        return;
+      }
+
+      if (phase === 6) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Pour ce même ΔC, cliquez sur le panier que le marché permet d'acheter sur la droite de budget.</p>
+        `;
+        graphClick((point) => {
+          const data = rightNoEqualityPoints();
+          if (Math.abs(point.c - data.marketWithMoreC.c) > 0.38) {
+            setFeedback("Attention : nous gardons le même supplément ΔC. Le panier doit contenir C + ΔC de bien C.", "error");
+          } else if (Math.abs(point.b - data.marketWithMoreC.b) <= 0.3) {
+            state.rightNoEqualityPhase = 7;
+            state.answered.add("rightNoEqualityDone");
+            setFeedback("Exact. Le marché demande de céder moins de B que ce que le consommateur était prêt à céder : P₈ est préféré et atteignable.");
+            renderRightNoEquality();
+            updateNav();
+          } else if (point.b > data.marketWithMoreC.b) {
+            setFeedback("Ce panier est au-dessus de la contrainte de budget : il est trop cher. Le marché demande de céder plus de B.", "error");
+          } else {
+            setFeedback("Ce panier est sous la contrainte de budget : tu cèdes trop de B. Le marché demande de céder moins de B.", "error");
+          }
+        });
+        return;
+      }
+
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>À droite du choix optimal, obtenir plus de B est trop coûteux en C.</p>
+          <p>En revanche, obtenir plus de C en cédant du B améliore le panier : P₈ est atteignable et préféré à P₇.</p>
+          <p>Au point optimal, aucun de ces deux échanges ne permet d'améliorer la situation : TMS et rapport des prix sont égaux.</p>
+        </div>
+      `;
+      updateNav();
+    }
+
+    function drawCornerIndifference(svg, offset = 0, options = {}) {
+      const curvature = options.curvature || 0.06;
+      const slope = options.slope || 0.72;
+      const anchorB = options.anchorB || 10;
+      const points = [];
+      for (let b = 0; b <= config.max + 1.1; b += 0.08) {
+        const distance = anchorB - b;
+        const c = curvature * distance * distance + slope * distance + offset;
+        if (c >= -1.2 && c <= config.max) {
+          points.push(`${points.length ? "L" : "M"} ${sx(b).toFixed(1)} ${sy(c).toFixed(1)}`);
+        }
+      }
+      svg.appendChild(svgEl("path", {
+        d: points.join(" "),
+        fill: "none",
+        stroke: options.color || "#6c85ff",
+        "stroke-width": options.width || 2.2,
+        "stroke-linecap": "round",
+        opacity: options.opacity || 0.72,
+        "stroke-dasharray": options.dash || ""
+      }));
+    }
+
+    function drawCornerGraph(mode = "choice") {
+      const showChoice = mode !== "choice";
+      const cornerPoints = [];
+      if (showChoice) {
+        cornerPoints.push({ b: 10, c: 0, label: "P₉", color: "#176b52", r: 7, dx: -38, dy: -12, fontSize: 15 });
+      }
+      if (mode === "choice" && state.cornerClickedPoint && state.cornerSuggestedPoint) {
+        cornerPoints.push({ ...state.cornerClickedPoint, label: "panier pointé", color: "#b6483b", r: 4, dx: 8, dy: -8, fontSize: 11 });
+        cornerPoints.push({ ...state.cornerSuggestedPoint, label: "préféré", color: "#176b52", r: 5, dx: 8, dy: -8, fontSize: 11 });
+      }
+      const svg = drawBaseGraph({
+        budgetArea: true,
+        points: cornerPoints
+      });
+
+      if (mode === "zoom") {
+        svg.appendChild(svgEl("line", { x1: sx(10), y1: sy(0), x2: sx(13.1), y2: sy(0), stroke: "#132536", "stroke-width": 3 }));
+        svg.appendChild(svgEl("polygon", { points: `${sx(13.1)},${sy(0)} ${sx(12.9)},${sy(0) - 7} ${sx(12.9)},${sy(0) + 7}`, fill: "#132536" }));
+        drawCornerIndifference(svg, 0, { color: "#1737ff", width: 2.4, opacity: 0.95, slope: 1.18, curvature: 0.08 });
+        drawSegment(svg, { b: 10, c: 0 }, { b: 13.1, c: budgetC(13.1) }, "#b6483b", { width: 1.8, dash: "5 4" });
+        const tmsLabel = svgEl("text", { x: sx(8.25), y: sy(1.0), fill: "#1737ff", "font-size": 8.5, "font-weight": 700 });
+        setSvgMathText(tmsLabel, "TMS > pB / pC");
+        svg.appendChild(tmsLabel);
+        svg.classList.add("zoomed-graph");
+        svg.setAttribute("viewBox", "180 300 340 240");
+      } else {
+        [-8.2, -6.15, -4.1, -2.05, 0].forEach((offset) => {
+          drawCornerIndifference(svg, offset, { opacity: 0.58, width: 2.2 });
+        });
+      }
+
+      return svg;
+    }
+
+    function renderInteriorResult() {
+      setChallenge(null);
+      stage.innerHTML = `
+        <div class="result-summary result-highlight">
+          <div class="result-label">Résultat à retenir</div>
+          <div class="result-grid">
+            <div class="result-statement">
+              Lorsque le consommateur choisit des quantités positives des deux biens, le panier optimal épuise le budget et égalise le taux marginal de substitution et le rapport des prix.
+            </div>
+            <div class="equation-stack">
+              <div class="formula-card">
+                <div class="formula">TMS = <span class="frac"><span class="top">p<sub>B</sub></span><span class="bottom">p<sub>C</sub></span></span></div>
+              </div>
+              <div class="formula-card">
+                <div class="formula">p<sub>B</sub>B + p<sub>C</sub>C = R</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      interaction.innerHTML = "";
+    }
+
+    function renderCornerChoice() {
+      const foundChoice = state.answered.has("cornerPointFound");
+      setChallenge(foundChoice ? "corner-confirm" : "corner-choice");
+      setStageWithGraph(
+        "Allons plus loin",
+        drawCornerGraph(foundChoice ? "chosen" : "choice")
+      );
+
+      if (!foundChoice) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Cliquez sur le panier préféré par le consommateur.</p>
+        `;
+        graphClick((point) => {
+          if (Math.hypot(point.b - 10, point.c) <= 0.45) {
+            state.answered.add("cornerPointFound");
+            setFeedback("Parfait. On voit bien que l'ensemble de budget est séparé de l'ensemble des paniers préférés à celui choisi. Mais ici, le TMS est différent du rapport des prix.");
+            renderCornerChoice();
+            updateNav();
+          } else if (!isAffordable(point)) {
+            setFeedback("Ce panier est sur une courbe d'indifférence plus élevée, mais il n'est pas atteignable. Le meilleur panier atteignable se trouve au coin de la contrainte.", "error");
+          } else {
+            const suggestedB = Math.min(10, Math.max(point.b + 0.8, point.b));
+            state.cornerClickedPoint = point;
+            state.cornerSuggestedPoint = { b: suggestedB, c: budgetC(suggestedB) };
+            setFeedback("Il existe un autre panier atteignable et préféré au panier pointé : je l'indique en vert sur le graphique.", "error");
+            renderCornerChoice();
+          }
+        });
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">Confirmez-vous que P₉ peut être le panier choisi, même si le TMS est différent du rapport des prix ?</p>
+        <div class="button-row">
+          <button data-answer="yes">Oui, je confirme</button>
+          <button data-answer="no">Non, cela me gêne</button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.answered.add("cornerChoiceDone");
+          if (button.dataset.answer === "yes") {
+            setFeedback("Tu as raison. Voyons maintenant pourquoi cette situation est possible.");
+          } else {
+            setFeedback("Sois un peu plus sûr de toi : ton premier choix était le bon. Voyons maintenant pourquoi.");
+          }
+          updateNav();
+        });
+      });
+    }
+
+    function renderCornerZoom() {
+      setChallenge("corner-why");
+      setStageWithGraph(
+        "",
+        drawCornerGraph("zoom")
+      );
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Comme le TMS est différent du rapport des prix, il existe bien une direction d'échange qui satisferait le consommateur : les paniers sur les pointillés rouges sont préférés au panier P₉ et coûtent autant.</p>
+          <p>La difficulté est qu'elle impliquerait une consommation d'une quantité négative de C. Ce n'est pas possible.</p>
+          <p>Dans un choix de coin, le budget est épuisé, mais le TMS n'est pas toujours égal au rapport des prix.</p>
+        </div>
+        <div class="button-row">
+          <button class="primary" data-action="done">J'ai compris</button>
+        </div>
+      `;
+      interaction.querySelector("button").addEventListener("click", () => {
+        state.answered.add("cornerDone");
+        setFeedback("Exact. Le panier de coin peut donc être optimal même sans égalité entre TMS et rapport des prix.");
+        updateNav();
+      });
+    }
+
+    const exerciseConfig = {
+      income: 120,
+      pB: 20,
+      pC: 30,
+      maxB: 7,
+      maxC: 5,
+      size: 460,
+      paletteWidth: 160,
+      margin: 54,
+      target: { b: 3, c: 2 },
+      tangentLevel: 6
+    };
+
+    function exSx(x) {
+      const inner = exerciseConfig.size - 2 * exerciseConfig.margin;
+      return exerciseConfig.margin + (x / exerciseConfig.maxB) * inner;
+    }
+
+    function exSy(y) {
+      const inner = exerciseConfig.size - 2 * exerciseConfig.margin;
+      return exerciseConfig.size - exerciseConfig.margin - (y / exerciseConfig.maxC) * inner;
+    }
+
+    function exToUnitX(pixelX) {
+      const inner = exerciseConfig.size - 2 * exerciseConfig.margin;
+      return Math.max(0, Math.min(exerciseConfig.maxB, ((pixelX - exerciseConfig.margin) / inner) * exerciseConfig.maxB));
+    }
+
+    function exToUnitY(pixelY) {
+      const inner = exerciseConfig.size - 2 * exerciseConfig.margin;
+      return Math.max(0, Math.min(exerciseConfig.maxC, ((exerciseConfig.size - exerciseConfig.margin - pixelY) / inner) * exerciseConfig.maxC));
+    }
+
+    function exerciseBudgetC(b) {
+      return (exerciseConfig.income - exerciseConfig.pB * b) / exerciseConfig.pC;
+    }
+
+    function tokenLabel(token) {
+      const labels = {
+        pB: "p<sub>B</sub>",
+        pC: "p<sub>C</sub>",
+        "10": "10",
+        "20": "20",
+        "30": "30",
+        B: "B",
+        C: "C",
+        sqrtB: "√B",
+        sqrtC: "√C",
+        sqrtpB: "√p<sub>B</sub>",
+        sqrtpC: "√p<sub>C</sub>",
+        "×": "×",
+        "+": "+"
+      };
+      return labels[token] || token;
+    }
+
+    function isValidExerciseConstraint(tokens) {
+      const terms = [];
+      let current = [];
+      tokens.forEach((token) => {
+        if (token === "+") {
+          terms.push(current.filter((item) => item !== "×"));
+          current = [];
+        } else if (token !== "×") {
+          current.push(token);
+        }
+      });
+      terms.push(current.filter((item) => item !== "×"));
+      if (terms.length !== 2 || terms.some((term) => term.length !== 2)) return false;
+      const normalized = terms.map((term) => term.slice().sort().join("*")).sort();
+      return normalized[0] === "20*B" && normalized[1] === "30*C";
+    }
+
+    function exerciseCurvePath(level) {
+      const points = [];
+      for (let b = 0.55; b <= exerciseConfig.maxB; b += 0.05) {
+        const c = level / b;
+        if (c >= 0.2 && c <= exerciseConfig.maxC) {
+          points.push(`${points.length ? "L" : "M"} ${exSx(b).toFixed(1)} ${exSy(c).toFixed(1)}`);
+        }
+      }
+      return points.join(" ");
+    }
+
+    function drawExerciseGraph(options = {}) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      const viewWidth = exerciseConfig.size + (options.curveReserve ? exerciseConfig.paletteWidth : 0);
+      svg.setAttribute("viewBox", `0 0 ${viewWidth} ${exerciseConfig.size}`);
+      svg.setAttribute("aria-label", "Exercice de choix sous contrainte");
+
+      for (let i = 0; i <= exerciseConfig.maxB; i += 1) {
+        svg.appendChild(svgEl("line", { x1: exSx(i), y1: exSy(0), x2: exSx(i), y2: exSy(exerciseConfig.maxC), stroke: "#d7e0e4", "stroke-width": 1 }));
+      }
+      for (let i = 0; i <= exerciseConfig.maxC; i += 1) {
+        svg.appendChild(svgEl("line", { x1: exSx(0), y1: exSy(i), x2: exSx(exerciseConfig.maxB), y2: exSy(i), stroke: "#d7e0e4", "stroke-width": 1 }));
+      }
+
+      if (options.showAccessible) {
+        svg.appendChild(svgEl("polygon", {
+          points: `${exSx(0)},${exSy(0)} ${exSx(0)},${exSy(4)} ${exSx(6)},${exSy(0)}`,
+          fill: "#dceee7",
+          opacity: 0.82
+        }));
+      }
+
+      if (options.showInaccessible) {
+        svg.appendChild(svgEl("polygon", {
+          points: `${exSx(0)},${exSy(4)} ${exSx(0)},${exSy(exerciseConfig.maxC)} ${exSx(exerciseConfig.maxB)},${exSy(exerciseConfig.maxC)} ${exSx(exerciseConfig.maxB)},${exSy(0)} ${exSx(6)},${exSy(0)}`,
+          fill: "#f4d8d1",
+          opacity: 0.72
+        }));
+      }
+
+      svg.appendChild(svgEl("line", { x1: exSx(0), y1: exSy(0), x2: exSx(exerciseConfig.maxB) + 12, y2: exSy(0), stroke: "#132536", "stroke-width": 3 }));
+      svg.appendChild(svgEl("line", { x1: exSx(0), y1: exSy(0), x2: exSx(0), y2: exSy(exerciseConfig.maxC) - 12, stroke: "#132536", "stroke-width": 3 }));
+      svg.appendChild(svgEl("polygon", { points: `${exSx(exerciseConfig.maxB) + 12},${exSy(0)} ${exSx(exerciseConfig.maxB)},${exSy(0) - 7} ${exSx(exerciseConfig.maxB)},${exSy(0) + 7}`, fill: "#132536" }));
+      svg.appendChild(svgEl("polygon", { points: `${exSx(0)},${exSy(exerciseConfig.maxC) - 12} ${exSx(0) - 7},${exSy(exerciseConfig.maxC)} ${exSx(0) + 7},${exSy(exerciseConfig.maxC)}`, fill: "#132536" }));
+
+      const labelB = svgEl("text", { x: exSx(exerciseConfig.maxB) - 105, y: exSy(0) + 34, fill: "#132536", "font-size": 22, "font-weight": 700 });
+      labelB.textContent = "Bien B";
+      svg.appendChild(labelB);
+      const labelC = svgEl("text", { x: exSx(0) - 30, y: exSy(exerciseConfig.maxC) + 84, fill: "#132536", "font-size": 22, "font-weight": 700, transform: `rotate(-90 ${exSx(0) - 30} ${exSy(exerciseConfig.maxC) + 84})` });
+      labelC.textContent = "Bien C";
+      svg.appendChild(labelC);
+
+      if (options.showBudgetLine || options.showExact) {
+        svg.appendChild(svgEl("path", {
+          d: `M ${exSx(0)} ${exSy(4)} L ${exSx(6)} ${exSy(0)}`,
+          fill: "none",
+          stroke: options.showExact ? "#176b52" : "#b6483b",
+          "stroke-width": options.showExact ? 5 : 4,
+          "stroke-linecap": "round"
+        }));
+      }
+
+      if (options.showIntercepts) {
+        drawExercisePoint(svg, { b: 0, c: 4, label: "(0,4)", color: "#176b52", dx: 12, dy: -12 });
+        drawExercisePoint(svg, { b: 6, c: 0, label: "(6,0)", color: "#c98c2d", dx: -48, dy: -12 });
+      }
+
+      if (options.intercepts) {
+        options.intercepts.forEach((point) => drawExercisePoint(svg, point));
+      }
+
+      if (options.curveLevels && options.curveReserve) {
+        const paletteX = exerciseConfig.size + 18;
+        const paletteY = exerciseConfig.margin;
+        const paletteWidth = exerciseConfig.paletteWidth - 32;
+        const paletteHeight = exerciseConfig.size - 2 * exerciseConfig.margin;
+        svg.appendChild(svgEl("rect", {
+          x: paletteX,
+          y: paletteY,
+          width: paletteWidth,
+          height: paletteHeight,
+          rx: 10,
+          fill: "#f4f7ff",
+          stroke: "#aebdff",
+          "stroke-width": 1.5,
+          "stroke-dasharray": "5 4",
+          opacity: 0.96
+        }));
+        const reserveLabel = svgEl("text", {
+          x: paletteX + 12,
+          y: paletteY + 24,
+          fill: "#3441a3",
+          "font-size": 13,
+          "font-weight": 700
+        });
+        reserveLabel.textContent = "Courbes";
+        svg.appendChild(reserveLabel);
+        const reserveLabel2 = svgEl("text", {
+          x: paletteX + 12,
+          y: paletteY + 41,
+          fill: "#3441a3",
+          "font-size": 13,
+          "font-weight": 700
+        });
+        reserveLabel2.textContent = "d'indiffÃ©rence";
+        svg.appendChild(reserveLabel2);
+        const hint = svgEl("text", {
+          x: paletteX + 12,
+          y: paletteY + 63,
+          fill: "#5f6e77",
+          "font-size": 11,
+          "font-weight": 700
+        });
+        hint.textContent = "Ã  glisser";
+        svg.appendChild(hint);
+      }
+
+      if (options.curveLevels) {
+        options.curveLevels.forEach((level, index) => {
+          const isCorrectCurve = options.correctCurve && Math.abs(level - exerciseConfig.tangentLevel) < 0.02;
+          const isPlaced = !options.curveReserve || Boolean(options.curvePlaced?.[index]) || isCorrectCurve;
+          if (isPlaced) {
+            const curve = svgEl("path", {
+              d: exerciseCurvePath(level),
+              fill: "none",
+              stroke: isCorrectCurve ? "#1737ff" : "#6c85ff",
+              "stroke-width": isCorrectCurve ? 4 : 2.8,
+              "stroke-linecap": "round",
+              opacity: isCorrectCurve ? 0.95 : 0.72,
+              "data-curve-index": String(index),
+              "data-exercise-curve": String(index),
+              style: "cursor: grab;"
+            });
+            svg.appendChild(curve);
+          }
+
+          if (options.curveReserve) {
+            const paletteX = exerciseConfig.size + 38;
+            const centerY = exerciseConfig.margin + 118 + index * 82;
+            const paletteCurve = svgEl("path", {
+              d: `M ${paletteX} ${centerY + 28} C ${paletteX + 16} ${centerY - 8}, ${paletteX + 56} ${centerY - 8}, ${paletteX + 84} ${centerY + 22}`,
+              fill: "none",
+              stroke: "#6c85ff",
+              "stroke-width": 3,
+              "stroke-linecap": "round",
+              opacity: isPlaced ? 0.42 : 0.95,
+              "data-curve-index": String(index),
+              style: "cursor: grab;"
+            });
+            svg.appendChild(paletteCurve);
+            const handle = svgEl("circle", {
+              cx: paletteX + 84,
+              cy: centerY + 22,
+              r: 8,
+              fill: "#1737ff",
+              stroke: "white",
+              "stroke-width": 3,
+              opacity: isPlaced ? 0.48 : 0.95,
+              "data-curve-index": String(index),
+              "data-curve-handle": String(index),
+              style: "cursor: grab;"
+            });
+            svg.appendChild(handle);
+          }
+        });
+      }
+      if (options.showOptimum) {
+        drawExercisePoint(svg, { ...exerciseConfig.target, label: "P*", color: "#176b52", dx: 12, dy: -12 });
+      }
+
+      return svg;
+    }
+
+    function drawExercisePoint(svg, point) {
+      svg.appendChild(svgEl("circle", {
+        cx: exSx(point.b),
+        cy: exSy(point.c),
+        r: point.r || 7,
+        fill: point.color || "#176b52",
+        stroke: "white",
+        "stroke-width": 3
+      }));
+      const label = svgEl("text", {
+        x: exSx(point.b) + (point.dx ?? 10),
+        y: exSy(point.c) + (point.dy ?? -10),
+        fill: point.color || "#176b52",
+        "font-size": point.fontSize || 16,
+        "font-weight": 700
+      });
+      label.textContent = point.label;
+      svg.appendChild(label);
+    }
+
+    function exerciseGraphClick(handler) {
+      const svg = document.querySelector("#graphMount svg");
+      svg.addEventListener("click", (event) => {
+        const point = exercisePointFromEvent(svg, event);
+        handler(point);
+      });
+    }
+
+    function exercisePointFromEvent(svg, event) {
+      const bounds = svg.getBoundingClientRect();
+      const view = svg.viewBox.baseVal;
+      const pixelX = view.x + ((event.clientX - bounds.left) / bounds.width) * view.width;
+      const pixelY = view.y + ((event.clientY - bounds.top) / bounds.height) * view.height;
+      return { b: exToUnitX(pixelX), c: exToUnitY(pixelY) };
+    }
+
+    function exercisePixelFromEvent(svg, event) {
+      const bounds = svg.getBoundingClientRect();
+      const view = svg.viewBox.baseVal;
+      return {
+        x: view.x + ((event.clientX - bounds.left) / bounds.width) * view.width,
+        y: view.y + ((event.clientY - bounds.top) / bounds.height) * view.height
+      };
+    }
+
+    function renderFinalExercise() {
+      const phase = state.finalExercisePhase || 0;
+      const challenge = phase === 0 ? "final-equation" : phase === 1 ? "final-intercepts" : phase === 2 ? `final-zones-${state.exerciseDrawMode || "choice"}` : phase === 3 ? "final-ci" : null;
+      setChallenge(challenge);
+
+      if (phase === 0) {
+        renderExerciseEquation();
+      } else if (phase === 1) {
+        renderExerciseIntercepts();
+      } else if (phase === 2) {
+        renderExerciseZones();
+      } else {
+        renderExerciseCurve();
+      }
+    }
+
+    function renderExerciseStatement(extra = "") {
+      stage.innerHTML = `
+        <div class="exercise-statement">
+          <div class="banner">Exercice : choix sous contrainte</div>
+          <div class="formula-card">
+            <p>Un consommateur dispose d'un revenu de 120 euros qu'il peut consacrer à l'achat de deux biens : le bien B et le bien C.</p>
+            <p>Le prix d'une unité de bien B est de 20 euros et le prix d'une unité de bien C est de 30 euros.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderExerciseEquation() {
+      if (!state.exerciseTokens) state.exerciseTokens = [];
+      renderExerciseStatement();
+      const tokens = ["10", "20", "30", "B", "C", "sqrtB", "sqrtC", "×", "+"];
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Construisez l'équation de la contrainte budgétaire.</p>
+          <div class="token-build" id="tokenBuild">
+            ${state.exerciseTokens.map((token) => `<span class="token-slot">${tokenLabel(token)}</span>`).join("")}
+            <span class="token-slot">≤ 120</span>
+          </div>
+        </div>
+        <p class="choice-prompt">Choisissez les éléments utiles dans la palette.</p>
+        <div class="token-palette">
+          ${tokens.map((token) => `<button data-token="${token}">${tokenLabel(token)}</button>`).join("")}
+        </div>
+        <div class="small-actions">
+          <button data-action="clear">Effacer</button>
+          <button class="primary" data-action="check">Vérifier</button>
+        </div>
+      `;
+      interaction.querySelectorAll("[data-token]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.exerciseTokens.push(button.dataset.token);
+          renderExerciseEquation();
+        });
+      });
+      interaction.querySelector("[data-action='clear']").addEventListener("click", () => {
+        state.exerciseTokens = [];
+        renderExerciseEquation();
+      });
+      interaction.querySelector("[data-action='check']").addEventListener("click", () => {
+        if (isValidExerciseConstraint(state.exerciseTokens)) {
+          state.finalExercisePhase = 1;
+          setFeedback("Exact. La contrainte est bien p<sub>B</sub>B + p<sub>C</sub>C ≤ R, ici 20B + 30C ≤ 120.");
+          renderFinalExercise();
+        } else {
+          setFeedback("Pas encore. Pour chaque bien, il faut multiplier le prix par la quantité, puis additionner les deux dépenses.", "error");
+        }
+      });
+    }
+
+    function renderExerciseIntercepts() {
+      if (!state.exerciseIntercepts) state.exerciseIntercepts = [];
+      const showLine = state.exerciseIntercepts.length >= 2;
+      setStageWithGraph(
+        "Tracer la droite de budget",
+        drawExerciseGraph({ intercepts: state.exerciseIntercepts, showBudgetLine: showLine }),
+        state.exerciseShowNote ? `<div class="note-box">Si B = 0, tout le revenu sert à acheter C : C = 120 / 30 = 4. Si C = 0, tout le revenu sert à acheter B : B = 120 / 20 = 6. Deux points suffisent pour tracer la droite.</div>` : ""
+      );
+      interaction.innerHTML = `
+        <p class="choice-prompt">Cliquez sur les deux paniers extrêmes de la droite de budget.</p>
+        <div class="small-actions">
+          <button data-action="note">Voir comment faire</button>
+          <button data-action="reset">Recommencer</button>
+        </div>
+      `;
+      interaction.querySelector("[data-action='note']").addEventListener("click", () => {
+        state.exerciseShowNote = !state.exerciseShowNote;
+        renderExerciseIntercepts();
+      });
+      interaction.querySelector("[data-action='reset']").addEventListener("click", () => {
+        state.exerciseIntercepts = [];
+        renderExerciseIntercepts();
+      });
+      exerciseGraphClick((point) => {
+        const targets = [
+          { b: 0, c: 4, label: "(0,4)", color: "#176b52", dx: 12, dy: -12 },
+          { b: 6, c: 0, label: "(6,0)", color: "#c98c2d", dx: -48, dy: -12 }
+        ];
+        const target = targets.find((candidate) => Math.hypot(point.b - candidate.b, point.c - candidate.c) <= 0.35);
+        if (!target) {
+          setFeedback("Pas encore. Cherchez les paniers où le consommateur achète un seul bien : seulement C, puis seulement B.", "error");
+          return;
+        }
+        const already = state.exerciseIntercepts.some((saved) => Math.hypot(saved.b - target.b, saved.c - target.c) <= 0.05);
+        if (!already) state.exerciseIntercepts.push(target);
+        if (state.exerciseIntercepts.length >= 2) {
+          state.finalExercisePhase = 2;
+          setFeedback("Exact. Avec deux points, une seule droite est possible : c'est la droite de budget.");
+          renderFinalExercise();
+        } else {
+          setFeedback("Bien. Il reste l'autre panier extrême à placer.");
+          renderExerciseIntercepts();
+        }
+      });
+    }
+
+    function renderExerciseZones() {
+      if (!state.exerciseZoneStatus) {
+        state.exerciseZoneStatus = { accessible: false, inaccessible: false, exact: false };
+      }
+      const done = state.exerciseZoneStatus.accessible && state.exerciseZoneStatus.inaccessible && state.exerciseZoneStatus.exact;
+      if (done) {
+        state.finalExercisePhase = 3;
+        setFeedback("Exact. Nous pouvons maintenant ajouter les préférences et chercher le panier choisi.");
+        renderFinalExercise();
+        return;
+      }
+      setStageWithGraph(
+        "Identifier les ensembles",
+        drawExerciseGraph({
+          showBudgetLine: true,
+          showAccessible: state.exerciseZoneStatus.accessible,
+          showInaccessible: state.exerciseZoneStatus.inaccessible,
+          showExact: state.exerciseZoneStatus.exact
+        }),
+        state.exerciseShowDrawNote ? `<div class="note-box">Choisissez une zone, puis tracez grossièrement avec la souris. Sous la droite : accessible. Au-dessus : inaccessible. Sur la droite : tout le revenu est utilisé.</div>` : ""
+      );
+      interaction.innerHTML = `
+        <p class="choice-prompt">Tracez successivement les paniers accessibles, les paniers inaccessibles et les paniers qui utilisent exactement tout le revenu.</p>
+        <div class="button-row">
+          <button data-mode="accessible">Paniers accessibles</button>
+          <button data-mode="inaccessible">Paniers inaccessibles</button>
+          <button data-mode="exact">Tout le revenu</button>
+        </div>
+        <div class="small-actions">
+          <button data-action="note">Voir comment faire</button>
+        </div>
+      `;
+      interaction.querySelectorAll("[data-mode]").forEach((button) => {
+        button.classList.toggle("primary", state.exerciseDrawMode === button.dataset.mode);
+        button.disabled = Boolean(state.exerciseZoneStatus[button.dataset.mode]);
+        button.addEventListener("click", () => {
+          state.exerciseDrawMode = button.dataset.mode;
+          renderExerciseZones();
+        });
+      });
+      interaction.querySelector("[data-action='note']").addEventListener("click", () => {
+        state.exerciseShowDrawNote = !state.exerciseShowDrawNote;
+        renderExerciseZones();
+      });
+      if (state.exerciseDrawMode) {
+        enableExerciseDrawing(state.exerciseDrawMode);
+      }
+    }
+
+    function enableExerciseDrawing(mode) {
+      const svg = document.querySelector("#graphMount svg");
+      svg.classList.add("draw-mode");
+      let drawing = false;
+      let points = [];
+      let path = null;
+      svg.addEventListener("pointerdown", (event) => {
+        drawing = true;
+        points = [exercisePointFromEvent(svg, event)];
+        const pixel = exercisePixelFromEvent(svg, event);
+        path = svgEl("path", {
+          d: `M ${pixel.x.toFixed(1)} ${pixel.y.toFixed(1)}`,
+          fill: "none",
+          stroke: mode === "accessible" ? "#176b52" : mode === "inaccessible" ? "#b6483b" : "#1737ff",
+          "stroke-width": 4,
+          "stroke-linecap": "round",
+          opacity: 0.74
+        });
+        svg.appendChild(path);
+      });
+      svg.addEventListener("pointermove", (event) => {
+        if (!drawing) return;
+        const point = exercisePointFromEvent(svg, event);
+        points.push(point);
+        const pixel = exercisePixelFromEvent(svg, event);
+        path.setAttribute("d", `${path.getAttribute("d")} L ${pixel.x.toFixed(1)} ${pixel.y.toFixed(1)}`);
+      });
+      svg.addEventListener("pointerup", () => {
+        if (!drawing) return;
+        drawing = false;
+        validateExerciseDrawing(mode, points);
+      });
+    }
+
+    function validateExerciseDrawing(mode, points) {
+      if (points.length < 2) {
+        setFeedback("Il faut tracer un petit morceau de zone ou de droite pour que je puisse valider.", "error");
+        return;
+      }
+      const ratios = points.map((point) => point.c - exerciseBudgetC(point.b));
+      let valid = false;
+      if (mode === "accessible") {
+        valid = ratios.filter((value) => value <= 0.25).length / ratios.length > 0.78;
+      } else if (mode === "inaccessible") {
+        valid = ratios.filter((value) => value > 0.25).length / ratios.length > 0.7;
+      } else {
+        const nearLine = ratios.filter((value) => Math.abs(value) <= 0.25).length / ratios.length;
+        const spread = Math.max(...points.map((point) => point.b)) - Math.min(...points.map((point) => point.b));
+        valid = nearLine > 0.6 && spread > 0.7;
+      }
+      if (!valid) {
+        setFeedback("Pas encore. La trace n'est pas dans la bonne région du graphique.", "error");
+        return;
+      }
+      state.exerciseZoneStatus[mode] = true;
+      state.exerciseDrawMode = null;
+      const labels = { accessible: "les paniers accessibles", inaccessible: "les paniers inaccessibles", exact: "les paniers qui utilisent exactement le revenu" };
+      setFeedback(`Exact. Vous avez identifié ${labels[mode]}.`);
+      renderExerciseZones();
+    }
+
+    function renderExerciseCurve() {
+      if (!state.exerciseCurveLevels) state.exerciseCurveLevels = [3.8, 7.8, 10.5];
+      if (!state.exerciseCurvePlaced) state.exerciseCurvePlaced = state.exerciseCurveLevels.map(() => false);
+      const done = state.answered.has("finalExerciseDone");
+      setStageWithGraph(
+        done ? "Panier préféré" : "Déterminer graphiquement le panier choisi",
+        drawExerciseGraph({
+          showBudgetLine: true,
+          showAccessible: true,
+          curveLevels: done ? [exerciseConfig.tangentLevel] : state.exerciseCurveLevels,
+          correctCurve: done,
+          showOptimum: done,
+          curveReserve: !done,
+          curvePlaced: state.exerciseCurvePlaced
+        })
+      );
+      interaction.innerHTML = done
+        ? `<div class="formula-card"><p>La courbe d'indifférence tangente à la droite de budget passe par le panier préféré. Ce panier est atteignable et aucun panier atteignable ne se trouve sur une courbe d'indifférence plus élevée.</p></div>`
+        : `
+          <div class="formula-card"><p>À partir de la contrainte budgétaire que vous avez représentée à la question précédente, utilisez les courbes d’indifférence fournies pour déterminer graphiquement le panier choisi par le consommateur.</p><p>Pour cela, déplacez les courbes d’indifférence jusqu’à identifier la courbe la plus élevée compatible avec l’ensemble budgétaire. Représentez clairement le panier optimal sur le graphique.</p></div>
+          <div class="small-actions">
+            <button class="primary" data-action="check">Vérifier</button>
+          </div>
+        `;
+      if (done) return;
+      enableExerciseCurveDrag();
+      interaction.querySelector("[data-action='check']").addEventListener("click", () => {
+        const placedLevels = state.exerciseCurveLevels.filter((_, index) => state.exerciseCurvePlaced[index]);
+        if (!placedLevels.length) {
+          setFeedback("Prenez d'abord une courbe d'indiffÃ©rence dans la palette et placez-la sur le graphique.", "error");
+          return;
+        }
+        const closestLevel = placedLevels.reduce((best, level) => (
+          Math.abs(level - exerciseConfig.tangentLevel) < Math.abs(best - exerciseConfig.tangentLevel) ? level : best
+        ), placedLevels[0]);
+        const closest = Math.abs(closestLevel - exerciseConfig.tangentLevel);
+        if (closest <= 0.35) {
+          state.exerciseCurveLevels = [exerciseConfig.tangentLevel];
+          state.exerciseCurvePlaced = [true];
+          state.answered.add("finalExerciseDone");
+          setFeedback("Exact. La CI tangente identifie le panier préféré, ici P* = (3,2).");
+          renderExerciseCurve();
+          updateNav();
+        } else if (closestLevel < exerciseConfig.tangentLevel) {
+          setFeedback("Pas encore. La courbe placée est trop basse : il existe une courbe d'indifférence atteignable plus élevée.", "error");
+        } else {
+          setFeedback("Pas encore. Cette courbe est trop haute : elle ne peut pas être atteinte avec le budget disponible.", "error");
+        }
+      });
+    }
+
+    function ensureExerciseCurve(svg, index) {
+      let curve = svg.querySelector(`path[data-exercise-curve="${index}"]`);
+      if (curve) return curve;
+      curve = svgEl("path", {
+        d: exerciseCurvePath(state.exerciseCurveLevels[index]),
+        fill: "none",
+        stroke: "#6c85ff",
+        "stroke-width": 2.8,
+        "stroke-linecap": "round",
+        opacity: 0.72,
+        "data-curve-index": String(index),
+        "data-exercise-curve": String(index),
+        style: "cursor: grab;"
+      });
+      svg.appendChild(curve);
+      return curve;
+    }
+    function enableExerciseCurveDrag() {
+      const svg = document.querySelector("#graphMount svg");
+      let selected = null;
+      svg.querySelectorAll("[data-curve-index]").forEach((curve) => {
+        curve.addEventListener("pointerdown", (event) => {
+          selected = Number(curve.dataset.curveIndex);
+          state.exerciseCurvePlaced[selected] = true;
+          curve.setPointerCapture(event.pointerId);
+          ensureExerciseCurve(svg, selected);
+        });
+      });
+      svg.addEventListener("pointermove", (event) => {
+        if (selected === null) return;
+        const point = exercisePointFromEvent(svg, event);
+        const level = Math.max(1.2, Math.min(13, point.b * point.c));
+        state.exerciseCurveLevels[selected] = level;
+        const curve = ensureExerciseCurve(svg, selected);
+        curve.setAttribute("d", exerciseCurvePath(level));
+      });
+      svg.addEventListener("pointerup", () => {
+        selected = null;
+      });
+    }
+
+    function update() {
+      const current = steps[state.step];
+      sequenceTitle.textContent = stepLabels[state.step] || `Diapositive ${state.step + 1}`;
+      narration.innerHTML = current.text;
+      interaction.dataset.titleless = "";
+      feedback.textContent = "";
+      renderProgressStrip();
+      current.render();
+      updateNav();
+    }
+
+    function updateNav() {
+      const current = steps[state.step];
+      backButton.disabled = state.step === 0;
+      nextButton.disabled = current.gate && !current.gate();
+      jumpSelect.value = String(state.step);
+      updateActionFocus();
+    }
+
+    backButton.addEventListener("click", () => {
+      if (state.step > 0) {
+        state.step -= 1;
+        update();
+      }
+    });
+
+    nextButton.addEventListener("click", () => {
+      const current = steps[state.step];
+      if (current.gate && !current.gate()) return;
+      if (state.step < steps.length - 1) {
+        state.step += 1;
+        update();
+      }
+    });
+
+    jumpSelect.addEventListener("change", () => {
+      state.step = Number(jumpSelect.value);
+      update();
+    });
+
+    update();
+  </script>
+</body>
+</html>

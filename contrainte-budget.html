@@ -1,0 +1,3127 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>La contrainte de budget</title>
+  <style>
+    :root {
+      --paper: #f8f5ed;
+      --panel: #fffdf8;
+      --ink: #132536;
+      --muted: #66747d;
+      --line: #e4e2dc;
+      --green: #176b52;
+      --blue: #1737ff;
+      --red: #b6483b;
+      --gold: #c98c2d;
+      --soft: #edf3f0;
+      --button: #e8edf0;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 20px;
+      line-height: 1.45;
+      overflow: hidden;
+    }
+
+    .app {
+      height: 100vh;
+      height: 100dvh;
+      display: grid;
+      grid-template-columns: 390px 1fr;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-areas:
+        "progress progress"
+        "narration main"
+        "exercise exercise";
+      gap: 14px 20px;
+      padding: 20px 24px 24px;
+      overflow: hidden;
+    }
+
+    .top-bar {
+      grid-area: progress;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .progress-strip {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 253, 248, 0.92);
+      box-shadow: 0 6px 18px rgba(19, 37, 54, 0.04);
+    }
+
+    .progress-strip::-webkit-scrollbar { display: none; }
+
+    .progress-step {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 5px 10px;
+      border: 1px solid #d6ded9;
+      border-radius: 8px;
+      background: #fbfaf5;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .progress-step.done {
+      color: var(--green);
+      background: #edf6f2;
+    }
+
+    .progress-step.current {
+      color: white;
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .btn-nav {
+      flex-shrink: 0;
+      padding: 6px 16px;
+      font-size: 15px;
+      border-radius: 10px;
+    }
+
+    .dev-nav {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 18px 40px rgba(19, 37, 54, 0.06);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .app > aside.panel {
+      grid-area: narration;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1, h2 {
+      margin: 0 0 18px;
+      color: #5f6e77;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      font-size: 30px;
+    }
+
+    .narration-text {
+      min-height: 160px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fffefa;
+      font-size: 23px;
+      overflow: auto;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .btn-dev {
+      font-size: 13px;
+      padding: 5px 13px;
+      background: transparent;
+      border: 1px dashed #b0b8bc;
+      color: var(--muted);
+      border-radius: 999px;
+      font-family: Georgia, serif;
+      font-weight: 700;
+      cursor: pointer;
+      align-self: center;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 22px;
+      color: var(--ink);
+      background: var(--button);
+      font: 700 20px Georgia, "Times New Roman", serif;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: var(--green);
+      color: white;
+    }
+
+    button.action-focus {
+      box-shadow: 0 0 0 4px rgba(23, 107, 82, 0.18), 0 10px 24px rgba(23, 107, 82, 0.22);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    input,
+    select {
+      min-width: 150px;
+      border: 1px solid #cfd8dc;
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: white;
+      color: var(--ink);
+      font: 700 20px Georgia, "Times New Roman", serif;
+    }
+
+    .main {
+      grid-area: main;
+      display: contents;
+    }
+
+    .stage {
+      grid-area: main;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .interaction {
+      grid-area: exercise;
+      min-height: 118px;
+      max-height: 28vh;
+      overflow: auto;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: start;
+      column-gap: 18px;
+    }
+
+    .interaction.tall-exercise {
+      max-height: 46vh;
+    }
+
+    .interaction.action-focus {
+      border-color: rgba(23, 107, 82, 0.55);
+      box-shadow: 0 0 0 4px rgba(23, 107, 82, 0.12), 0 18px 38px rgba(23, 107, 82, 0.12);
+    }
+
+    .interaction.action-focus h2 {
+      display: inline-block;
+      padding: 7px 14px;
+      border-radius: 999px;
+      color: var(--green);
+      background: #edf6f2;
+      border: 1px solid #c9d8d2;
+    }
+
+    .interaction.info-only {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .interaction.info-only > h2 {
+      display: none;
+    }
+
+    .interaction.info-only #actionHint,
+    .interaction.info-only #interaction,
+    .interaction.info-only #feedback {
+      grid-column: 1;
+    }
+
+    .interaction > h2 {
+      grid-column: 1;
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    .interaction #actionHint,
+    .interaction #interaction,
+    .interaction #feedback {
+      grid-column: 2;
+      min-width: 0;
+    }
+
+    .action-hint {
+      margin: -2px 0 12px;
+      padding: 9px 13px;
+      border: 1px solid #c9d8d2;
+      border-radius: 999px;
+      width: fit-content;
+      max-width: 100%;
+      color: var(--green);
+      background: #edf6f2;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .graph-wrap {
+      display: grid;
+      place-items: center;
+      gap: 12px;
+    }
+
+    #graphMount {
+      width: min(582px, 58.2vh, 100%);
+    }
+
+    .banner {
+      width: min(760px, 100%);
+      padding: 14px 18px;
+      border: 1px solid #cbd9d5;
+      border-radius: 14px;
+      background: linear-gradient(90deg, #eef6f2, #eef3fb);
+      font-size: 22px;
+    }
+
+    .banner-one-line {
+      display: block;
+      white-space: nowrap;
+      font-size: clamp(15px, 1.5vw, 18px);
+    }
+
+    .banner-compact-one-line {
+      display: block;
+      white-space: nowrap;
+      font-size: clamp(14px, 1.35vw, 17px);
+    }
+
+    svg {
+      width: 100%;
+      aspect-ratio: 1;
+      border: 1px solid #d8e0e3;
+      border-radius: 18px;
+      background: #f8fbfc;
+    }
+
+    .choice-prompt {
+      margin: 0 0 14px;
+      font-size: 24px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .feedback {
+      margin-top: 16px;
+      color: var(--green);
+      font-weight: 700;
+      min-height: 32px;
+    }
+
+    .formula-card {
+      padding: 20px;
+      border: 1px solid #d5e0dc;
+      border-radius: 14px;
+      background: var(--soft);
+    }
+
+    .formula-card.cheatsheet {
+      display: grid;
+      gap: 0;
+    }
+
+    .cheatsheet-title {
+      font-weight: 700;
+      color: var(--green);
+      font-size: 1.1em;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #c8dbd5;
+    }
+
+    .cheatsheet-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid #e0ecec;
+      align-items: center;
+    }
+
+    .cheatsheet-row:last-child {
+      border-bottom: none;
+    }
+
+    .cheatsheet-label {
+      color: var(--muted);
+      font-size: 0.93em;
+    }
+
+    .cheatsheet-formula {
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .cover-page {
+      width: min(880px, 100%);
+      display: grid;
+      gap: 22px;
+      padding: 34px;
+      border: 1px solid #c9d8d2;
+      border-radius: 18px;
+      background: #fffefa;
+    }
+
+    .cover-page .btn-start {
+      justify-self: start;
+      font-size: 1.1em;
+      padding: 16px 40px;
+    }
+
+    .cover-author {
+      color: var(--muted);
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .cover-title {
+      color: var(--green);
+      font-size: 42px;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .cover-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding-left: 24px;
+      font-size: 24px;
+    }
+
+    .formula {
+      margin-top: 12px;
+      color: var(--green);
+      font-size: 30px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .context-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      padding: 28px;
+    }
+
+    .context-box {
+      width: 200px;
+      border-radius: 16px;
+      padding: 20px 18px;
+      text-align: center;
+      border: 2px solid var(--line);
+      background: #fbfaf5;
+    }
+
+    .context-box.done {
+      border-color: #a8d4c2;
+      background: #edf6f2;
+    }
+
+    .context-box.current {
+      border-color: var(--green);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(23, 107, 82, 0.12), 0 12px 32px rgba(23, 107, 82, 0.14);
+    }
+
+    .context-box.upcoming {
+      opacity: 0.5;
+    }
+
+    .context-tag {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .context-box.done .context-tag { color: var(--green); }
+    .context-box.current .context-tag { color: var(--green); }
+
+    .context-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .context-sub {
+      font-size: 16px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .context-op {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .math-frac {
+      display: inline-grid;
+      grid-template-rows: auto auto;
+      align-items: center;
+      justify-items: center;
+      margin: 0 8px;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .math-frac .top {
+      border-bottom: 2px solid currentColor;
+      padding: 0 8px 4px;
+    }
+
+    .math-frac .bottom {
+      padding-top: 4px;
+    }
+
+    .formula-builder {
+      display: grid;
+      gap: 16px;
+    }
+
+    .builder-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 20px;
+      border: 1px solid #c8dbd5;
+      border-radius: 16px;
+      background: #f8fcfa;
+    }
+
+    .formula-slot {
+      min-width: 76px;
+      min-height: 54px;
+      border: 2px dashed #a4b8b2;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: white;
+      color: var(--green);
+      font-weight: 700;
+      white-space: nowrap;
+      line-height: 1;
+      transition: border-color 0.15s, background 0.15s;
+      cursor: pointer;
+    }
+
+    .formula-slot:hover:not(.filled) {
+      border-color: var(--green);
+      background: #f0f9f5;
+    }
+
+    .price-token {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 1px;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .formula-slot sub,
+    .token-bank button sub {
+      font-size: 0.72em;
+      line-height: 0;
+    }
+
+    .formula-slot.filled {
+      border-style: solid;
+      border-color: var(--green);
+      background: #edf6f2;
+      color: var(--green);
+    }
+
+    .fixed-symbol {
+      color: var(--ink);
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .token-bank {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 14px 18px;
+      border: 1px solid #d5e0dc;
+      border-radius: 14px;
+      background: var(--soft);
+    }
+
+    .token-bank button {
+      min-width: 64px;
+    }
+
+    .intercept-builder .builder-workbench {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .intercept-builder .token-bank {
+      justify-content: flex-start;
+      align-content: start;
+      min-width: 230px;
+    }
+
+    .basket-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .basket-card {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffefa;
+    }
+
+    .basket-card strong {
+      color: var(--green);
+      font-size: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        grid-template-areas:
+          "progress"
+          "narration"
+          "main"
+          "exercise";
+      }
+      .narration-text { min-height: auto; }
+      .basket-grid { grid-template-columns: 1fr; }
+      .intercept-builder .builder-workbench { grid-template-columns: 1fr; }
+      .interaction {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .interaction > h2 {
+        display: none;
+      }
+      .interaction #actionHint,
+      .interaction #interaction,
+      .interaction #feedback {
+        grid-column: 1;
+      }
+    }
+
+    @media (max-height: 850px) {
+      body { font-size: 18px; }
+      .app { gap: 12px; padding: 14px; }
+      .progress-strip { padding: 5px 8px; gap: 5px; }
+      .progress-step { padding: 5px 8px; font-size: 12px; }
+      .btn-nav { padding: 5px 12px; font-size: 14px; }
+      .panel { padding: 16px; }
+      h1, h2 { margin-bottom: 10px; font-size: 24px; }
+      .narration-text { min-height: 130px; padding: 16px; font-size: 20px; }
+      button { padding: 9px 16px; font-size: 17px; }
+      .btn-nav { padding: 5px 12px; font-size: 14px; }
+      input, select { padding: 9px 12px; font-size: 17px; }
+      .interaction { min-height: 106px; max-height: 22vh; }
+      .banner, .formula-card { padding: 12px 16px; }
+      .banner { font-size: 22px; }
+      .choice-prompt { margin-bottom: 10px; font-size: 20px; }
+      .feedback { margin-top: 10px; min-height: 26px; }
+      #graphMount { width: min(524px, 52.8vh, 100%); }
+    }
+
+    @media (max-height: 720px) {
+      .app { gap: 8px; padding: 10px; }
+      .progress-step { padding: 4px 7px; font-size: 11px; }
+      .btn-nav { padding: 4px 10px; font-size: 13px; }
+      .panel { padding: 12px; border-radius: 14px; }
+      h1, h2 { font-size: 21px; margin-bottom: 8px; }
+      .narration-text { min-height: 100px; padding: 12px; font-size: 17px; }
+      .interaction { min-height: 94px; max-height: 20vh; }
+      .graph-wrap { gap: 8px; }
+      .formula { font-size: 23px; }
+      .cover-page { gap: 14px; padding: 22px; }
+      .cover-title { font-size: 32px; }
+      .cover-list { font-size: 20px; }
+      #graphMount { width: min(463px, 48vh, 100%); }
+    }
+
+    .nav-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(19, 37, 54, 0.28);
+      z-index: 999;
+    }
+
+    .nav-panel {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(19, 37, 54, 0.18);
+      padding: 22px;
+      z-index: 1000;
+      max-height: 80vh;
+      overflow-y: auto;
+      width: min(380px, 92vw);
+    }
+
+    .nav-panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 14px;
+    }
+
+    .nav-panel-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 9px 13px;
+      margin-bottom: 4px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink);
+      font: 400 17px Georgia, serif;
+      cursor: pointer;
+    }
+
+    .nav-panel-item:hover { background: var(--soft); }
+
+    .nav-panel-item.nav-current {
+      background: #edf6f2;
+      color: var(--green);
+      border-color: #c0ddd4;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div id="navBackdrop" class="nav-backdrop"></div>
+  <div id="navPanel" class="nav-panel">
+    <div class="nav-panel-title">Aller à la diapositive</div>
+    <div id="navPanelItems"></div>
+  </div>
+  <main class="app">
+    <div class="top-bar">
+      <button id="backButton" class="btn-nav">Retour</button>
+      <nav id="progressStrip" class="progress-strip" aria-label="Progression dans la séquence"></nav>
+      <button id="nextButton" class="primary btn-nav">Suivant</button>
+      <div class="dev-nav">
+        <button id="devSkipButton" class="btn-dev" type="button" title="Avancer sans répondre (dev)">dev →</button>
+        <button id="navJumpButton" class="btn-dev" type="button" title="Aller à une diapositive">↗ aller à</button>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <h1 id="sequenceTitle">Progression</h1>
+      <div id="narration" class="narration-text"></div>
+    </aside>
+
+    <section class="main">
+      <section class="panel stage">
+        <div id="stage"></div>
+      </section>
+
+      <section class="panel interaction">
+        <h2 id="exerciceTitle">Exercice</h2>
+        <div id="actionHint" class="action-hint"></div>
+        <div id="interaction"></div>
+        <div id="feedback" class="feedback"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      step: 0,
+      answered: new Set(),
+      costChecked: new Set()
+    };
+
+    const config = {
+      max: 10,
+      size: 420,
+      margin: 48,
+      income: 100,
+      pB: 10,
+      pC: 20
+    };
+
+    const narration = document.getElementById("narration");
+    const stage = document.getElementById("stage");
+    const interaction = document.getElementById("interaction");
+    const feedback = document.getElementById("feedback");
+    const sequenceTitle = document.getElementById("sequenceTitle");
+    const progressStrip = document.getElementById("progressStrip");
+    const interactionPanel = document.querySelector(".panel.interaction");
+    const exerciceTitle = document.getElementById("exerciceTitle");
+    const actionHint = document.getElementById("actionHint");
+    const backButton = document.getElementById("backButton");
+    const nextButton = document.getElementById("nextButton");
+    const devSkipButton = document.getElementById("devSkipButton");
+    const navJumpButton = document.getElementById("navJumpButton");
+    const navBackdrop = document.getElementById("navBackdrop");
+    const navPanel = document.getElementById("navPanel");
+    const navPanelItems = document.getElementById("navPanelItems");
+
+    const steps = [
+      {
+        text: "Ce module porte sur la contrainte budgétaire. Nous allons partir de situations simples, construire l'équation du budget, puis comprendre sa représentation graphique.",
+        render: renderCoverPage
+      },
+      {
+        text: "Ce module est le deuxième temps du programme du consommateur. Le premier module a décrit les préférences. Ici, nous introduisons ce qui limite les choix : le revenu et les prix. Ces deux ingrédients — préférences et budget — permettront ensuite de déterminer le choix optimal.",
+        render: renderContextSlide
+      },
+      {
+        text: "Nous avons déjà représenté les préférences avec des courbes d'indifférence dans le plan des biens B et C. Une question naturelle apparaît : que choisirait un consommateur si rien ne limitait ses choix ?",
+        render: renderUnlimitedChoice,
+        gate: () => state.answered.has("unlimited")
+      },
+      {
+        text: "Avec l'hypothèse de non-satiété, plus de bien B et plus de bien C sont toujours préférés. Sans contrainte, le consommateur voudrait donc aller toujours plus loin vers le nord-est du graphique.",
+        render: renderInfiniteWant
+      },
+      {
+        text: "Dans la réalité, le choix est limité par un revenu. Supposons que le consommateur dispose d'un revenu maximum de 100 euros. Le prix d'une unité de bien B est 10 euros, et le prix d'une unité de bien C est 20 euros.",
+        render: renderBudgetSetup
+      },
+      {
+        text: "Premier test : le panier P₁ contient 4 unités de bien B et 2 unités de bien C. Le revenu de 100 euros suffit-il pour acheter ce panier ?",
+        render: () => renderAffordabilityQuiz({
+          key: "p1",
+          label: "P₁",
+          b: 4,
+          c: 2,
+          correct: "yes"
+        }),
+        gate: () => state.answered.has("p1")
+      },
+      {
+        text: "Deuxième test : le panier P₂ contient 7 unités de bien B et 2 unités de bien C. Le revenu de 100 euros suffit-il cette fois ?",
+        render: () => renderAffordabilityQuiz({
+          key: "p2",
+          label: "P₂",
+          b: 7,
+          c: 2,
+          correct: "no"
+        }),
+        gate: () => state.answered.has("p2")
+      },
+      {
+        text: "Nous pouvons maintenant généraliser. Pour savoir si un panier est dans les moyens du consommateur, il faut calculer sa dépense totale et la comparer au revenu disponible.",
+        render: renderBudgetCondition,
+        gate: () => state.answered.has("condition"),
+        tall: true
+      },
+      {
+        text: "Replaçons maintenant les deux paniers précédents dans le plan B C. P₁ est accessible, P₂ ne l’est pas. Comment représenter alors l’ensemble des paniers accessibles ?",
+        render: renderBudgetBasketsGraph
+      },
+      {
+        text: "Pour construire la frontière du budget, nous allons commencer par les paniers qui coûtent exactement le revenu disponible. Avec R = 100, p<sub>B</sub> = 10 et p<sub>C</sub> = 20, cela donne 10B + 20C = 100.",
+        render: renderSolveBudgetEquation,
+        gate: () => state.answered.has("solveC")
+      },
+      {
+        text: "Nous pouvons maintenant tracer la droite budgétaire : elle rassemble tous les paniers qui coûtent exactement le revenu. Pour bien la comprendre, lisons graphiquement la quantité maximale de bien C que l’on peut acheter pour une quantité donnée de bien B.",
+        render: renderBudgetCQuestion,
+        gate: () => state.answered.has("readCPoint")
+      },
+      {
+        text: "Pour tracer rapidement une droite budgétaire, il suffit de repérer deux points faciles : le panier qui ne contient que du bien C, puis le panier qui ne contient que du bien B.",
+        render: renderParticularIntercepts,
+        gate: () => state.answered.has("particularBIntercept")
+      },
+      {
+        text: "Une fois que nous avons deux points, il n’existe qu’une seule droite qui passe par ces deux points. Cette droite est la droite de budget.",
+        render: renderParticularBudgetLine
+      },
+      {
+        text: "Passons maintenant au cas général. Si le panier ne contient que du bien C, toute la dépense va dans le bien C. Il faut donc trouver combien d’unités de C le revenu R permet d’acheter.",
+        render: () => renderGeneralInterceptBuilder("C"),
+        gate: () => state.answered.has("generalCIntercept"),
+        tall: true
+      },
+      {
+        text: "Même raisonnement pour le bien B : si le panier ne contient que du bien B, toute la dépense va dans le bien B. Cela donne le second point facile à placer.",
+        render: () => renderGeneralInterceptBuilder("B"),
+        gate: () => state.answered.has("generalBIntercept"),
+        tall: true
+      },
+      {
+        text: "Nous avons maintenant la droite de budget générale. Nous pouvons définir l'ensemble de budget : tous les paniers qui respectent la contrainte de budget.",
+        render: renderBudgetSetDefinition
+      },
+      {
+        text: "Vérifions maintenant la lecture graphique : quelques paniers sont placés dans le plan. Selon leur position par rapport à la droite, nous pouvons dire s'ils coûtent moins, plus, ou exactement 100.",
+        render: renderBudgetSetQuiz,
+        gate: () => state.answered.has("budgetSetQuizDone")
+      },
+      {
+        text: "Intéressons-nous maintenant à la pente de la droite de budget. Partons d'un panier situé sur la droite. Si ce panier ne satisfait pas le consommateur et qu'il veut plus de bien B, il doit réduire la quantité de bien C pour rester exactement sur son budget.",
+        render: renderBudgetSlopeQuiz,
+        gate: () => state.answered.has("budgetSlopeEquation")
+      },
+      {
+        text: "Nous pouvons résumer ce résultat : la pente de la droite de budget mesure le taux auquel le marché échange le bien B contre le bien C. Elle dépend seulement des prix relatifs.",
+        render: renderBudgetSlopeSummary
+      },
+      {
+        text: "Étudions maintenant l'effet d'une variation de prix. Nous allons analyser successivement l'effet d'une hausse de p<sub>B</sub> puis d'une hausse de p<sub>C</sub> sur les points extrêmes de la droite de budget.",
+        render: renderPriceChangeQuiz,
+        gate: () => state.answered.has("priceCOther")
+      },
+      {
+        text: "Dans les deux cas, la droite pivote autour du point extrême dont le prix n'a pas changé. La pente se modifie car les prix relatifs changent.",
+        render: renderPriceChangeResult,
+        gate: () => state.answered.has("priceResultDone")
+      },
+      {
+        text: "Dernière variation importante : que se passe-t-il lorsque le revenu change, alors que les prix restent constants ? Reprenons la méthode des deux points extrêmes.",
+        render: renderIncomeChangeQuiz,
+        gate: () => state.answered.has("incomeSlope")
+      },
+      {
+        text: "Quand le revenu augmente et que les prix ne changent pas, la droite de budget se déplace vers l'extérieur en restant parallèle à elle-même.",
+        render: renderIncomeChangeResult
+      },
+      {
+        text: "À vous de construire une droite de budget complète. On donne R = 120, p<sub>B</sub> = 20 et p<sub>C</sub> = 30. Repérez les deux paniers extrêmes, puis cliquez sur les deux points pour tracer la droite.",
+        render: renderBudgetConstructionExercise,
+        gate: () => state.answered.has("constructedBudget")
+      },
+      {
+        text: "Terminons par un quiz d'évaluation. L'objectif est de vérifier que vous savez utiliser la contrainte budgétaire, lire ses points extrêmes, interpréter sa pente et prévoir ses déplacements.",
+        render: renderEvaluationQuiz,
+        gate: () => state.answered.has("evaluationDone")
+      },
+      {
+        text: "La contrainte budgétaire sépare les paniers accessibles des paniers inaccessibles. Les paniers sur la droite coûtent exactement le budget, et ceux situés sous la droite coûtent moins que le budget.",
+        render: renderClosing
+      },
+      {
+        text: "Vous maîtrisez maintenant les deux premiers ingrédients du programme du consommateur : les préférences (module 1) et la contrainte de budget (module 2). Avant le module 3, un exercice vous permettra de construire et d'interpréter une droite de budget par vous-même.",
+        render: renderEndSlide
+      }
+    ];
+
+    const stepLabels = [
+      "Présentation",
+      "Choix sans contrainte",
+      "Non-satiété sans limite",
+      "Introduction du budget",
+      "Test P₁",
+      "Test P₂",
+      "Condition budgétaire",
+      "Paniers dans le plan",
+      "Équation de budget",
+      "Lire C sur la droite",
+      "Deux points faciles",
+      "Droite de budget",
+      "Point axe C",
+      "Point axe B",
+      "Ensemble budget",
+      "Quiz budget",
+      "Pente de budget",
+      "Taux du marché",
+      "Variations de prix",
+      "Pivotements",
+      "Variation de revenu",
+      "Translation",
+      "Construire",
+      "Évaluation",
+      "Bilan",
+      "Fin"
+    ];
+
+    const progressSections = [
+      { label: "Intro", from: 0, to: 0 },
+      { label: "Découvrir", from: 1, to: 4 },
+      { label: "Budget", from: 5, to: 11 },
+      { label: "Droite", from: 12, to: 16 },
+      { label: "Pente", from: 17, to: 18 },
+      { label: "Variations", from: 19, to: 22 },
+      { label: "Synthèse", from: 23, to: 24 },
+      { label: "Fin", from: 25, to: steps.length - 1 }
+    ];
+
+    function renderProgressStrip() {
+      progressStrip.innerHTML = progressSections.map((section, index) => {
+        const status = state.step >= section.from && state.step <= section.to
+          ? "current"
+          : state.step > section.to
+            ? "done"
+            : "";
+        return `<span class="progress-step ${status}">${index + 1}. ${section.label}</span>`;
+      }).join("");
+    }
+
+    function updateActionFocus() {
+      const current = steps[state.step];
+      const waitsForExercise = Boolean(current.gate && !current.gate());
+      interactionPanel.classList.toggle("action-focus", waitsForExercise);
+      nextButton.classList.toggle("action-focus", !waitsForExercise && state.step < steps.length - 1);
+      if (waitsForExercise) {
+        actionHint.textContent = "";
+        actionHint.style.display = "none";
+      } else if (state.step < steps.length - 1) {
+        actionHint.textContent = "";
+        actionHint.style.display = "none";
+      } else {
+        actionHint.textContent = "";
+        actionHint.style.display = "none";
+      }
+    }
+
+    function sx(x) {
+      const inner = config.size - 2 * config.margin;
+      return config.margin + (x / config.max) * inner;
+    }
+
+    function sy(y) {
+      const inner = config.size - 2 * config.margin;
+      return config.size - config.margin - (y / config.max) * inner;
+    }
+
+    function toUnitX(pixelX) {
+      const inner = config.size - 2 * config.margin;
+      return Math.max(0, Math.min(config.max, ((pixelX - config.margin) / inner) * config.max));
+    }
+
+    function toUnitY(pixelY) {
+      const inner = config.size - 2 * config.margin;
+      return Math.max(0, Math.min(config.max, ((config.size - config.margin - pixelY) / inner) * config.max));
+    }
+
+    function svgEl(tag, attrs) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      return el;
+    }
+
+    function appendSvgPriceSymbol(parent, good, prime = "") {
+      const p = svgEl("tspan", {});
+      p.textContent = "p";
+      parent.appendChild(p);
+      const sub = svgEl("tspan", { "baseline-shift": "sub", "font-size": "70%" });
+      sub.textContent = good;
+      parent.appendChild(sub);
+      if (prime) {
+        const primeTspan = svgEl("tspan", {});
+        primeTspan.textContent = prime;
+        parent.appendChild(primeTspan);
+      }
+    }
+
+    function setSvgMathText(element, text) {
+      element.textContent = "";
+      const re = /pB'|pC'|pB|pC/g;
+      let lastIndex = 0;
+      String(text).replace(re, (match, offset) => {
+        if (offset > lastIndex) {
+          const plain = svgEl("tspan", {});
+          plain.textContent = text.slice(lastIndex, offset);
+          element.appendChild(plain);
+        }
+        appendSvgPriceSymbol(element, match.includes("B") ? "B" : "C", match.endsWith("'") ? "'" : "");
+        lastIndex = offset + match.length;
+        return match;
+      });
+      if (lastIndex < text.length) {
+        const plain = svgEl("tspan", {});
+        plain.textContent = text.slice(lastIndex);
+        element.appendChild(plain);
+      }
+    }
+
+    function drawBaseGraph(points = [], options = {}) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", `0 0 ${config.size} ${config.size}`);
+      svg.setAttribute("aria-label", "Plan des biens B et C");
+
+      for (let i = 0; i <= config.max; i += 1) {
+        svg.appendChild(svgEl("line", { x1: sx(i), y1: sy(0), x2: sx(i), y2: sy(config.max), stroke: "#d7e0e4", "stroke-width": 1 }));
+        svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(i), x2: sx(config.max), y2: sy(i), stroke: "#d7e0e4", "stroke-width": 1 }));
+      }
+
+      if (options.budgetArea) {
+        drawBudgetArea(svg);
+      }
+
+      svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(0), x2: sx(config.max) + 12, y2: sy(0), stroke: "#132536", "stroke-width": 3 }));
+      svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(0), x2: sx(0), y2: sy(config.max) - 12, stroke: "#132536", "stroke-width": 3 }));
+      svg.appendChild(svgEl("polygon", { points: `${sx(config.max) + 12},${sy(0)} ${sx(config.max)},${sy(0) - 7} ${sx(config.max)},${sy(0) + 7}`, fill: "#132536" }));
+      svg.appendChild(svgEl("polygon", { points: `${sx(0)},${sy(config.max) - 12} ${sx(0) - 7},${sy(config.max)} ${sx(0) + 7},${sy(config.max)}`, fill: "#132536" }));
+
+      const labelB = svgEl("text", { x: sx(config.max) - 128, y: sy(0) + 34, fill: "#132536", "font-size": 22, "font-weight": 700 });
+      labelB.textContent = "Bien B";
+      svg.appendChild(labelB);
+      const labelC = svgEl("text", { x: sx(0) - 30, y: sy(config.max) + 86, fill: "#132536", "font-size": 22, "font-weight": 700, transform: `rotate(-90 ${sx(0) - 30} ${sy(config.max) + 86})` });
+      labelC.textContent = "Bien C";
+      svg.appendChild(labelC);
+
+      if (options.showCurves !== false) {
+        drawIndifferenceCurves(svg);
+      }
+
+      if (options.arrow) {
+        svg.appendChild(svgEl("line", { x1: sx(1.3), y1: sy(1.3), x2: sx(6.8), y2: sy(6.8), stroke: "#176b52", "stroke-width": 5, "stroke-linecap": "round" }));
+        svg.appendChild(svgEl("polygon", { points: `${sx(6.8)},${sy(6.8)} ${sx(6.38)},${sy(6.68)} ${sx(6.68)},${sy(6.38)}`, fill: "#176b52" }));
+        const text = svgEl("text", { x: sx(3.5), y: sy(7.15), fill: "#176b52", "font-size": 17, "font-weight": 700 });
+        text.textContent = "Toujours plus de B et de C";
+        svg.appendChild(text);
+      }
+
+      if (options.budgetLine) {
+        drawBudgetLine(svg, options.budgetLabel);
+      }
+
+      if (options.budgetGuide) {
+        drawBudgetGuide(svg, options.budgetGuide);
+      }
+
+      if (options.intercepts) {
+        drawIntercepts(svg, options.intercepts);
+      }
+
+      points.forEach((point) => {
+        svg.appendChild(svgEl("circle", { cx: sx(point.b), cy: sy(point.c), r: 8, fill: point.color || "#b6483b", stroke: "white", "stroke-width": 3 }));
+        const label = svgEl("text", { x: sx(point.b) + 12, y: sy(point.c) - 12, fill: point.color || "#b6483b", "font-size": 18, "font-weight": 700 });
+      setSvgMathText(label, point.showCoords === false ? point.label : `${point.label} (${point.b},${point.c})`);
+      svg.appendChild(label);
+    });
+
+      return svg;
+    }
+
+    function drawIndifferenceCurves(svg) {
+      [9.2, 12.2, 15.2].forEach((level) => {
+        const points = [];
+        for (let x = 0.8; x <= 7.6; x += 0.08) {
+          const y = level / (x + 0.55) - 0.25;
+          if (y >= 0.55 && y <= 7.7) {
+            points.push(`${points.length ? "L" : "M"} ${sx(x).toFixed(1)} ${sy(y).toFixed(1)}`);
+          }
+        }
+        svg.appendChild(svgEl("path", {
+          d: points.join(" "),
+          fill: "none",
+          stroke: "#1737ff",
+          "stroke-width": 3.2,
+          "stroke-linecap": "round",
+          opacity: 0.86
+        }));
+      });
+    }
+
+    function drawBudgetArea(svg) {
+      const maxB = config.income / config.pB;
+      const maxC = config.income / config.pC;
+      svg.appendChild(svgEl("polygon", {
+        points: `${sx(0)},${sy(0)} ${sx(0)},${sy(maxC)} ${sx(Math.min(maxB, config.max))},${sy(0)}`,
+        fill: "#dceee7",
+        opacity: 0.78
+      }));
+      const label = svgEl("text", {
+        x: sx(2.15),
+        y: sy(1.35),
+        fill: "#176b52",
+        "font-size": 17,
+        "font-weight": 700
+      });
+      label.textContent = "ensemble de budget";
+      svg.appendChild(label);
+    }
+
+    function drawBudgetLine(svg, labelText = "Budget : 10B + 20C = 100") {
+      const maxB = config.income / config.pB;
+      const maxC = config.income / config.pC;
+      svg.appendChild(svgEl("path", {
+        d: `M ${sx(0)} ${sy(maxC)} L ${sx(Math.min(maxB, config.max))} ${sy(Math.max(0, maxC - config.pB / config.pC * Math.min(maxB, config.max)))}`,
+        fill: "none",
+        stroke: "#b6483b",
+        "stroke-width": 4,
+        "stroke-linecap": "round"
+      }));
+      if (labelText !== false) {
+        const label = svgEl("text", { x: sx(2.2), y: sy(3.7), fill: "#b6483b", "font-size": 17, "font-weight": 700 });
+        setSvgMathText(label, labelText);
+        svg.appendChild(label);
+      }
+    }
+
+    function drawArrow(svg, from, to, color, width = 4, dash = null) {
+      const attrs = {
+        x1: sx(from.b),
+        y1: sy(from.c),
+        x2: sx(to.b),
+        y2: sy(to.c),
+        stroke: color,
+        "stroke-width": width,
+        "stroke-linecap": "round"
+      };
+      if (dash) {
+        attrs["stroke-dasharray"] = dash;
+      }
+      svg.appendChild(svgEl("line", attrs));
+
+      const x1 = sx(from.b);
+      const y1 = sy(from.c);
+      const x2 = sx(to.b);
+      const y2 = sy(to.c);
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const size = 9;
+      const left = `${x2 - size * Math.cos(angle - Math.PI / 6)},${y2 - size * Math.sin(angle - Math.PI / 6)}`;
+      const right = `${x2 - size * Math.cos(angle + Math.PI / 6)},${y2 - size * Math.sin(angle + Math.PI / 6)}`;
+      svg.appendChild(svgEl("polygon", {
+        points: `${x2},${y2} ${left} ${right}`,
+        fill: color
+      }));
+    }
+
+    function drawBudgetGuide(svg, guide) {
+      const { b, c } = guide;
+      svg.appendChild(svgEl("line", {
+        x1: sx(b),
+        y1: sy(0),
+        x2: sx(b),
+        y2: sy(c),
+        stroke: "#176b52",
+        "stroke-width": 3,
+        "stroke-dasharray": "7 5"
+      }));
+      svg.appendChild(svgEl("line", {
+        x1: sx(0),
+        y1: sy(c),
+        x2: sx(b),
+        y2: sy(c),
+        stroke: "#176b52",
+        "stroke-width": 3,
+        "stroke-dasharray": "7 5"
+      }));
+      svg.appendChild(svgEl("circle", {
+        cx: sx(b),
+        cy: sy(c),
+        r: 8,
+        fill: "#176b52",
+        stroke: "white",
+        "stroke-width": 3
+      }));
+      const cLabel = svgEl("text", {
+        x: sx(0) - 22,
+        y: sy(c) + 6,
+        fill: "#176b52",
+        "font-size": 18,
+        "font-weight": 700,
+        "text-anchor": "end"
+      });
+      cLabel.textContent = String(c).replace(".", ",");
+      svg.appendChild(cLabel);
+      const bLabel = svgEl("text", {
+        x: sx(b),
+        y: sy(0) + 26,
+        fill: "#176b52",
+        "font-size": 18,
+        "font-weight": 700,
+        "text-anchor": "middle"
+      });
+      bLabel.textContent = String(b).replace(".", ",");
+      svg.appendChild(bLabel);
+    }
+
+    function drawFractionLabel(svg, x, y, numerator, denominator, color, anchor = "middle") {
+      const width = 30;
+      const offset = anchor === "end" ? -width / 2 : 0;
+      const group = svgEl("g", { transform: `translate(${x + offset} ${y})` });
+      const top = svgEl("text", {
+        x: 0,
+        y: -5,
+        fill: color,
+        "font-size": 16,
+        "font-weight": 700,
+        "text-anchor": "middle"
+      });
+      setSvgMathText(top, numerator);
+      group.appendChild(top);
+      group.appendChild(svgEl("line", {
+        x1: -width / 2,
+        y1: 0,
+        x2: width / 2,
+        y2: 0,
+        stroke: color,
+        "stroke-width": 2
+      }));
+      const bottom = svgEl("text", {
+        x: 0,
+        y: 16,
+        fill: color,
+        "font-size": 16,
+        "font-weight": 700,
+        "text-anchor": "middle"
+      });
+      setSvgMathText(bottom, denominator);
+      group.appendChild(bottom);
+      svg.appendChild(group);
+    }
+
+    function drawIntercepts(svg, mode = "particular") {
+      const points = mode === "generalC"
+        ? [{ b: 0, c: 5, label: "R/pC", numerator: "R", denominator: "pC", color: "#176b52", axisLabel: "y" }]
+        : mode === "particularC"
+          ? [{ b: 0, c: 5, label: "5", color: "#176b52", axisLabel: "y" }]
+          : mode === "generalBoth"
+          ? [
+              { b: 0, c: 5, label: "R/pC", numerator: "R", denominator: "pC", color: "#176b52", axisLabel: "y" },
+              { b: 10, c: 0, label: "R/pB", numerator: "R", denominator: "pB", color: "#c98c2d", axisLabel: "x" }
+            ]
+          : [
+              { b: 0, c: 5, label: "5", color: "#176b52", axisLabel: "y" },
+              { b: 10, c: 0, label: "10", color: "#c98c2d", axisLabel: "x" }
+            ];
+
+      points.forEach((point) => {
+        svg.appendChild(svgEl("circle", {
+          cx: sx(point.b),
+          cy: sy(point.c),
+          r: 8,
+          fill: point.color,
+          stroke: "white",
+          "stroke-width": 3
+        }));
+        const labelPosition = point.axisLabel === "y"
+          ? { x: sx(0) - 25, y: sy(point.c), anchor: "end" }
+          : point.axisLabel === "x"
+            ? { x: sx(point.b) - 4, y: sy(0) + 23, anchor: "middle" }
+            : { x: sx(point.b) + 12, y: sy(point.c) - 12, anchor: "start" };
+
+        if (point.numerator && point.denominator) {
+          drawFractionLabel(svg, labelPosition.x, labelPosition.y, point.numerator, point.denominator, point.color, labelPosition.anchor);
+          return;
+        }
+
+        const label = svgEl("text", {
+          x: point.axisLabel === "y" ? labelPosition.x + 9 : labelPosition.x,
+          y: point.axisLabel === "y" ? labelPosition.y + 6 : labelPosition.y + 11,
+          fill: point.color,
+          "font-size": 20,
+          "font-weight": 700,
+          "text-anchor": labelPosition.anchor
+        });
+        label.textContent = point.label;
+        svg.appendChild(label);
+      });
+    }
+
+    function setStageWithGraph(title, graph, extra = "") {
+      stage.innerHTML = `<div class="graph-wrap"><div class="banner">${title}</div><div id="graphMount"></div>${extra}</div>`;
+      document.getElementById("graphMount").appendChild(graph);
+    }
+
+    function setFeedback(text, type = "ok") {
+      feedback.innerHTML = text;
+      feedback.style.color = type === "ok" ? "var(--green)" : "var(--red)";
+    }
+
+    function renderCoverPage() {
+      stage.innerHTML = `
+          <div class="cover-page">
+          <div class="cover-author">Auteur : Tanguy van Ypersele · © Tous droits réservés</div>
+          <div class="cover-author">Programmation effectuée à l'aide de l'IA.</div>
+          <div class="cover-title">La contrainte de budget</div>
+          <div class="formula-card">
+            <p>Dans ce module, nous allons apprendre à :</p>
+            <ul class="cover-list">
+              <li>comprendre pourquoi le revenu limite les choix du consommateur ;</li>
+              <li>écrire la contrainte budgétaire d'un panier ;</li>
+              <li>tracer la droite de budget à partir de ses deux points extrêmes ;</li>
+              <li>interpréter les déplacements de la droite lorsque les prix ou le revenu changent.</li>
+            </ul>
+          </div>
+          <button id="commencerButton" class="primary btn-start">Commencer →</button>
+        </div>
+      `;
+      interaction.innerHTML = "";
+      interactionPanel.style.display = "none";
+      document.getElementById("commencerButton").addEventListener("click", () => {
+        state.step = 1;
+        update();
+      });
+    }
+
+    function renderContextSlide() {
+      stage.innerHTML = `
+        <div class="context-diagram">
+          <div class="context-box done">
+            <div class="context-tag">Module 1 ✓</div>
+            <div class="context-name">Préférences</div>
+            <div class="context-sub">courbes d'indifférence</div>
+          </div>
+          <div class="context-op">+</div>
+          <div class="context-box current">
+            <div class="context-tag">Module 2 — vous êtes ici</div>
+            <div class="context-name">Contrainte de budget</div>
+            <div class="context-sub">droite de budget</div>
+          </div>
+          <div class="context-op">→</div>
+          <div class="context-box upcoming">
+            <div class="context-tag">Module 3</div>
+            <div class="context-name">Choix optimal</div>
+            <div class="context-sub">point de tangence</div>
+          </div>
+        </div>
+      `;
+      interaction.innerHTML = "";
+    }
+
+    function renderUnlimitedChoice() {
+      setStageWithGraph("<span class=\"banner-one-line\">Les courbes d'indifférence décrivent les préférences dans le plan des biens B et C.</span>", drawBaseGraph([
+        { label: "P₁", b: 2, c: 4.5, color: "#b6483b" },
+        { label: "P₂", b: 4, c: 2.4, color: "#176b52" }
+      ]));
+      interaction.innerHTML = `
+        <p class="choice-prompt">Sans contrainte et avec non-satiété, que voudrait consommer l'agent ?</p>
+        <div class="button-row">
+          <button data-answer="p1">P₁ = (2 ; 4,5)</button>
+          <button data-answer="p2">P₂ = (4 ; 2,4)</button>
+          <button data-answer="infinite">Une quantité infinie des deux biens</button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === "infinite") {
+            state.answered.add("unlimited");
+            setFeedback("Exact. P₁ et P₂ sont des paniers finis sur une courbe d'indifférence. Sans contrainte et avec non-satiété, l'agent voudrait toujours plus de bien B et de bien C.");
+          } else {
+            setFeedback("Pas encore. Ce panier reste fini. S'il n'y a aucune contrainte et si plus est toujours mieux, l'agent voudrait davantage des deux biens.", "error");
+          }
+          updateNav();
+        });
+      });
+    }
+
+    function renderInfiniteWant() {
+      setStageWithGraph("<span class=\"banner-compact-one-line\">Sans contrainte, il n'y a pas de meilleur panier fini : l'agent veut aller toujours plus loin.</span>", drawBaseGraph([], { arrow: true }));
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <div class="formula">Malheureusement, la question se pose rarement dans ces termes : nous sommes contraints par notre budget.</div>
+        </div>
+      `;
+    }
+
+    function renderBudgetSetup() {
+      stage.innerHTML = `
+        <div class="basket-grid">
+          <article class="basket-card"><strong>Revenu disponible</strong><p>R = 100 euros</p></article>
+          <article class="basket-card"><strong>Prix du bien B</strong><p>p<sub>B</sub> = 10 euros</p></article>
+          <article class="basket-card"><strong>Prix du bien C</strong><p>p<sub>C</sub> = 20 euros</p></article>
+          <article class="basket-card"><strong>Question</strong><p>Quels paniers le consommateur peut-il acheter ?</p></article>
+        </div>
+      `;
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Pour l'instant, restons dans un calcul simple : chaque panier a un coût, et ce coût doit être comparé au revenu disponible.</p>
+        </div>
+      `;
+    }
+
+    function renderAffordabilityQuiz(item) {
+      const cost = item.b * config.pB + item.c * config.pC;
+      const costIsChecked = state.costChecked.has(item.key);
+      stage.innerHTML = `
+        <div class="basket-grid">
+          <article class="basket-card"><strong>${item.label}</strong><p>${item.b} unités de bien B</p><p>${item.c} unités de bien C</p></article>
+          <article class="basket-card"><strong>Prix</strong><p>p<sub>B</sub> = ${config.pB} euros</p><p>p<sub>C</sub> = ${config.pC} euros</p></article>
+          <article class="basket-card"><strong>Revenu</strong><p>R = ${config.income} euros</p></article>
+          <article class="basket-card"><strong>Calcul à faire</strong><p>Combien coûte ${item.label} ?</p></article>
+        </div>
+      `;
+
+      if (!costIsChecked) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Combien coûte ${item.label} ?</p>
+          <div class="button-row">
+            <input id="costInput" type="number" min="0" step="1" aria-label="Coût du panier en euros" />
+            <button id="checkCostButton" class="primary" type="button">Vérifier</button>
+          </div>
+        `;
+        document.getElementById("checkCostButton").addEventListener("click", () => {
+          const value = Number(document.getElementById("costInput").value);
+          if (value === cost) {
+            state.costChecked.add(item.key);
+            setFeedback(`Exact. ${item.label} coûte ${config.pB} × ${item.b} + ${config.pC} × ${item.c} = ${cost} euros.`);
+            renderAffordabilityQuiz(item);
+            updateNav();
+          } else {
+            setFeedback(`Pas encore. Calculez ${config.pB} × ${item.b} + ${config.pC} × ${item.c}.`, "error");
+          }
+        });
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">${item.label} coûte ${cost} euros. Le revenu de 100 euros suffit-il pour l'acheter ?</p>
+        <div class="button-row">
+          <button data-answer="yes">Oui, ce panier est dans ses moyens</button>
+          <button data-answer="no">Non, ce panier est trop cher</button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === item.correct) {
+            state.answered.add(item.key);
+            const verdict = item.correct === "yes" ? "inférieure ou égale" : "supérieure";
+            setFeedback(`Exact. La dépense de ${cost} euros est ${verdict} au revenu de 100 euros.`);
+          } else {
+            setFeedback(`Comparez bien : ${item.label} coûte ${cost} euros et le revenu est de 100 euros.`, "error");
+          }
+          updateNav();
+        });
+      });
+    }
+
+    function renderBudgetCondition() {
+      stage.innerHTML = `
+        <div class="formula-card">
+          <p>Nous avons toujours fait la même opération :</p>
+          <div class="formula">dépense du panier ≤ revenu</div>
+          <p>Il reste à écrire cette idée avec les prix et les quantités.</p>
+        </div>
+      `;
+      interaction.innerHTML = `
+        <div class="formula-builder">
+          <p class="choice-prompt">À l'aide de la palette ici en bas, construisez la condition qui permet de vérifier qu'un panier (B,C) est dans le budget.</p>
+          <div class="builder-line" aria-label="Constructeur de contrainte budgétaire">
+            <button class="formula-slot" data-slot="0" type="button"></button>
+            <button class="formula-slot" data-slot="1" type="button"></button>
+            <button class="formula-slot" data-slot="2" type="button"></button>
+            <button class="formula-slot" data-slot="3" type="button"></button>
+            <button class="formula-slot" data-slot="4" type="button"></button>
+            <button class="formula-slot" data-slot="5" type="button"></button>
+            <button class="formula-slot" data-slot="6" type="button"></button>
+            <button class="formula-slot" data-slot="7" type="button"></button>
+            <button class="formula-slot" data-slot="8" type="button"></button>
+          </div>
+          <div class="token-bank" aria-label="Éléments disponibles">
+            <button type="button" data-token="pB">p<sub>B</sub></button>
+            <button type="button" data-token="pC">p<sub>C</sub></button>
+            <button type="button" data-token="B">B</button>
+            <button type="button" data-token="C">C</button>
+            <button type="button" data-token="sqrtB">√B</button>
+            <button type="button" data-token="sqrtC">√C</button>
+            <button type="button" data-token="+">+</button>
+            <button type="button" data-token="-">−</button>
+            <button type="button" data-token="*">×</button>
+            <button type="button" data-token="le">≤</button>
+            <button type="button" data-token="gt">&gt;</button>
+            <button type="button" data-token="eq">=</button>
+            <button type="button" data-token="R">R</button>
+          </div>
+          <div class="button-row">
+            <button id="resetFormulaButton" type="button">Effacer</button>
+            <button id="checkFormulaButton" class="primary" type="button">Vérifier</button>
+          </div>
+        </div>
+      `;
+      const slots = Array.from(interaction.querySelectorAll("[data-slot]"));
+      const validFormulas = [
+        ["pB", "*", "B", "+", "pC", "*", "C", "le", "R"],
+        ["B", "*", "pB", "+", "pC", "*", "C", "le", "R"],
+        ["pB", "*", "B", "+", "C", "*", "pC", "le", "R"],
+        ["B", "*", "pB", "+", "C", "*", "pC", "le", "R"],
+        ["pC", "*", "C", "+", "pB", "*", "B", "le", "R"],
+        ["C", "*", "pC", "+", "pB", "*", "B", "le", "R"],
+        ["pC", "*", "C", "+", "B", "*", "pB", "le", "R"],
+        ["C", "*", "pC", "+", "B", "*", "pB", "le", "R"]
+      ];
+      const labels = {
+        pB: "<span class=\"price-token\">p<sub>B</sub></span>",
+        pC: "<span class=\"price-token\">p<sub>C</sub></span>",
+        B: "B",
+        C: "C",
+        sqrtB: "√B",
+        sqrtC: "√C",
+        "+": "+",
+        "-": "−",
+        "*": "×",
+        le: "≤",
+        gt: "&gt;",
+        eq: "=",
+        R: "R"
+      };
+
+      function slotValues() {
+        return slots.map((slot) => slot.dataset.value || "");
+      }
+
+      function setSlot(slot, value) {
+        slot.dataset.value = value;
+        slot.innerHTML = labels[value];
+        slot.classList.add("filled");
+      }
+
+      function clearSlot(slot) {
+        delete slot.dataset.value;
+        slot.innerHTML = "";
+        slot.classList.remove("filled");
+      }
+
+      function firstEmptySlot() {
+        return slots.find((slot) => !slot.dataset.value);
+      }
+
+      interaction.querySelectorAll("[data-token]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const slot = firstEmptySlot();
+          if (!slot) {
+            setFeedback("Toutes les cases sont déjà remplies. Vous pouvez effacer une case en cliquant dessus.", "error");
+            return;
+          }
+          setSlot(slot, button.dataset.token);
+        });
+      });
+
+      slots.forEach((slot) => {
+        slot.addEventListener("click", () => {
+          if (slot.dataset.value) clearSlot(slot);
+        });
+      });
+
+      document.getElementById("resetFormulaButton").addEventListener("click", () => {
+        slots.forEach(clearSlot);
+        setFeedback("");
+      });
+
+      document.getElementById("checkFormulaButton").addEventListener("click", () => {
+        const values = slotValues();
+        const isComplete = values.every(Boolean);
+        const isCorrect = validFormulas.some((formula) => formula.every((value, index) => values[index] === value));
+        if (!isComplete) {
+          setFeedback("Il reste des cases à remplir avant de vérifier.", "error");
+        } else if (isCorrect) {
+          state.answered.add("condition");
+          setFeedback("Exact. Le panier est accessible si la somme des deux dépenses ne dépasse pas R.");
+          updateNav();
+        } else {
+          setFeedback("Pas encore. Pour chaque bien, il faut multiplier son prix par sa quantité, puis additionner les deux dépenses.", "error");
+        }
+      });
+    }
+
+    function renderBudgetBasketsGraph() {
+      setStageWithGraph("Les deux paniers testés apparaissent maintenant dans le plan B C.", drawBaseGraph([
+        { label: "P₁", b: 4, c: 2, color: "#176b52" },
+        { label: "P₂", b: 7, c: 2, color: "#b6483b" }
+      ], { showCurves: false }));
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>P₁ coûte 80 euros : il est accessible. P₂ coûte 110 euros : il ne l'est pas.</p>
+          <p>Pour représenter l'ensemble des paniers accessibles, commençons par tracer la frontière : tous les paniers qui coûtent exactement le budget.</p>
+          <div class="formula">10B + 20C = 100</div>
+        </div>
+      `;
+    }
+
+    function renderSolveBudgetEquation() {
+      stage.innerHTML = `
+        <div class="formula-card">
+          <p>La frontière du budget est donnée par :</p>
+          <div class="formula">10B + 20C = 100</div>
+          <p>La droite budgétaire met en évidence un arbitrage : plus le consommateur choisit une quantité élevée de bien B, moins il lui reste de revenu pour consommer le bien C.</p>
+          <p>Pour tracer cette frontière, il est utile d'écrire C en fonction de B.</p>
+        </div>
+      `;
+      interaction.innerHTML = `
+        <p class="choice-prompt">En partant de 10B + 20C = 100, quelle expression de C obtient-on ?</p>
+        <div class="button-row">
+          <button data-answer="correct">C = (100 − 10B) / 20</button>
+          <button data-answer="wrong1">C = 100 − 10B / 20</button>
+          <button data-answer="wrong2">C = (100 + 10B) / 20</button>
+          <button data-answer="wrong3">C = 100 / (10B + 20)</button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === "correct") {
+            state.answered.add("solveC");
+            setFeedback("Exact. Pour chaque quantité de B, cette formule donne la quantité de C qui utilise exactement tout le budget.");
+            updateNav();
+          } else {
+            setFeedback("Pas encore. Isolez d'abord 20C : 20C = 100 − 10B, puis divisez toute l'expression par 20.", "error");
+          }
+        });
+      });
+    }
+
+    function renderBudgetCQuestion() {
+      const b = 4;
+      const c = (config.income - config.pB * b) / config.pC;
+      const firstSolved = state.answered.has("readC");
+      const clicked = state.answered.has("readCPoint");
+      const clickB = 1;
+      const clickC = (config.income - config.pB * clickB) / config.pC;
+      const guide = clicked ? { b: clickB, c: clickC } : firstSolved ? { b, c } : null;
+
+      setStageWithGraph(
+        "<span class=\"banner-one-line\">Pour une quantité donnée de B, la droite indique la quantité maximale de C.</span>",
+        drawBaseGraph([], {
+          budgetLine: true,
+          showCurves: false,
+          budgetGuide: guide
+        })
+      );
+
+      if (firstSolved) {
+        if (clicked) {
+          interactionPanel.classList.add("info-only");
+          interaction.innerHTML = `
+            <div class="formula-card">
+              <p>Lecture graphique : pour B = ${clickB}, la contrainte budgétaire donne C = ${String(clickC).replace(".", ",")}.</p>
+              <p>Ce point est sur la droite parce qu'il utilise exactement tout le budget.</p>
+            </div>
+          `;
+          return;
+        }
+
+        feedback.textContent = "";
+        interaction.innerHTML = `
+          <p class="choice-prompt">Deuxième étape : si le consommateur achète B = ${clickB}, pointez sur le graphique la quantité maximale de bien C qu'il peut acheter.</p>
+          <p>Vous pouvez cliquer soit sur la droite budgétaire, soit sur l'axe des ordonnées à la hauteur correspondante.</p>
+        `;
+        const svg = document.querySelector("#graphMount svg");
+        svg.addEventListener("click", (event) => {
+          const bounds = svg.getBoundingClientRect();
+          const unitX = toUnitX((event.clientX - bounds.left) * (config.size / bounds.width));
+          const unitY = toUnitY((event.clientY - bounds.top) * (config.size / bounds.height));
+          const nearBudgetPoint = Math.hypot(unitX - clickB, unitY - clickC) <= 0.75;
+          const nearOrdinate = unitX <= 0.75 && Math.abs(unitY - clickC) <= 0.75;
+
+          if (nearBudgetPoint || nearOrdinate) {
+            state.answered.add("readCPoint");
+            setFeedback(`Exact. Si B = ${clickB}, alors C = ${String(clickC).replace(".", ",")}. La contrainte indique donc la quantité maximale de C compatible avec ce choix de B.`);
+            renderBudgetCQuestion();
+            updateNav();
+          } else {
+            setFeedback(`Pas encore. Cherchez la hauteur C = ${String(clickC).replace(".", ",")} : soit sur la droite pour B = ${clickB}, soit sur l'axe vertical.`, "error");
+          }
+        });
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">Si le consommateur achète B = ${b}, quelle quantité maximale de bien C peut-il acheter avec son budget ?</p>
+        <div class="button-row">
+          <input id="maxCInput" type="number" min="0" step="0.5" aria-label="Quantité maximale de bien C" />
+          <button id="checkMaxCButton" class="primary" type="button">Vérifier</button>
+        </div>
+      `;
+      document.getElementById("checkMaxCButton").addEventListener("click", () => {
+        const value = Number(document.getElementById("maxCInput").value);
+        if (Math.abs(value - c) < 0.001) {
+          state.answered.add("readC");
+          setFeedback(`Exact. Si B = ${b}, alors C = (100 − 10 × ${b}) / 20 = ${c}.`);
+          renderBudgetCQuestion();
+          updateNav();
+        } else {
+          setFeedback(`Pas encore. Utilisez C = (100 − 10B) / 20 avec B = ${b}.`, "error");
+        }
+      });
+    }
+
+    function renderParticularIntercepts() {
+      const cFound = state.answered.has("particularCIntercept");
+      const bFound = state.answered.has("particularBIntercept");
+      const intercepts = bFound ? "particular" : cFound ? "particularC" : null;
+
+      setStageWithGraph(
+        bFound
+          ? "Les deux points faciles sont maintenant placés."
+          : "Construisons les deux points faciles de la droite budgétaire.",
+        drawBaseGraph([], {
+          budgetLine: false,
+          showCurves: false,
+          intercepts
+        })
+      );
+
+      if (!cFound) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Si le consommateur ne consomme pas de bien B, combien de bien C peut-il acheter au maximum ?</p>
+          <div class="formula-card">
+            <p>Le revenu est de 100 euros, p<sub>B</sub> = 10 et p<sub>C</sub> = 20. Ici, B = 0.</p>
+            <div class="button-row">
+              <input id="interceptCInput" type="number" min="0" step="0.5" aria-label="Quantité maximale de bien C" />
+              <button id="checkInterceptC" class="primary" type="button">Vérifier</button>
+            </div>
+          </div>
+        `;
+        document.getElementById("checkInterceptC").addEventListener("click", () => {
+          const value = Number(document.getElementById("interceptCInput").value.replace(",", "."));
+          if (Math.abs(value - 5) < 0.001) {
+            state.answered.add("particularCIntercept");
+            setFeedback("Exact. Si B = 0, alors 20C = 100, donc C = 5. Nous plaçons le point vert sur l'axe des ordonnées.");
+            renderParticularIntercepts();
+            updateNav();
+          } else {
+            setFeedback("Pas encore. Quand B = 0, toute la dépense va dans le bien C : il faut calculer 100 / 20.", "error");
+          }
+        });
+        return;
+      }
+
+      if (!bFound) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Même raisonnement : si le consommateur ne consomme pas de bien C, combien de bien B peut-il acheter au maximum ?</p>
+          <div class="formula-card">
+            <p>Le revenu est de 100 euros, p<sub>B</sub> = 10 et p<sub>C</sub> = 20. Ici, C = 0.</p>
+            <div class="button-row">
+              <input id="interceptBInput" type="number" min="0" step="0.5" aria-label="Quantité maximale de bien B" />
+              <button id="checkInterceptB" class="primary" type="button">Vérifier</button>
+            </div>
+          </div>
+        `;
+        document.getElementById("checkInterceptB").addEventListener("click", () => {
+          const value = Number(document.getElementById("interceptBInput").value.replace(",", "."));
+          if (Math.abs(value - 10) < 0.001) {
+            state.answered.add("particularBIntercept");
+            setFeedback("Exact. Si C = 0, alors 10B = 100, donc B = 10. Nous avons maintenant deux points.");
+            renderParticularIntercepts();
+            updateNav();
+          } else {
+            setFeedback("Pas encore. Quand C = 0, toute la dépense va dans le bien B : il faut calculer 100 / 10.", "error");
+          }
+        });
+        return;
+      }
+
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Nous avons construit les deux paniers extrêmes : uniquement du bien C, puis uniquement du bien B.</p>
+          <div class="formula">(0,5) et (10,0)</div>
+          <p>Une fois que deux points sont placés, il n’existe qu’une seule droite qui passe par ces deux points.</p>
+        </div>
+      `;
+    }
+
+    function renderParticularBudgetLine() {
+      setStageWithGraph(
+        "La droite qui passe par ces deux points est la droite de budget.",
+        drawBaseGraph([], {
+          budgetLine: true,
+          showCurves: false,
+          intercepts: "particular"
+        })
+      );
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Cette droite rassemble tous les paniers qui coûtent exactement 100 euros.</p>
+          <div class="formula">10B + 20C = 100</div>
+          <p>Elle forme la frontière entre les paniers accessibles et les paniers trop chers.</p>
+        </div>
+      `;
+    }
+
+    function renderBudgetSetDefinition() {
+      setStageWithGraph(
+        "L'ensemble de budget est le triangle situé sous la droite.",
+        drawBaseGraph([], {
+          budgetArea: true,
+          budgetLine: true,
+          budgetLabel: "pB B + pC C = R",
+          showCurves: false,
+          intercepts: "generalBoth"
+        })
+      );
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>L'ensemble de budget est l'ensemble des paniers qui respectent la contrainte de budget.</p>
+          <div class="formula">p<sub>B</sub>B + p<sub>C</sub>C ≤ R</div>
+          <p>Graphiquement, c'est le triangle coloré situé sous la droite de budget.</p>
+          <p>La droite seule rassemble les paniers qui coûtent exactement le revenu R.</p>
+        </div>
+      `;
+    }
+
+    function renderBudgetSetQuiz() {
+      const baskets = [
+        { key: "budgetQuizP1", label: "P₁", b: 2, c: 2, relation: "less", color: "#176b52", showCoords: false },
+        { key: "budgetQuizP2", label: "P₂", b: 4, c: 3, relation: "equal", color: "#c98c2d", showCoords: false },
+        { key: "budgetQuizP3", label: "P₃", b: 7, c: 2, relation: "more", color: "#b6483b", showCoords: false }
+      ];
+      const current = baskets.find((basket) => !state.answered.has(basket.key));
+      setStageWithGraph(
+        "Quels paniers respectent la contrainte de budget ?",
+        drawBaseGraph(baskets, {
+          budgetLine: true,
+          budgetLabel: false,
+          showCurves: false
+        })
+      );
+
+      if (!current) {
+        state.answered.add("budgetSetQuizDone");
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>Exact. Les paniers sous la droite coûtent moins que R, les paniers sur la droite coûtent exactement R, et les paniers au-dessus coûtent plus que R.</p>
+            <div class="formula">p<sub>B</sub>B + p<sub>C</sub>C ≤ R</div>
+          </div>
+        `;
+        updateNav();
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">À partir du graphique, ${current.label} coûte-t-il moins, plus, ou exactement 100 ?</p>
+        <div class="button-row">
+          <button data-answer="less">Moins que 100</button>
+          <button data-answer="equal">Exactement 100</button>
+          <button data-answer="more">Plus que 100</button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === current.relation) {
+            state.answered.add(current.key);
+            const message = current.relation === "less"
+              ? "Il est dans l'ensemble de budget, sous la droite."
+              : current.relation === "equal"
+                ? "Il est sur la droite de budget."
+                : "Il est en dehors de l'ensemble de budget, au-dessus de la droite.";
+            setFeedback(`Exact. ${message}`);
+            renderBudgetSetQuiz();
+            updateNav();
+          } else {
+            setFeedback("Regardez si le panier est sous la droite, sur la droite ou au-dessus de la droite.", "error");
+          }
+        });
+      });
+    }
+
+    function renderGeneralInterceptBuilder(kind) {
+      const isC = kind === "C";
+      const key = isC ? "generalCIntercept" : "generalBIntercept";
+      const expected = isC ? ["R", "/", "pC"] : ["R", "/", "pB"];
+      const answered = state.answered.has(key);
+      const mode = isC
+        ? answered ? "generalC" : null
+        : answered ? "generalBoth" : "generalC";
+      const drawLine = !isC && answered;
+      const prompt = isC
+        ? "Si le panier ne contient que du bien C, quelle quantité de C peut-on acheter ?"
+        : "Si le panier ne contient que du bien B, quelle quantité de B peut-on acheter ?";
+      const pointText = isC
+        ? "Le premier point est donc (0, R/p<sub>C</sub>)."
+        : "Le second point est donc (R/p<sub>B</sub>, 0).";
+
+      setStageWithGraph(
+        drawLine
+          ? "Les deux points généraux déterminent la droite de budget."
+          : isC
+            ? "Premier point général : le panier avec seulement du bien C."
+            : "Deuxième point général : le panier avec seulement du bien B.",
+        drawBaseGraph([], {
+          budgetLine: drawLine,
+          budgetLabel: "pB B + pC C = R",
+          showCurves: false,
+          intercepts: mode
+        })
+      );
+
+      if (answered) {
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>${pointText}</p>
+            <p>${drawLine ? "Une seule droite passe par ces deux points : c’est la droite de budget." : "Nous gardons ce point pour construire ensuite le second point facile."}</p>
+          </div>
+        `;
+        return;
+      }
+
+      interaction.innerHTML = `
+        <div class="formula-builder intercept-builder">
+          <p class="choice-prompt">${prompt}</p>
+          <div class="builder-workbench">
+            <div class="builder-line">
+              <button class="formula-slot" data-slot="0" type="button"></button>
+              <button class="formula-slot" data-slot="1" type="button"></button>
+              <button class="formula-slot" data-slot="2" type="button"></button>
+            </div>
+            <div class="token-bank">
+              <button type="button" data-token="R">R</button>
+              <button type="button" data-token="pB">p<sub>B</sub></button>
+              <button type="button" data-token="pC">p<sub>C</sub></button>
+              <button type="button" data-token="/">/</button>
+              <button type="button" data-token="+">+</button>
+            </div>
+          </div>
+          <div class="button-row">
+            <button id="resetFormulaButton" type="button">Effacer</button>
+            <button id="checkFormulaButton" class="primary" type="button">Vérifier</button>
+          </div>
+        </div>
+      `;
+
+      const slots = Array.from(interaction.querySelectorAll("[data-slot]"));
+      const labels = {
+        R: "R",
+        pB: '<span class="price-token">p<sub>B</sub></span>',
+        pC: '<span class="price-token">p<sub>C</sub></span>',
+        "/": "/",
+        "+": "+"
+      };
+
+      const clearSlot = (slot) => {
+        delete slot.dataset.value;
+        slot.innerHTML = "";
+        slot.classList.remove("filled");
+      };
+      const firstEmptySlot = () => slots.find((slot) => !slot.dataset.value);
+      const values = () => slots.map((slot) => slot.dataset.value || "");
+
+      interaction.querySelectorAll("[data-token]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const slot = firstEmptySlot();
+          if (!slot) {
+            setFeedback("Toutes les cases sont déjà remplies. Cliquez sur une case pour l’effacer.", "error");
+            return;
+          }
+          slot.dataset.value = button.dataset.token;
+          slot.innerHTML = labels[button.dataset.token];
+          slot.classList.add("filled");
+        });
+      });
+
+      slots.forEach((slot) => {
+        slot.addEventListener("click", () => clearSlot(slot));
+      });
+
+      document.getElementById("resetFormulaButton").addEventListener("click", () => {
+        slots.forEach(clearSlot);
+        setFeedback("");
+      });
+
+      document.getElementById("checkFormulaButton").addEventListener("click", () => {
+        const current = values();
+        const complete = current.every(Boolean);
+        const correct = expected.every((value, index) => current[index] === value);
+        if (!complete) {
+          setFeedback("Il reste des cases à remplir.", "error");
+        } else if (correct) {
+          state.answered.add(key);
+          setFeedback(`Exact. ${pointText}`);
+          renderGeneralInterceptBuilder(kind);
+          updateNav();
+        } else {
+          setFeedback(isC ? "Pas encore. Si tout le revenu est dépensé en C, il faut diviser R par le prix de C." : "Pas encore. Si tout le revenu est dépensé en B, il faut diviser R par le prix de B.", "error");
+        }
+      });
+    }
+
+    function drawBudgetLineForPrices(svg, pB, pC, attrs = {}) {
+      drawBudgetLineForValues(svg, config.income, pB, pC, attrs);
+    }
+
+    function drawBudgetLineForValues(svg, income, pB, pC, attrs = {}) {
+      const maxB = income / pB;
+      const maxC = income / pC;
+      const shownB = Math.min(maxB, config.max);
+      const shownC = Math.max(0, maxC - (pB / pC) * shownB);
+      svg.appendChild(svgEl("path", {
+        d: `M ${sx(0)} ${sy(maxC)} L ${sx(shownB)} ${sy(shownC)}`,
+        fill: "none",
+        stroke: attrs.stroke || "#b6483b",
+        "stroke-width": attrs.width || 4,
+        "stroke-linecap": "round",
+        "stroke-dasharray": attrs.dash || ""
+      }));
+    }
+
+    function drawAxisFraction(svg, kind, value, color, numerator = "R", denominator = "p") {
+      const point = kind === "B" ? { b: value, c: 0 } : { b: 0, c: value };
+      svg.appendChild(svgEl("circle", {
+        cx: sx(point.b),
+        cy: sy(point.c),
+        r: 7,
+        fill: color,
+        stroke: "white",
+        "stroke-width": 3
+      }));
+      if (kind === "B") {
+        drawFractionLabel(svg, sx(value), sy(0) + 24, numerator, denominator, color, "middle");
+      } else {
+        drawFractionLabel(svg, sx(0) - 25, sy(value), numerator, denominator, color, "end");
+      }
+    }
+
+    function drawMovementArrow(svg, from, to, color) {
+      svg.appendChild(svgEl("line", {
+        x1: from.x,
+        y1: from.y,
+        x2: to.x,
+        y2: to.y,
+        stroke: color,
+        "stroke-width": 3,
+        "stroke-linecap": "round"
+      }));
+      const angle = Math.atan2(to.y - from.y, to.x - from.x);
+      const size = 8;
+      const p1 = `${to.x},${to.y}`;
+      const p2 = `${to.x - size * Math.cos(angle - 0.55)},${to.y - size * Math.sin(angle - 0.55)}`;
+      const p3 = `${to.x - size * Math.cos(angle + 0.55)},${to.y - size * Math.sin(angle + 0.55)}`;
+      svg.appendChild(svgEl("polygon", { points: `${p1} ${p2} ${p3}`, fill: color }));
+    }
+
+    function drawPriceChangeGraph(kind) {
+      const svg = drawBaseGraph([], { showCurves: false });
+      const oldPB = config.pB;
+      const oldPC = config.pC;
+      const newPB = kind === "B" ? 20 : oldPB;
+      const newPC = kind === "C" ? 25 : oldPC;
+      const oldB = config.income / oldPB;
+      const oldC = config.income / oldPC;
+      const newB = config.income / newPB;
+      const newC = config.income / newPC;
+
+      drawBudgetLineForPrices(svg, oldPB, oldPC, { stroke: "#7d8990", width: 3, dash: "8 6" });
+      drawBudgetLineForPrices(svg, newPB, newPC, { stroke: "#b6483b", width: 4 });
+
+      drawAxisFraction(svg, "B", oldB, "#7d8990", "R", "pB");
+      drawAxisFraction(svg, "C", oldC, "#7d8990", "R", "pC");
+      drawAxisFraction(svg, "B", newB, kind === "B" ? "#c98c2d" : "#7d8990", "R", kind === "B" ? "pB'" : "pB");
+      drawAxisFraction(svg, "C", newC, kind === "C" ? "#176b52" : "#7d8990", "R", kind === "C" ? "pC'" : "pC");
+
+      if (kind === "B") {
+        drawMovementArrow(svg, { x: sx(oldB) - 16, y: sy(0) - 12 }, { x: sx(newB) + 16, y: sy(0) - 12 }, "#c98c2d");
+      } else {
+        drawMovementArrow(svg, { x: sx(0) + 16, y: sy(oldC) + 12 }, { x: sx(0) + 16, y: sy(newC) - 12 }, "#176b52");
+      }
+
+      const oldLabel = svgEl("text", { x: sx(5.9), y: sy(2.25), fill: "#7d8990", "font-size": 15, "font-weight": 700 });
+      oldLabel.textContent = "ancienne droite";
+      svg.appendChild(oldLabel);
+      const newLabel = svgEl("text", { x: sx(kind === "B" ? 2.3 : 5.2), y: sy(kind === "B" ? 3.55 : 1.25), fill: "#b6483b", "font-size": 15, "font-weight": 700 });
+      newLabel.textContent = "nouvelle droite";
+      svg.appendChild(newLabel);
+      return svg;
+    }
+
+    function drawBudgetSlopeGraph(showBalance) {
+      const svg = drawBaseGraph([], {
+        budgetLine: true,
+        budgetLabel: false,
+        showCurves: false
+      });
+      const start = { b: 4, c: 3 };
+      const moreB = { b: 6, c: 3 };
+      const balanced = { b: 6, c: 2 };
+
+      drawArrow(svg, start, moreB, "#c98c2d", 4);
+      const deltaB = svgEl("text", { x: sx(5) - 10, y: sy(3) - 14, fill: "#c98c2d", "font-size": 18, "font-weight": 700 });
+      deltaB.textContent = "ΔB";
+      svg.appendChild(deltaB);
+
+      if (showBalance) {
+        drawArrow(svg, moreB, balanced, "#176b52", 4);
+        const deltaC = svgEl("text", { x: sx(6) + 12, y: sy(2.55), fill: "#176b52", "font-size": 18, "font-weight": 700 });
+        deltaC.textContent = "ΔC";
+        svg.appendChild(deltaC);
+      }
+
+      [
+        { point: start, label: "P₁", color: "#176b52", dx: -30, dy: -12 },
+        { point: moreB, label: "hors budget", color: "#b6483b", dx: 12, dy: -12 },
+        ...(showBalance ? [{ point: balanced, label: "P₂", color: "#176b52", dx: 12, dy: 24 }] : [])
+      ].forEach(({ point, label, color, dx, dy }) => {
+        svg.appendChild(svgEl("circle", {
+          cx: sx(point.b),
+          cy: sy(point.c),
+          r: 8,
+          fill: color,
+          stroke: "white",
+          "stroke-width": 3
+        }));
+        const text = svgEl("text", {
+          x: sx(point.b) + dx,
+          y: sy(point.c) + dy,
+          fill: color,
+          "font-size": 17,
+          "font-weight": 700
+        });
+        text.textContent = label;
+        svg.appendChild(text);
+      });
+
+      return svg;
+    }
+
+    function renderBudgetSlopeQuiz() {
+      const intuitionAnswered = state.answered.has("budgetSlopeIntuition");
+      const overspendAnswered = state.answered.has("budgetSlopeOverspend");
+      const equationAnswered = state.answered.has("budgetSlopeEquation");
+
+      if (!intuitionAnswered) {
+        setStageWithGraph(
+          "Un premier calcul intuitif avant la formule générale.",
+          drawBudgetSlopeGraph(false),
+          `<div class="formula-card">
+            <p>Avec les valeurs numériques : p<sub>B</sub> = 10 € et p<sub>C</sub> = 20 €.</p>
+          </div>`
+        );
+        interaction.innerHTML = `
+          <p class="choice-prompt">Vous souhaitez acheter 1 unité de bien B de plus. Pour rester dans votre budget, combien d'unités de bien C devez-vous abandonner ?</p>
+          <div class="button-row">
+            <button data-answer="half">0,5 unité de C</button>
+            <button data-answer="one">1 unité de C</button>
+            <button data-answer="two">2 unités de C</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "half") {
+              state.answered.add("budgetSlopeIntuition");
+              setFeedback("Exact. 1 unité de B coûte 10 € ; 1 unité de C coûte 20 €. Une unité de B « vaut » donc 10/20 = 0,5 unité de C.");
+              renderBudgetSlopeQuiz();
+              updateNav();
+            } else if (button.dataset.answer === "two") {
+              setFeedback("Pas encore. C'est le rapport inverse : c'est B qui coûte moins cher que C, pas l'inverse.", "error");
+            } else {
+              setFeedback("Pas encore. Comparez les prix : p<sub>B</sub> = 10 € et p<sub>C</sub> = 20 €. Pour équilibrer 10 €, combien d'unités à 20 € faut-il ?", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      setStageWithGraph(
+        overspendAnswered
+          ? "Pour rester sur la droite, il faut réduire la quantité de bien C."
+          : "Si B augmente sans réduire C, le panier dépasse le budget.",
+        drawBudgetSlopeGraph(overspendAnswered),
+        `<div class="formula-card">
+          <p>Nous partons d'un panier situé sur la droite de budget.</p>
+          <p>La question est : de combien de bien C faut-il se défaire pour consommer une unité de bien B en plus ?</p>
+        </div>`
+      );
+
+      if (equationAnswered) {
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>La dépense supplémentaire en bien B doit être exactement compensée par l'économie réalisée sur le bien C.</p>
+            <div class="formula">
+              ΔC × p<sub>C</sub> = ΔB × p<sub>B</sub>
+              &lt;=&gt;
+              <span class="math-frac"><span class="top">ΔC</span><span class="bottom">ΔB</span></span>
+              =
+              <span class="math-frac"><span class="top">p<sub>B</sub></span><span class="bottom">p<sub>C</sub></span></span>
+            </div>
+            <p>La pente de la droite est négative, mais sa valeur absolue est p<sub>B</sub>/p<sub>C</sub>.</p>
+          </div>
+        `;
+        updateNav();
+        return;
+      }
+
+      if (!overspendAnswered) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Si le consommateur prend ΔB unités de bien B en plus tout en gardant le même nombre de C, de combien dépasse-t-il son budget ?</p>
+          <div class="button-row">
+            <button data-answer="correct">p<sub>B</sub> × ΔB</button>
+            <button data-answer="wrong1">p<sub>C</sub> × ΔB</button>
+            <button data-answer="wrong2">p<sub>B</sub> / ΔB</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "correct") {
+              state.answered.add("budgetSlopeOverspend");
+              setFeedback("Exact. Le supplément de bien B coûte p<sub>B</sub> × ΔB : c'est le dépassement à compenser.");
+              renderBudgetSlopeQuiz();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. Le dépassement vient du bien B supplémentaire : prix de B multiplié par quantité supplémentaire de B.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">Quelle condition permet de réduire C juste assez pour revenir sur la droite de budget ?</p>
+        <div class="button-row">
+          <button data-answer="correct">ΔC × p<sub>C</sub> = ΔB × p<sub>B</sub></button>
+          <button data-answer="wrong1">ΔC × p<sub>B</sub> = ΔB × p<sub>C</sub></button>
+          <button data-answer="wrong2">ΔC + p<sub>C</sub> = ΔB + p<sub>B</sub></button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === "correct") {
+            state.answered.add("budgetSlopeEquation");
+            setFeedback("Exact. L'économie réalisée sur C doit compenser exactement le coût du supplément de B.");
+            renderBudgetSlopeQuiz();
+            updateNav();
+          } else {
+            setFeedback("Pas encore. Il faut égaliser deux montants en euros : l'économie sur C et le coût du supplément de B.", "error");
+          }
+        });
+      });
+    }
+
+    function renderBudgetSlopeSummary() {
+      setStageWithGraph(
+        "La pente est un taux d'échange imposé par les prix du marché.",
+        drawBudgetSlopeGraph(true),
+        `<div class="formula-card">
+          <p>Sur la droite de budget, chaque panier coûte exactement le même revenu.</p>
+          <p>Obtenir plus de bien B oblige donc à céder du bien C.</p>
+        </div>`
+      );
+      interactionPanel.classList.add("info-only");
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>La valeur absolue de la pente indique combien d'unités de bien C il faut sacrifier pour obtenir une unité supplémentaire de bien B.</p>
+          <div class="formula">
+            |pente| =
+            <span class="math-frac"><span class="top">ΔC</span><span class="bottom">ΔB</span></span>
+            =
+            <span class="math-frac"><span class="top">p<sub>B</sub></span><span class="bottom">p<sub>C</sub></span></span>
+          </div>
+          <p>Avec p<sub>B</sub> = 10 et p<sub>C</sub> = 20, pour une unité supplémentaire de bien B, il faut sacrifier 0,5 unité de bien C.</p>
+          <p>C'est le taux auquel le marché échange le bien B contre le bien C.</p>
+        </div>
+      `;
+    }
+
+    function renderPriceChangeQuiz() {
+      const bOwnDone = state.answered.has("priceBOwn");
+      const bOtherDone = state.answered.has("priceBOther");
+      const cOwnDone = state.answered.has("priceCOwn");
+
+      const doingB = !bOtherDone;
+      const isB = doingB;
+      const ownKey = isB ? "priceBOwn" : "priceCOwn";
+      const otherKey = isB ? "priceBOther" : "priceCOther";
+      const ownAnswered = isB ? bOwnDone : cOwnDone;
+
+      const phaseLabel = isB
+        ? "Hausse de p<sub>B</sub> — regardons les points où la droite coupe les axes."
+        : "Hausse de p<sub>C</sub> — maintenant regardons les intercepts pour p<sub>C</sub>.";
+
+      setStageWithGraph(
+        phaseLabel,
+        drawBaseGraph([], {
+          budgetLine: true,
+          budgetLabel: "pB B + pC C = R",
+          showCurves: false,
+          intercepts: "generalBoth"
+        }),
+        `<div class="formula-card">
+          <p>Revenu inchangé : R. Nous augmentons seulement ${isB ? "p<sub>B</sub>" : "p<sub>C</sub>"}.</p>
+          <p>La pente de la droite de budget est −p<sub>B</sub>/p<sub>C</sub>.</p>
+        </div>`
+      );
+
+      if (!ownAnswered) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">${isB ? "Dans quelle direction se déplace R/p<sub>B</sub> lorsque p<sub>B</sub> augmente ?" : "Dans quelle direction se déplace R/p<sub>C</sub> lorsque p<sub>C</sub> augmente ?"}</p>
+          <div class="button-row">
+            <button data-answer="down">${isB ? "Vers la gauche" : "Vers le bas"}</button>
+            <button data-answer="up">${isB ? "Vers la droite" : "Vers le haut"}</button>
+            <button data-answer="none">Pas de changement</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "down") {
+              state.answered.add(ownKey);
+              setFeedback(isB
+                ? "Exact. Si p<sub>B</sub> augmente, R/p<sub>B</sub> diminue : l’interception sur l’axe B se déplace vers la gauche."
+                : "Exact. Si p<sub>C</sub> augmente, R/p<sub>C</sub> diminue : l’interception sur l’axe C se déplace vers le bas.");
+              renderPriceChangeQuiz();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. Le revenu est divisé par un prix plus grand, donc la quantité maximale diminue.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">${isB ? "Que devient R/p<sub>C</sub> lorsque p<sub>B</sub> augmente ?" : "Que devient R/p<sub>B</sub> lorsque p<sub>C</sub> augmente ?"}</p>
+        <div class="button-row">
+          <button data-answer="up">Vers le haut / la droite</button>
+          <button data-answer="down">Vers le bas / la gauche</button>
+          <button data-answer="none">Pas de changement</button>
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === "none") {
+            state.answered.add(otherKey);
+            setFeedback(isB
+              ? "Exact. R/p<sub>C</sub> ne change pas car p<sub>C</sub> et R restent constants."
+              : "Exact. R/p<sub>B</sub> ne change pas car p<sub>B</sub> et R restent constants.");
+            renderPriceChangeQuiz();
+            updateNav();
+          } else {
+            setFeedback(isB
+              ? "Attention : R/p<sub>C</sub> dépend de R et de p<sub>C</sub>, pas de p<sub>B</sub>."
+              : "Attention : R/p<sub>B</sub> dépend de R et de p<sub>B</sub>, pas de p<sub>C</sub>.", "error");
+          }
+        });
+      });
+    }
+
+    function renderPriceChangeResult() {
+      const bTradeoff = state.answered.has("priceBTradeoff");
+      const cResultDone = state.answered.has("priceCResultDone");
+
+      if (!bTradeoff) {
+        setStageWithGraph(
+          "Quand p<sub>B</sub> augmente, la droite pivote vers l’intérieur autour de R/p<sub>C</sub>.",
+          drawPriceChangeGraph("B")
+        );
+        interaction.innerHTML = `
+          <p class="choice-prompt">Si le prix du bien B augmente, que devient le sacrifice de bien C nécessaire pour obtenir une unité supplémentaire de bien B ?</p>
+          <div class="button-row">
+            <button data-answer="more">Il faut sacrifier plus de bien C</button>
+            <button data-answer="less">Il faut sacrifier moins de bien C</button>
+            <button data-answer="same">Le sacrifice ne change pas</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "more") {
+              state.answered.add("priceBTradeoff");
+              setFeedback("Exact. Comme p<sub>B</sub> augmente, p<sub>B</sub>/p<sub>C</sub> augmente : il faut sacrifier plus de C pour obtenir une unité de plus de B.");
+              renderPriceChangeResult();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. Quand B devient plus cher, une unité de plus de B coûte relativement plus en termes de C.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      if (!cResultDone) {
+        setStageWithGraph(
+          "Quand p<sub>C</sub> augmente, la droite pivote vers l’intérieur autour de R/p<sub>B</sub>.",
+          drawPriceChangeGraph("C")
+        );
+        interaction.innerHTML = `
+          <p class="choice-prompt">Si le prix du bien C augmente, que devient la pente de la droite de budget ?</p>
+          <div class="button-row">
+            <button data-answer="flatter">Elle diminue en valeur absolue — la droite est moins pentue</button>
+            <button data-answer="steeper">Elle augmente en valeur absolue — la droite est plus pentue</button>
+            <button data-answer="same">La pente ne change pas</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "flatter") {
+              state.answered.add("priceCResultDone");
+              state.answered.add("priceResultDone");
+              setFeedback("Exact. La pente vaut −p<sub>B</sub>/p<sub>C</sub> : si p<sub>C</sub> augmente, ce rapport diminue en valeur absolue — la droite pivote et devient moins pentue.");
+              renderPriceChangeResult();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. La pente est −p<sub>B</sub>/p<sub>C</sub> : si p<sub>C</sub> augmente, ce rapport change, mais dans quel sens ?", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      setStageWithGraph(
+        "Récapitulatif : les deux pivotements.",
+        drawPriceChangeGraph("B")
+      );
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p><strong>Hausse de p<sub>B</sub> :</strong> R/p<sub>B</sub> diminue (axe B se rapproche), R/p<sub>C</sub> fixe. La droite pivote autour de R/p<sub>C</sub> et devient <em>plus pentue</em>.</p>
+          <p><strong>Hausse de p<sub>C</sub> :</strong> R/p<sub>C</sub> diminue (axe C se rapproche), R/p<sub>B</sub> fixe. La droite pivote autour de R/p<sub>B</sub> et devient <em>moins pentue</em>.</p>
+          <p>Dans les deux cas, la pente −p<sub>B</sub>/p<sub>C</sub> change car les prix relatifs changent.</p>
+        </div>
+      `;
+    }
+
+    function drawIncomeChangeGraph(options = {}) {
+      const oldIncome = 60;
+      const newIncome = 100;
+      const svg = drawBaseGraph([], { showCurves: false });
+      const oldB = oldIncome / config.pB;
+      const oldC = oldIncome / config.pC;
+      const newB = newIncome / config.pB;
+      const newC = newIncome / config.pC;
+
+      drawBudgetLineForValues(svg, oldIncome, config.pB, config.pC, { stroke: "#7d8990", width: 3, dash: "8 6" });
+      if (options.showNewLine) {
+        drawBudgetLineForValues(svg, newIncome, config.pB, config.pC, { stroke: "#b6483b", width: 4 });
+      }
+
+      drawAxisFraction(svg, "C", oldC, "#7d8990", "R", "pC");
+      drawAxisFraction(svg, "B", oldB, "#7d8990", "R", "pB");
+
+      if (options.showC) {
+        drawAxisFraction(svg, "C", newC, "#176b52", "R'", "pC");
+        drawMovementArrow(svg, { x: sx(0) + 17, y: sy(oldC) - 12 }, { x: sx(0) + 17, y: sy(newC) + 12 }, "#176b52");
+      }
+
+      if (options.showB) {
+        drawAxisFraction(svg, "B", newB, "#c98c2d", "R'", "pB");
+        drawMovementArrow(svg, { x: sx(oldB) + 16, y: sy(0) - 14 }, { x: sx(newB) - 16, y: sy(0) - 14 }, "#c98c2d");
+      }
+
+      if (options.showNewLine) {
+        const oldLabel = svgEl("text", { x: sx(3.2), y: sy(1.55), fill: "#7d8990", "font-size": 15, "font-weight": 700 });
+        oldLabel.textContent = "ancien revenu";
+        svg.appendChild(oldLabel);
+        const newLabel = svgEl("text", { x: sx(4.6), y: sy(3.05), fill: "#b6483b", "font-size": 15, "font-weight": 700 });
+        newLabel.textContent = "nouveau revenu";
+        svg.appendChild(newLabel);
+      }
+
+      return svg;
+    }
+
+    function renderIncomeChangeQuiz() {
+      const cDone = state.answered.has("incomeCMove");
+      const bDone = state.answered.has("incomeBMove");
+      const slopeDone = state.answered.has("incomeSlope");
+
+      const graphTitle = slopeDone
+        ? "La pente ne change pas : la nouvelle droite est parallèle à l'ancienne."
+        : bDone
+          ? "Les deux points extrêmes se sont déplacés. Qu'en est-il de la pente ?"
+          : cDone
+            ? "Quand R augmente, observons le point extrême sur l'axe B."
+            : "Quand R augmente, observons d'abord le point extrême sur l'axe C.";
+
+      setStageWithGraph(
+        graphTitle,
+        drawIncomeChangeGraph({ showC: cDone, showB: bDone, showNewLine: slopeDone }),
+        `<div class="formula-card">
+          <p>Les prix restent constants : p<sub>B</sub> = 10 et p<sub>C</sub> = 20.</p>
+          <p>Le revenu augmente : il passe de 60 à 100.</p>
+        </div>`
+      );
+
+      if (!cDone) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Que devient R/p<sub>C</sub> lorsque R augmente ?</p>
+          <div class="button-row">
+            <button data-answer="up">Il monte</button>
+            <button data-answer="down">Il descend</button>
+            <button data-answer="none">Il ne change pas</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "up") {
+              state.answered.add("incomeCMove");
+              setFeedback("Exact. R est plus grand et p<sub>C</sub> ne change pas, donc R/p<sub>C</sub> augmente.");
+              renderIncomeChangeQuiz();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. Le numérateur augmente, tandis que p<sub>C</sub> au dénominateur ne change pas.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      if (!bDone) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Que devient R/p<sub>B</sub> lorsque R augmente ?</p>
+          <div class="button-row">
+            <button data-answer="up">Il va vers la droite</button>
+            <button data-answer="down">Il va vers la gauche</button>
+            <button data-answer="none">Il ne change pas</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "up") {
+              state.answered.add("incomeBMove");
+              setFeedback("Exact. R est plus grand et p<sub>B</sub> ne change pas, donc R/p<sub>B</sub> augmente.");
+              renderIncomeChangeQuiz();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. Le numérateur augmente, tandis que p<sub>B</sub> au dénominateur ne change pas.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      if (!slopeDone) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Si seul le revenu R augmente (p<sub>B</sub> et p<sub>C</sub> inchangés), que devient la pente de la droite de budget ?</p>
+          <div class="button-row">
+            <button data-answer="steeper">Elle devient plus pentue</button>
+            <button data-answer="flatter">Elle devient moins pentue</button>
+            <button data-answer="same">Elle ne change pas</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "same") {
+              state.answered.add("incomeSlope");
+              setFeedback("Exact. La pente vaut −p<sub>B</sub>/p<sub>C</sub>. Comme p<sub>B</sub> et p<sub>C</sub> ne changent pas, la pente ne change pas : la droite reste parallèle.");
+              renderIncomeChangeQuiz();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. La pente dépend seulement des prix, pas du revenu.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Les deux interceptions R/p<sub>C</sub> et R/p<sub>B</sub> se déplacent vers l'extérieur dans le même rapport.</p>
+          <p>La pente −p<sub>B</sub>/p<sub>C</sub> ne change pas car les prix relatifs ne changent pas.</p>
+          <p>La nouvelle droite de budget est donc parallèle à l'ancienne.</p>
+        </div>
+      `;
+    }
+
+    function renderIncomeChangeResult() {
+      setStageWithGraph(
+        "Une hausse de revenu déplace la droite vers l'extérieur.",
+        drawIncomeChangeGraph({ showC: true, showB: true, showNewLine: true })
+      );
+      interaction.innerHTML = `
+        <div class="formula-card">
+          <p>Les croisements avec les axes se déplacent vers l'extérieur.</p>
+          <p>La pente ne change pas, car p<sub>B</sub>/p<sub>C</sub> ne change pas.</p>
+          <p>La nouvelle droite de budget est donc parallèle à l'ancienne.</p>
+        </div>
+      `;
+    }
+
+    function drawBudgetConstructionGraph() {
+      const svg = drawBaseGraph([], { showCurves: false });
+      const hasC = state.answered.has("constructCPoint");
+      const hasB = state.answered.has("constructBPoint");
+      const cPoint = { b: 0, c: 4 };
+      const bPoint = { b: 6, c: 0 };
+
+      if (hasC && hasB) {
+        drawBudgetLineForValues(svg, 120, 20, 30, { stroke: "#b6483b", width: 4 });
+      }
+
+      [
+        ...(hasC ? [{ point: cPoint, label: "4", color: "#176b52", dx: -24, dy: 6 }] : []),
+        ...(hasB ? [{ point: bPoint, label: "6", color: "#c98c2d", dx: -4, dy: 28 }] : [])
+      ].forEach(({ point, label, color, dx, dy }) => {
+        svg.appendChild(svgEl("circle", {
+          cx: sx(point.b),
+          cy: sy(point.c),
+          r: 8,
+          fill: color,
+          stroke: "white",
+          "stroke-width": 3
+        }));
+        const text = svgEl("text", {
+          x: sx(point.b) + dx,
+          y: sy(point.c) + dy,
+          fill: color,
+          "font-size": 18,
+          "font-weight": 700
+        });
+        text.textContent = label;
+        svg.appendChild(text);
+      });
+
+      return svg;
+    }
+
+    function renderBudgetConstructionExercise() {
+      const hasC = state.answered.has("constructCPoint");
+      const hasB = state.answered.has("constructBPoint");
+      const slopeDone = state.answered.has("constructSlope");
+      const tradeoffBDone = state.answered.has("constructTradeoffB");
+      const tradeoffCDone = state.answered.has("constructTradeoffC");
+      if (hasC && hasB && slopeDone && tradeoffBDone && tradeoffCDone) {
+        state.answered.add("constructedBudget");
+      }
+
+      setStageWithGraph(
+        !(hasC && hasB)
+          ? "Cliquez sur les deux points extrêmes de la droite de budget."
+          : !slopeDone
+          ? "Calculons d'abord la pente de cette droite de budget."
+          : !tradeoffBDone
+            ? "Interprétons la pente : combien de C sacrifier pour obtenir plus de B ?"
+            : !tradeoffCDone
+              ? "Retournons maintenant la question : combien de B sacrifier pour obtenir plus de C ?"
+              : hasC && hasB
+          ? "Les deux points sont placés : la droite de budget est construite."
+          : "Cliquez sur les deux points extrêmes de la droite de budget.",
+        drawBudgetConstructionGraph(),
+        `<div class="formula-card">
+          <p>Cas particulier : R = 120, p<sub>B</sub> = 20 et p<sub>C</sub> = 30.</p>
+          <p>La contrainte est donc : 20B + 30C = 120.</p>
+        </div>`
+      );
+
+      if (!(hasC && hasB)) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Placez les deux croisements avec les axes : le panier avec seulement du C et le panier avec seulement du B.</p>
+          <p>Vous pouvez cliquer dans n'importe quel ordre.</p>
+        `;
+        const svg = document.querySelector("#graphMount svg");
+        svg.addEventListener("click", (event) => {
+          const bounds = svg.getBoundingClientRect();
+          const unitX = toUnitX((event.clientX - bounds.left) * (config.size / bounds.width));
+          const unitY = toUnitY((event.clientY - bounds.top) * (config.size / bounds.height));
+          const nearC = Math.hypot(unitX - 0, unitY - 4) <= 0.75;
+          const nearB = Math.hypot(unitX - 6, unitY - 0) <= 0.75;
+
+          if (nearC) {
+            state.answered.add("constructCPoint");
+            setFeedback("Très bien : si B = 0, toute la dépense va dans C, donc C = 4.");
+            renderBudgetConstructionExercise();
+            updateNav();
+          } else if (nearB) {
+            state.answered.add("constructBPoint");
+            setFeedback("Très bien : si C = 0, toute la dépense va dans B, donc B = 6.");
+            renderBudgetConstructionExercise();
+            updateNav();
+          } else {
+            setFeedback("Cherchez les interceptions : un point sur l'axe C et un point sur l'axe B.", "error");
+          }
+        });
+        return;
+      }
+
+      if (!slopeDone) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Quelle est la pente de la droite de budget ?</p>
+          <div class="button-row">
+            <button data-answer="correct">-2/3</button>
+            <button data-answer="wrong1">-3/2</button>
+            <button data-answer="wrong2">2/3</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "correct") {
+              state.answered.add("constructSlope");
+              setFeedback("Exact. La pente est -p<sub>B</sub>/p<sub>C</sub> = -20/30 = -2/3.");
+              renderBudgetConstructionExercise();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. La pente de la droite de budget est -p<sub>B</sub>/p<sub>C</sub>.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      if (!tradeoffBDone) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Pour obtenir une unité supplémentaire de bien B, combien d'unités de bien C faut-il sacrifier ?</p>
+          <div class="button-row">
+            <button data-answer="correct">2/3 unité de C</button>
+            <button data-answer="wrong1">3/2 unités de C</button>
+            <button data-answer="wrong2">2 unités de C</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "correct") {
+              state.answered.add("constructTradeoffB");
+              setFeedback("Exact. La valeur absolue de la pente est 2/3 : pour 1 unité de B en plus, il faut sacrifier 2/3 unité de C.");
+              renderBudgetConstructionExercise();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. Utilisez la valeur absolue de la pente : p<sub>B</sub>/p<sub>C</sub> = 20/30.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      if (!tradeoffCDone) {
+        interaction.innerHTML = `
+          <p class="choice-prompt">Inversement, pour obtenir une unité supplémentaire de bien C, combien d'unités de bien B faut-il sacrifier ?</p>
+          <div class="button-row">
+            <button data-answer="wrong1">2/3 unité de B</button>
+            <button data-answer="correct">3/2 unités de B</button>
+            <button data-answer="wrong2">3 unités de B</button>
+          </div>
+        `;
+        interaction.querySelectorAll("button").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.answer === "correct") {
+              state.answered.add("constructTradeoffC");
+              setFeedback("Exact. On inverse le rapport : p<sub>C</sub>/p<sub>B</sub> = 30/20 = 3/2. Pour 1 unité de C en plus, il faut sacrifier 1,5 unité de B.");
+              renderBudgetConstructionExercise();
+              updateNav();
+            } else {
+              setFeedback("Pas encore. Cette fois, on échange dans l'autre sens : il faut calculer p<sub>C</sub>/p<sub>B</sub>.", "error");
+            }
+          });
+        });
+        return;
+      }
+
+      if (hasC && hasB) {
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>Exact. Si B = 0, alors C = 120/30 = 4. Si C = 0, alors B = 120/20 = 6.</p>
+            <p>La droite qui passe par ces deux points est la droite de budget.</p>
+          </div>
+        `;
+        updateNav();
+        return;
+      }
+    }
+
+    function renderEvaluationQuiz() {
+      const questions = [
+        {
+          key: "evalCondition",
+          title: "Condition budgétaire",
+          prompt: "Avec R = 90, p<sub>B</sub> = 15 et p<sub>C</sub> = 10, le panier P = (4,2) est-il accessible ?",
+          options: [
+            { id: "yes", text: "Oui, car il coûte 80" },
+            { id: "equal", text: "Oui, car il coûte exactement 90" },
+            { id: "no", text: "Non, car il coûte 100" }
+          ],
+          correct: "yes",
+          feedback: "Exact. La dépense est 15 × 4 + 10 × 2 = 80, donc elle est inférieure au revenu de 90."
+        },
+        {
+          key: "evalBoundary",
+          title: "Droite et ensemble de budget",
+          prompt: "Que représente la droite de budget ?",
+          options: [
+            { id: "exact", text: "Les paniers qui coûtent exactement R" },
+            { id: "all", text: "Tous les paniers accessibles" },
+            { id: "tooexpensive", text: "Les paniers trop chers" }
+          ],
+          correct: "exact",
+          feedback: "Exact. L'ensemble de budget est toute la zone sous la droite ; la droite seule correspond aux paniers qui coûtent exactement R."
+        },
+        {
+          key: "evalIntercepts",
+          title: "Points extrêmes",
+          prompt: "Si R = 96, p<sub>B</sub> = 12 et p<sub>C</sub> = 16, quels sont les deux points extrêmes de la droite de budget ?",
+          options: [
+            { id: "correct", text: "(0,6) et (8,0)" },
+            { id: "wrong1", text: "(6,0) et (0,8)" },
+            { id: "wrong2", text: "(0,8) et (6,0)" }
+          ],
+          correct: "correct",
+          feedback: "Exact. Si B = 0, C = 96/16 = 6 ; si C = 0, B = 96/12 = 8."
+        },
+        {
+          key: "evalSlope",
+          title: "Pente",
+          prompt: "Avec p<sub>B</sub> = 18 et p<sub>C</sub> = 24, quelle est la valeur absolue de la pente ?",
+          options: [
+            { id: "correct", text: "3/4" },
+            { id: "wrong1", text: "4/3" },
+            { id: "wrong2", text: "18 + 24" }
+          ],
+          correct: "correct",
+          feedback: "Exact. La valeur absolue de la pente est p<sub>B</sub>/p<sub>C</sub> = 18/24 = 3/4."
+        },
+        {
+          key: "evalPrice",
+          title: "Baisse du prix de B",
+          prompt: "Si p<sub>B</sub> diminue, en gardant R et p<sub>C</sub> constants, que se passe-t-il ?",
+          options: [
+            { id: "correct", text: "R/p<sub>B</sub> augmente et la droite pivote vers l'extérieur" },
+            { id: "wrong1", text: "R/p<sub>C</sub> augmente et la droite pivote vers l'extérieur" },
+            { id: "wrong2", text: "La droite se déplace parallèlement vers l'extérieur" }
+          ],
+          correct: "correct",
+          feedback: "Exact. Le bien B devient moins cher : avec le même revenu, on peut acheter plus de B si C = 0. L'interception sur l'axe B s'éloigne de l'origine."
+        },
+        {
+          key: "evalIncome",
+          title: "Hausse du revenu",
+          prompt: "Si R augmente alors que p<sub>B</sub> et p<sub>C</sub> ne changent pas, que devient la droite de budget ?",
+          options: [
+            { id: "correct", text: "Elle se déplace vers l'extérieur en restant parallèle" },
+            { id: "wrong1", text: "Elle pivote autour de R/p<sub>C</sub>" },
+            { id: "wrong2", text: "Elle devient nécessairement plus pentue" }
+          ],
+          correct: "correct",
+          feedback: "Exact. Les deux interceptions augmentent, mais la pente ne change pas car les prix relatifs ne changent pas."
+        },
+        {
+          key: "evalReasoning",
+          title: "Raisonnement combiné",
+          prompt: "Si p<sub>B</sub> double et R double simultanément, p<sub>C</sub> restant constant, que se passe-t-il ?",
+          options: [
+            { id: "pivot", text: "La droite pivote autour de R/p<sub>B</sub> vers l'extérieur" },
+            { id: "unchanged", text: "La droite reste identique" },
+            { id: "parallel", text: "La droite se déplace parallèlement vers l'extérieur" }
+          ],
+          correct: "pivot",
+          feedback: "Exact. R/p<sub>B</sub> = 2R/2p<sub>B</sub> : l'intercept B ne change pas. Mais R/p<sub>C</sub> = 2R/p<sub>C</sub> : l'intercept C double. La pente −2p<sub>B</sub>/p<sub>C</sub> devient aussi plus pentue. La droite pivote donc autour de R/p<sub>B</sub> vers l'extérieur."
+        }
+      ];
+
+      const currentIndex = questions.findIndex((question) => !state.answered.has(question.key));
+      if (currentIndex === -1) {
+        state.answered.add("evaluationDone");
+        setStageWithGraph(
+          "Quiz d'évaluation terminé.",
+          drawBaseGraph([], { budgetLine: true, showCurves: false })
+        );
+        interaction.innerHTML = `
+          <div class="formula-card">
+            <p>Très bien. Vous avez validé les points essentiels :</p>
+            <p>condition budgétaire, ensemble de budget, points extrêmes, pente, variation des prix, variation du revenu et raisonnement combiné.</p>
+          </div>
+        `;
+        updateNav();
+        return;
+      }
+
+      const question = questions[currentIndex];
+      setStageWithGraph(
+        `Évaluation ${currentIndex + 1}/${questions.length} : ${question.title}`,
+        drawBaseGraph([], { budgetLine: true, budgetLabel: false, showCurves: false }),
+        `<div class="formula-card">
+          <p>Répondez sans revenir aux dias précédentes. Le but est de vérifier que le raisonnement est bien installé.</p>
+        </div>`
+      );
+
+      interaction.innerHTML = `
+        <p class="choice-prompt">${question.prompt}</p>
+        <div class="button-row">
+          ${question.options.map((option) => `<button data-answer="${option.id}">${option.text}</button>`).join("")}
+        </div>
+      `;
+      interaction.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.answer === question.correct) {
+            state.answered.add(question.key);
+            setFeedback(question.feedback);
+            renderEvaluationQuiz();
+            updateNav();
+          } else {
+            setFeedback("Pas encore. Reprenez le raisonnement avec les prix, le revenu et la position de la droite.", "error");
+          }
+        });
+      });
+    }
+
+    function renderClosing() {
+      setStageWithGraph(
+        "Récapitulatif : toutes les propriétés de la droite de budget.",
+        drawBaseGraph([], { budgetLine: true, showCurves: false, intercepts: "generalBoth" })
+      );
+      interactionPanel.classList.add("info-only");
+      interaction.innerHTML = `
+        <div class="formula-card cheatsheet">
+          <p class="cheatsheet-title">Fiche mémo — Contrainte budgétaire</p>
+          <div class="cheatsheet-row">
+            <span class="cheatsheet-label">Condition d'accessibilité</span>
+            <span class="cheatsheet-formula">p<sub>B</sub>B + p<sub>C</sub>C ≤ R</span>
+          </div>
+          <div class="cheatsheet-row">
+            <span class="cheatsheet-label">Frontière (droite)</span>
+            <span class="cheatsheet-formula">p<sub>B</sub>B + p<sub>C</sub>C = R</span>
+          </div>
+          <div class="cheatsheet-row">
+            <span class="cheatsheet-label">Intercept axe C</span>
+            <span class="cheatsheet-formula">R / p<sub>C</sub></span>
+          </div>
+          <div class="cheatsheet-row">
+            <span class="cheatsheet-label">Intercept axe B</span>
+            <span class="cheatsheet-formula">R / p<sub>B</sub></span>
+          </div>
+          <div class="cheatsheet-row">
+            <span class="cheatsheet-label">Pente</span>
+            <span class="cheatsheet-formula">− p<sub>B</sub> / p<sub>C</sub></span>
+          </div>
+          <div class="cheatsheet-row">
+            <span class="cheatsheet-label">Hausse de p<sub>B</sub> ou p<sub>C</sub></span>
+            <span class="cheatsheet-formula">Pivotement (axe opposé fixe)</span>
+          </div>
+          <div class="cheatsheet-row">
+            <span class="cheatsheet-label">Variation de R (prix fixes)</span>
+            <span class="cheatsheet-formula">Translation parallèle</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderEndSlide() {
+      stage.innerHTML = `
+        <div class="context-diagram">
+          <div class="context-box done">
+            <div class="context-tag">Module 1 ✓</div>
+            <div class="context-name">Préférences</div>
+            <div class="context-sub">courbes d'indifférence</div>
+          </div>
+          <div class="context-op">+</div>
+          <div class="context-box done">
+            <div class="context-tag">Module 2 ✓</div>
+            <div class="context-name">Budget</div>
+            <div class="context-sub">droite de budget</div>
+          </div>
+          <div class="context-op">→</div>
+          <div class="context-box upcoming">
+            <div class="context-tag">Exercice</div>
+            <div class="context-name">Droite et choix</div>
+            <div class="context-sub">construire & interpréter</div>
+          </div>
+          <div class="context-op">→</div>
+          <div class="context-box upcoming">
+            <div class="context-tag">Module 3</div>
+            <div class="context-name">Choix optimal</div>
+            <div class="context-sub">point de tangence</div>
+          </div>
+        </div>
+      `;
+      interaction.innerHTML = `
+        <div class="formula-card cheatsheet">
+          <p class="cheatsheet-title">Ce que vous savez maintenant</p>
+          <div class="cheatsheet-row">
+            <span class="cheatsheet-label">Module 1</span>
+            <span class="cheatsheet-formula">Préférences → courbes d'indifférence, TMS</span>
+          </div>
+          <div class="cheatsheet-row">
+            <span class="cheatsheet-label">Module 2</span>
+            <span class="cheatsheet-formula">Budget → droite p<sub>B</sub>B + p<sub>C</sub>C = R, pente −p<sub>B</sub>/p<sub>C</sub></span>
+          </div>
+          <div class="cheatsheet-row">
+            <span class="cheatsheet-label">Module 3</span>
+            <span class="cheatsheet-formula">Choix optimal → tangence CI et droite de budget</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function update() {
+      const current = steps[state.step];
+      sequenceTitle.textContent = stepLabels[state.step] || `Diapositive ${state.step + 1}`;
+      narration.innerHTML = current.text;
+      feedback.textContent = "";
+      interactionPanel.classList.remove("info-only");
+      interactionPanel.classList.toggle("tall-exercise", !!current.tall);
+      interactionPanel.style.display = "";
+      renderProgressStrip();
+      current.render();
+      exerciceTitle.style.display = current.gate ? "" : "none";
+      updateNav();
+    }
+
+    function updateNav() {
+      const current = steps[state.step];
+      backButton.disabled = state.step === 0;
+      nextButton.disabled = Boolean(current.gate && !current.gate());
+      updateActionFocus();
+    }
+
+    function openNavPanel() {
+      navPanelItems.innerHTML = steps.map((_, i) => {
+        const label = stepLabels[i] || `Diapositive ${i + 1}`;
+        return `<button class="nav-panel-item${i === state.step ? " nav-current" : ""}" data-step="${i}">${i + 1}. ${label}</button>`;
+      }).join("");
+      navPanelItems.querySelectorAll("[data-step]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.step = Number(btn.dataset.step);
+          update();
+          closeNavPanel();
+        });
+      });
+      navPanel.style.display = "block";
+      navBackdrop.style.display = "block";
+    }
+
+    function closeNavPanel() {
+      navPanel.style.display = "none";
+      navBackdrop.style.display = "none";
+    }
+
+    navJumpButton.addEventListener("click", () => {
+      navPanel.style.display === "none" ? openNavPanel() : closeNavPanel();
+    });
+    navBackdrop.addEventListener("click", closeNavPanel);
+
+    devSkipButton.addEventListener("click", () => {
+      if (state.step < steps.length - 1) {
+        state.step += 1;
+        update();
+      }
+    });
+
+    backButton.addEventListener("click", () => {
+      if (state.step > 0) {
+        state.step -= 1;
+        update();
+      }
+    });
+
+    nextButton.addEventListener("click", () => {
+      const current = steps[state.step];
+      if (current.gate && !current.gate()) return;
+      if (state.step < steps.length - 1) {
+        state.step += 1;
+        update();
+      }
+    });
+
+    update();
+  </script>
+</body>
+</html>

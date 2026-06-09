@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Microéconomie du consommateur</title>
+  <style>
+    :root {
+      --green:       #176b52;
+      --green-dark:  #0f503d;
+      --green-light: rgba(23,107,82,0.10);
+      --gold:        #c98c2d;
+      --ink:         #1f2c35;
+      --muted:       #5f6d74;
+      --bg:          #f4efe5;
+      --sidebar-w:   280px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      background: var(--bg);
+      color: var(--ink);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ──────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex: 0 0 var(--sidebar-w);
+      background: linear-gradient(160deg, #0f503d 0%, #176b52 60%, #1e8464 100%);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.18);
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .course-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 6px;
+    }
+
+    .course-title {
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+
+    .course-author {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.45);
+      margin-top: 6px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 0 20px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar { width: 4px; }
+    .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+    .chapter {
+      margin-bottom: 6px;
+    }
+
+    .chapter-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      padding: 14px 20px 5px;
+    }
+
+    .module-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 20px;
+      background: transparent;
+      border: none;
+      border-left: 3px solid transparent;
+      color: rgba(255,255,255,0.75);
+      font: inherit;
+      font-size: 0.88rem;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      line-height: 1.35;
+    }
+
+    .module-btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+
+    .module-btn.active {
+      background: rgba(255,255,255,0.14);
+      border-left-color: #c98c2d;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .module-num {
+      flex: 0 0 auto;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      display: grid;
+      place-items: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .module-btn.active .module-num {
+      background: var(--gold);
+      color: #fff;
+    }
+
+    .sidebar-footer {
+      padding: 14px 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.35);
+      text-align: center;
+    }
+
+    /* ── Main area ────────────────────────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      position: relative;
+    }
+
+    /* Topbar (shown when a module is loaded) */
+    .topbar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 20px;
+      background: rgba(255,253,248,0.97);
+      border-bottom: 1px solid rgba(48,67,82,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      z-index: 5;
+      gap: 12px;
+    }
+
+    .topbar.visible { display: flex; }
+
+    .topbar-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--green-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font: 700 0.82rem Georgia, serif;
+      cursor: pointer;
+      transition: transform 0.12s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-outline {
+      background: rgba(23,107,82,0.1);
+      color: var(--green-dark);
+      border: 1px solid rgba(23,107,82,0.2);
+    }
+
+    .btn-primary {
+      background: var(--green);
+      color: #fff;
+    }
+
+    /* Welcome screen */
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .welcome-icon {
+      font-size: 3rem;
+      opacity: 0.4;
+    }
+
+    .welcome-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .welcome-sub {
+      color: var(--muted);
+      font-size: 0.97rem;
+      max-width: 42ch;
+      line-height: 1.65;
+    }
+
+    .welcome-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 10px;
+      max-width: 600px;
+    }
+
+    .welcome-card {
+      padding: 10px 16px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(48,67,82,0.1);
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .welcome-card:hover {
+      background: var(--green-light);
+      border-color: rgba(23,107,82,0.2);
+      color: var(--green-dark);
+    }
+
+    /* Iframe */
+    #moduleFrame {
+      display: none;
+      flex: 1;
+      border: none;
+      width: 100%;
+    }
+
+    #moduleFrame.visible {
+      display: block;
+    }
+
+    /* Loading overlay */
+    .loader {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    .loader.visible { display: flex; }
+
+    .loader-ring {
+      width: 40px; height: 40px;
+      border: 4px solid rgba(23,107,82,0.15);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Mobile toggle */
+    .toggle-sidebar {
+      display: none;
+      position: fixed;
+      bottom: 18px;
+      left: 18px;
+      z-index: 100;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 46px; height: 46px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+
+    @media (max-width: 700px) {
+      .toggle-sidebar { display: flex; align-items: center; justify-content: center; }
+      .sidebar {
+        position: fixed;
+        left: -100%;
+        top: 0; bottom: 0;
+        transition: left 0.25s ease;
+        z-index: 50;
+      }
+      .sidebar.open { left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="course-label">Cours de microéconomie</div>
+    <div class="course-title">Le consommateur</div>
+    <div class="course-author">Tanguy van Ypersele</div>
+  </div>
+
+  <nav class="sidebar-nav" id="sidebarNav">
+
+    <div class="chapter">
+      <div class="chapter-label">Préférences</div>
+      <button class="module-btn" data-src="preferences.html" data-title="1a. Les préférences et paniers">
+        <span class="module-num">1a</span>
+        <span>Les préférences et paniers</span>
+      </button>
+      <button class="module-btn" data-src="fonction-utilite.html" data-title="Fonction d'utilité">
+        <span class="module-num">1b</span>
+        <span>Fonction d'utilité</span>
+      </button>
+    </div>
+
+    <div class="chapter">
+      <div class="chapter-label">Contrainte budgétaire</div>
+      <button class="module-btn" data-src="contrainte-budget.html" data-title="2. La contrainte de budget">
+        <span class="module-num">2</span>
+        <span>La contrainte de budget</span>
+      </button>
+      <button class="module-btn" data-src="exercice-droite-budget.html" data-title="Exercice — droite de budget">
+        <span class="module-num">2+</span>
+        <span>Exercice droite de budget</span>
+      </button>
+    </div>
+
+    <div class="chapter">
+      <div class="chapter-label">Choix du consommateur</div>
+      <button class="module-btn" data-src="choix-sous-contrainte.html" data-title="3. Le choix sous contrainte">
+        <span class="module-num">3</span>
+        <span>Le choix sous contrainte</span>
+      </button>
+      <button class="module-btn" data-src="choix-sous-contrainte-exo.html" data-title="Exercice — choix sous contrainte">
+        <span class="module-num">3+</span>
+        <span>Exercice choix optimal</span>
+      </button>
+    </div>
+
+    <div class="chapter">
+      <div class="chapter-label">Demande</div>
+      <button class="module-btn" data-src="demande-compensee.html" data-title="Fonction de dépense et demandes compensées">
+        <span class="module-num">4</span>
+        <span>Dépense et demandes compensées</span>
+      </button>
+    </div>
+
+    <div class="chapter">
+      <div class="chapter-label">Typologies</div>
+      <button class="module-btn" data-src="chapitre4-biens.html" data-title="Chapitre 4 — Typologie des biens">
+        <span class="module-num">5</span>
+        <span>Typologie des biens</span>
+      </button>
+    </div>
+
+    <div class="chapter">
+      <div class="chapter-label">Choix intertemporel</div>
+      <button class="module-btn" data-src="choix-intertemporel.html" data-title="Le choix intertemporel">
+        <span class="module-num">6</span>
+        <span>Le choix intertemporel</span>
+      </button>
+    </div>
+
+  </nav>
+
+  <div class="sidebar-footer">
+    Programmation assistée par IA
+  </div>
+</aside>
+
+<!-- ── Zone principale ── -->
+<div class="main" id="main">
+
+  <!-- Barre du haut (visible quand un module est chargé) -->
+  <div class="topbar" id="topbar">
+    <span class="topbar-title" id="topbarTitle"></span>
+    <div class="topbar-actions">
+      <button class="btn btn-outline" onclick="openInNewTab()">↗ Nouvel onglet</button>
+      <button class="btn btn-outline" onclick="closeModule()">✕ Fermer</button>
+    </div>
+  </div>
+
+  <!-- Écran d'accueil -->
+  <div class="welcome" id="welcome">
+    <div class="welcome-icon">📚</div>
+    <div class="welcome-title">Microéconomie du consommateur</div>
+    <div class="welcome-sub">
+      Sélectionnez un module dans le menu à gauche pour commencer.
+      Chaque séquence est interactive — répondez aux questions pour avancer.
+    </div>
+    <div class="welcome-cards" id="quickLinks"></div>
+  </div>
+
+  <!-- Loader -->
+  <div class="loader" id="loader">
+    <div class="loader-ring"></div>
+  </div>
+
+  <!-- iframe du module -->
+  <iframe id="moduleFrame" title="Module de cours" allowfullscreen></iframe>
+
+</div>
+
+<!-- Bouton mobile -->
+<button class="toggle-sidebar" id="toggleSidebar" onclick="toggleSidebar()" title="Menu">☰</button>
+
+<script>
+  var currentSrc = '';
+
+  // ── Construire les raccourcis rapides sur l'accueil ─────────────
+  var quickLinks = document.getElementById('quickLinks');
+  document.querySelectorAll('.module-btn').forEach(function(btn) {
+    var card = document.createElement('button');
+    card.className = 'welcome-card';
+    card.textContent = btn.querySelector('span:last-child').textContent;
+    card.onclick = function() { loadModule(btn); };
+    quickLinks.appendChild(card);
+  });
+
+  // ── Charger un module ───────────────────────────────────────────
+  function loadModule(btn) {
+    var src   = btn.dataset.src;
+    var title = btn.dataset.title;
+
+    // Activer le bouton
+    document.querySelectorAll('.module-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    btn.classList.add('active');
+
+    // Afficher loader
+    document.getElementById('loader').classList.add('visible');
+    document.getElementById('welcome').style.display = 'none';
+    document.getElementById('moduleFrame').classList.remove('visible');
+    document.getElementById('topbar').classList.remove('visible');
+
+    currentSrc = src;
+
+    var frame = document.getElementById('moduleFrame');
+    frame.onload = function() {
+      document.getElementById('loader').classList.remove('visible');
+      frame.classList.add('visible');
+      document.getElementById('topbar').classList.add('visible');
+      document.getElementById('topbarTitle').textContent = title;
+    };
+    frame.src = src;
+
+    // Fermer sidebar sur mobile
+    document.getElementById('sidebar').classList.remove('open');
+  }
+
+  // ── Ouvrir dans un nouvel onglet ────────────────────────────────
+  function openInNewTab() {
+    if (currentSrc) window.open(currentSrc, '_blank');
+  }
+
+  // ── Fermer le module ────────────────────────────────────────────
+  function closeModule() {
+    document.getElementById('moduleFrame').classList.remove('visible');
+    document.getElementById('moduleFrame').src = '';
+    document.getElementById('topbar').classList.remove('visible');
+    document.getElementById('welcome').style.display = '';
+    document.querySelectorAll('.module-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    currentSrc = '';
+  }
+
+  // ── Toggle sidebar mobile ───────────────────────────────────────
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  // Attacher les événements aux boutons du menu
+  document.querySelectorAll('.module-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { loadModule(btn); });
+  });
+</script>
+</body>
+</html>
