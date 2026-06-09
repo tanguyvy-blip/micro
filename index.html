@@ -13,7 +13,7 @@
       --ink:         #1f2c35;
       --muted:       #5f6d74;
       --bg:          #f4efe5;
-      --sidebar-w:   280px;
+      --sidebar-w:   272px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,7 +27,7 @@
       overflow: hidden;
     }
 
-    /* ── Sidebar ──────────────────────────────────────── */
+    /* ── Sidebar ── */
     .sidebar {
       width: var(--sidebar-w);
       flex: 0 0 var(--sidebar-w);
@@ -40,67 +40,54 @@
     }
 
     .sidebar-header {
-      padding: 24px 20px 20px;
+      padding: 22px 18px 18px;
       border-bottom: 1px solid rgba(255,255,255,0.12);
     }
 
     .course-label {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.55);
-      margin-bottom: 6px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 5px;
     }
 
     .course-title {
-      font-size: 1.18rem;
+      font-size: 1.12rem;
       font-weight: 700;
       color: #fff;
       line-height: 1.3;
     }
 
     .course-author {
-      font-size: 0.75rem;
-      color: rgba(255,255,255,0.45);
-      margin-top: 6px;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.4);
+      margin-top: 5px;
     }
 
     .sidebar-nav {
       flex: 1;
       overflow-y: auto;
-      padding: 12px 0 20px;
+      padding: 8px 0 16px;
     }
 
     .sidebar-nav::-webkit-scrollbar { width: 4px; }
     .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
-    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
-
-    .chapter {
-      margin-bottom: 6px;
-    }
-
-    .chapter-label {
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.4);
-      padding: 14px 20px 5px;
-    }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 2px; }
 
     .module-btn {
       display: flex;
       align-items: center;
       gap: 10px;
       width: 100%;
-      padding: 10px 20px;
+      padding: 10px 18px;
       background: transparent;
       border: none;
       border-left: 3px solid transparent;
-      color: rgba(255,255,255,0.75);
+      color: rgba(255,255,255,0.72);
       font: inherit;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       text-align: left;
       cursor: pointer;
       transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -121,15 +108,16 @@
 
     .module-num {
       flex: 0 0 auto;
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
       background: rgba(255,255,255,0.12);
       display: grid;
       place-items: center;
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 700;
-      color: rgba(255,255,255,0.6);
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0;
     }
 
     .module-btn.active .module-num {
@@ -138,14 +126,14 @@
     }
 
     .sidebar-footer {
-      padding: 14px 20px;
+      padding: 12px 18px;
       border-top: 1px solid rgba(255,255,255,0.1);
-      font-size: 0.7rem;
-      color: rgba(255,255,255,0.35);
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.3);
       text-align: center;
     }
 
-    /* ── Main area ────────────────────────────────────── */
+    /* ── Main ── */
     .main {
       flex: 1;
       display: flex;
@@ -154,12 +142,11 @@
       position: relative;
     }
 
-    /* Topbar (shown when a module is loaded) */
     .topbar {
       display: none;
       align-items: center;
       justify-content: space-between;
-      padding: 9px 20px;
+      padding: 8px 18px;
       background: rgba(255,253,248,0.97);
       border-bottom: 1px solid rgba(48,67,82,0.1);
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -171,7 +158,7 @@
 
     .topbar-title {
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       color: var(--green-dark);
       white-space: nowrap;
       overflow: hidden;
@@ -187,77 +174,69 @@
     .btn {
       border: none;
       border-radius: 999px;
-      padding: 7px 14px;
-      font: 700 0.82rem Georgia, serif;
+      padding: 6px 13px;
+      font: 700 0.8rem Georgia, serif;
       cursor: pointer;
       transition: transform 0.12s;
     }
     .btn:hover { transform: translateY(-1px); }
-
     .btn-outline {
       background: rgba(23,107,82,0.1);
       color: var(--green-dark);
       border: 1px solid rgba(23,107,82,0.2);
     }
 
-    .btn-primary {
-      background: var(--green);
-      color: #fff;
-    }
-
-    /* Welcome screen */
+    /* Welcome */
     .welcome {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 20px;
+      gap: 18px;
       padding: 40px;
       text-align: center;
     }
 
-    .welcome-icon {
-      font-size: 3rem;
-      opacity: 0.4;
-    }
+    .welcome-icon { font-size: 2.8rem; opacity: 0.35; }
 
     .welcome-title {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 700;
       color: var(--green);
     }
 
     .welcome-sub {
       color: var(--muted);
-      font-size: 0.97rem;
-      max-width: 42ch;
+      font-size: 0.94rem;
+      max-width: 44ch;
       line-height: 1.65;
     }
 
     .welcome-cards {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 9px;
       justify-content: center;
-      margin-top: 10px;
-      max-width: 600px;
+      margin-top: 8px;
+      max-width: 580px;
     }
 
     .welcome-card {
-      padding: 10px 16px;
-      border-radius: 12px;
+      padding: 9px 15px;
+      border-radius: 11px;
       background: rgba(255,255,255,0.7);
       border: 1px solid rgba(48,67,82,0.1);
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--muted);
       cursor: pointer;
       transition: background 0.15s, border-color 0.15s;
+      font-family: inherit;
     }
 
     .welcome-card:hover {
       background: var(--green-light);
-      border-color: rgba(23,107,82,0.2);
+      border-color: rgba(23,107,82,0.22);
       color: var(--green-dark);
     }
 
@@ -268,12 +247,9 @@
       border: none;
       width: 100%;
     }
+    #moduleFrame.visible { display: block; }
 
-    #moduleFrame.visible {
-      display: block;
-    }
-
-    /* Loading overlay */
+    /* Loader */
     .loader {
       display: none;
       position: absolute;
@@ -283,42 +259,37 @@
       justify-content: center;
       z-index: 20;
     }
-
     .loader.visible { display: flex; }
-
     .loader-ring {
-      width: 40px; height: 40px;
+      width: 38px; height: 38px;
       border: 4px solid rgba(23,107,82,0.15);
       border-top-color: var(--green);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Mobile toggle */
+    /* Mobile */
     .toggle-sidebar {
       display: none;
       position: fixed;
-      bottom: 18px;
-      left: 18px;
+      bottom: 16px; left: 16px;
       z-index: 100;
       background: var(--green);
       color: #fff;
       border: none;
       border-radius: 50%;
-      width: 46px; height: 46px;
-      font-size: 1.2rem;
+      width: 44px; height: 44px;
+      font-size: 1.15rem;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
     }
 
-    @media (max-width: 700px) {
+    @media (max-width: 680px) {
       .toggle-sidebar { display: flex; align-items: center; justify-content: center; }
       .sidebar {
         position: fixed;
-        left: -100%;
-        top: 0; bottom: 0;
+        left: -100%; top: 0; bottom: 0;
         transition: left 0.25s ease;
         z-index: 50;
       }
@@ -328,87 +299,76 @@
 </head>
 <body>
 
-<!-- ── Sidebar ── -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="course-label">Cours de microéconomie</div>
+    <div class="course-label">Microéconomie</div>
     <div class="course-title">Le consommateur</div>
     <div class="course-author">Tanguy van Ypersele</div>
   </div>
 
   <nav class="sidebar-nav" id="sidebarNav">
 
-    <div class="chapter">
-      <div class="chapter-label">Préférences</div>
-      <button class="module-btn" data-src="preferences.html" data-title="1a. Les préférences et paniers">
-        <span class="module-num">1a</span>
-        <span>Les préférences et paniers</span>
-      </button>
-      <button class="module-btn" data-src="fonction-utilite.html" data-title="Fonction d'utilité">
-        <span class="module-num">1b</span>
-        <span>Fonction d'utilité</span>
-      </button>
-    </div>
+    <button class="module-btn" data-src="1a-preferences.html"
+            data-title="1a. Les préférences et paniers">
+      <span class="module-num">1a</span>
+      <span>Les préférences et paniers</span>
+    </button>
 
-    <div class="chapter">
-      <div class="chapter-label">Contrainte budgétaire</div>
-      <button class="module-btn" data-src="contrainte-budget.html" data-title="2. La contrainte de budget">
-        <span class="module-num">2</span>
-        <span>La contrainte de budget</span>
-      </button>
-      <button class="module-btn" data-src="exercice-droite-budget.html" data-title="Exercice — droite de budget">
-        <span class="module-num">2+</span>
-        <span>Exercice droite de budget</span>
-      </button>
-    </div>
+    <button class="module-btn" data-src="2-contrainte-budget.html"
+            data-title="2. La contrainte de budget">
+      <span class="module-num">2</span>
+      <span>La contrainte de budget</span>
+    </button>
 
-    <div class="chapter">
-      <div class="chapter-label">Choix du consommateur</div>
-      <button class="module-btn" data-src="choix-sous-contrainte.html" data-title="3. Le choix sous contrainte">
-        <span class="module-num">3</span>
-        <span>Le choix sous contrainte</span>
-      </button>
-      <button class="module-btn" data-src="choix-sous-contrainte-exo.html" data-title="Exercice — choix sous contrainte">
-        <span class="module-num">3+</span>
-        <span>Exercice choix optimal</span>
-      </button>
-    </div>
+    <button class="module-btn" data-src="2b-exercice-droite-budget.html"
+            data-title="2b. Exercice — droite de budget">
+      <span class="module-num">2b</span>
+      <span>Exercice droite de budget</span>
+    </button>
 
-    <div class="chapter">
-      <div class="chapter-label">Demande</div>
-      <button class="module-btn" data-src="demande-compensee.html" data-title="Fonction de dépense et demandes compensées">
-        <span class="module-num">4</span>
-        <span>Dépense et demandes compensées</span>
-      </button>
-    </div>
+    <button class="module-btn" data-src="3-choix-sous-contrainte.html"
+            data-title="3. Le choix sous contrainte">
+      <span class="module-num">3</span>
+      <span>Le choix sous contrainte</span>
+    </button>
 
-    <div class="chapter">
-      <div class="chapter-label">Typologies</div>
-      <button class="module-btn" data-src="chapitre4-biens.html" data-title="Chapitre 4 — Typologie des biens">
-        <span class="module-num">5</span>
-        <span>Typologie des biens</span>
-      </button>
-    </div>
+    <button class="module-btn" data-src="4-effets-substitution-revenu.html"
+            data-title="4. Effets de substitution et de revenu">
+      <span class="module-num">4</span>
+      <span>Effets substitution et revenu</span>
+    </button>
 
-    <div class="chapter">
-      <div class="chapter-label">Choix intertemporel</div>
-      <button class="module-btn" data-src="choix-intertemporel.html" data-title="Le choix intertemporel">
-        <span class="module-num">6</span>
-        <span>Le choix intertemporel</span>
-      </button>
-    </div>
+    <button class="module-btn" data-src="5-chapitre4-biens.html"
+            data-title="5. Chapitre 4 — Typologie des biens">
+      <span class="module-num">5</span>
+      <span>Typologie des biens</span>
+    </button>
+
+    <button class="module-btn" data-src="6-fonction-utilite.html"
+            data-title="6. Fonction d'utilité">
+      <span class="module-num">6</span>
+      <span>Fonction d'utilité</span>
+    </button>
+
+    <button class="module-btn" data-src="7-depense-demandes-compensees.html"
+            data-title="7. Fonction de dépense et demandes compensées">
+      <span class="module-num">7</span>
+      <span>Dépense et demandes compensées</span>
+    </button>
+
+    <button class="module-btn" data-src="8-choix-intertemporel.html"
+            data-title="8. Le choix intertemporel">
+      <span class="module-num">8</span>
+      <span>Le choix intertemporel</span>
+    </button>
 
   </nav>
 
-  <div class="sidebar-footer">
-    Programmation assistée par IA
-  </div>
+  <div class="sidebar-footer">Programmation assistée par IA</div>
 </aside>
 
-<!-- ── Zone principale ── -->
 <div class="main" id="main">
 
-  <!-- Barre du haut (visible quand un module est chargé) -->
   <div class="topbar" id="topbar">
     <span class="topbar-title" id="topbarTitle"></span>
     <div class="topbar-actions">
@@ -417,34 +377,27 @@
     </div>
   </div>
 
-  <!-- Écran d'accueil -->
   <div class="welcome" id="welcome">
     <div class="welcome-icon">📚</div>
     <div class="welcome-title">Microéconomie du consommateur</div>
     <div class="welcome-sub">
-      Sélectionnez un module dans le menu à gauche pour commencer.
+      Sélectionnez un module dans le menu à gauche.<br>
       Chaque séquence est interactive — répondez aux questions pour avancer.
     </div>
     <div class="welcome-cards" id="quickLinks"></div>
   </div>
 
-  <!-- Loader -->
-  <div class="loader" id="loader">
-    <div class="loader-ring"></div>
-  </div>
+  <div class="loader" id="loader"><div class="loader-ring"></div></div>
 
-  <!-- iframe du module -->
   <iframe id="moduleFrame" title="Module de cours" allowfullscreen></iframe>
-
 </div>
 
-<!-- Bouton mobile -->
 <button class="toggle-sidebar" id="toggleSidebar" onclick="toggleSidebar()" title="Menu">☰</button>
 
 <script>
   var currentSrc = '';
 
-  // ── Construire les raccourcis rapides sur l'accueil ─────────────
+  // Raccourcis rapides sur l'écran d'accueil
   var quickLinks = document.getElementById('quickLinks');
   document.querySelectorAll('.module-btn').forEach(function(btn) {
     var card = document.createElement('button');
@@ -454,64 +407,51 @@
     quickLinks.appendChild(card);
   });
 
-  // ── Charger un module ───────────────────────────────────────────
   function loadModule(btn) {
-    var src   = btn.dataset.src;
-    var title = btn.dataset.title;
-
-    // Activer le bouton
     document.querySelectorAll('.module-btn').forEach(function(b) {
       b.classList.remove('active');
     });
     btn.classList.add('active');
 
-    // Afficher loader
     document.getElementById('loader').classList.add('visible');
     document.getElementById('welcome').style.display = 'none';
     document.getElementById('moduleFrame').classList.remove('visible');
     document.getElementById('topbar').classList.remove('visible');
 
-    currentSrc = src;
+    currentSrc = btn.dataset.src;
 
     var frame = document.getElementById('moduleFrame');
     frame.onload = function() {
       document.getElementById('loader').classList.remove('visible');
       frame.classList.add('visible');
       document.getElementById('topbar').classList.add('visible');
-      document.getElementById('topbarTitle').textContent = title;
+      document.getElementById('topbarTitle').textContent = btn.dataset.title;
     };
-    frame.src = src;
-
-    // Fermer sidebar sur mobile
+    frame.src = currentSrc;
     document.getElementById('sidebar').classList.remove('open');
   }
 
-  // ── Ouvrir dans un nouvel onglet ────────────────────────────────
   function openInNewTab() {
     if (currentSrc) window.open(currentSrc, '_blank');
   }
 
-  // ── Fermer le module ────────────────────────────────────────────
   function closeModule() {
     document.getElementById('moduleFrame').classList.remove('visible');
     document.getElementById('moduleFrame').src = '';
     document.getElementById('topbar').classList.remove('visible');
     document.getElementById('welcome').style.display = '';
-    document.querySelectorAll('.module-btn').forEach(function(b) {
-      b.classList.remove('active');
-    });
+    document.querySelectorAll('.module-btn').forEach(function(b) { b.classList.remove('active'); });
     currentSrc = '';
   }
 
-  // ── Toggle sidebar mobile ───────────────────────────────────────
   function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
   }
 
-  // Attacher les événements aux boutons du menu
   document.querySelectorAll('.module-btn').forEach(function(btn) {
     btn.addEventListener('click', function() { loadModule(btn); });
   });
 </script>
 </body>
 </html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

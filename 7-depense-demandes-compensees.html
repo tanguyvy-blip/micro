@@ -1,0 +1,1895 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fonction de dépense et demandes compensées</title>
+  <style>
+    :root {
+      --paper: #f8f5ed;
+      --panel: #fffdf8;
+      --ink: #132536;
+      --muted: #66747d;
+      --line: #e4e2dc;
+      --green: #176b52;
+      --blue: #2156c5;
+      --red: #b6483b;
+      --gold: #c98c2d;
+      --violet: #6d4bc2;
+      --soft: #edf3f0;
+      --button: #e8edf0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 18px;
+      line-height: 1.34;
+      overflow: hidden;
+    }
+
+    .app {
+      height: 100vh;
+      height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(320px, 58%) minmax(280px, 42%);
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 16px;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .app.no-visual {
+      grid-template-columns: minmax(0, 1fr);
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .app.no-visual .main {
+      display: none;
+    }
+
+    .progress-strip {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 6px;
+      align-items: stretch;
+      min-width: 0;
+      overflow-x: auto;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 253, 248, 0.94);
+      box-shadow: 0 10px 26px rgba(19, 37, 54, 0.04);
+    }
+
+    .progress-step {
+      flex: 1 1 0;
+      min-width: 105px;
+      padding: 6px 9px;
+      border: 1px solid #d6ded9;
+      border-radius: 8px;
+      background: #fbfaf5;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .progress-step.done {
+      color: var(--green);
+      background: #edf6f2;
+    }
+
+    .progress-step.current {
+      color: white;
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 18px 40px rgba(19, 37, 54, 0.06);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    h1, h2 {
+      margin: 0;
+      color: #5f6e77;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      font-size: 23px;
+      line-height: 1.05;
+    }
+
+    .course-credit {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .jump-nav select {
+      width: 100%;
+      min-width: 0;
+      min-height: 44px;
+      border: 1px solid #cfd8dc;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: white;
+      color: var(--ink);
+      font: 700 15px Georgia, "Times New Roman", serif;
+    }
+
+    .statement,
+    .feedback,
+    .hint-box {
+      padding: 11px 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fffefa;
+      overflow: auto;
+    }
+
+    .statement {
+      min-height: 0;
+      flex: 0 1 auto;
+      font-size: 17px;
+      line-height: 1.3;
+    }
+
+    .statement p,
+    .feedback p,
+    .hint-box p { margin: 0 0 6px; }
+    .statement p:last-child,
+    .feedback p:last-child,
+    .hint-box p:last-child { margin-bottom: 0; }
+
+    .feedback {
+      min-height: 46px;
+      border-color: #d3ded9;
+      background: #f7fbf8;
+      color: var(--green);
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.28;
+    }
+
+    .feedback.error {
+      border-color: #ecd0c9;
+      background: #fff6f3;
+      color: var(--red);
+    }
+
+    .controls {
+      display: grid;
+      gap: 8px;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .button-row,
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 13px;
+      min-height: 44px;
+      color: var(--ink);
+      background: var(--button);
+      font: 700 15px Georgia, "Times New Roman", serif;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: var(--green);
+      color: white;
+    }
+
+    button.selected {
+      background: var(--green);
+      color: white;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--green);
+    }
+
+    .slider-box,
+    .formula-box,
+    .reveal-box {
+      display: grid;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fffefa;
+    }
+
+    .app.no-visual .formula-box {
+      gap: 7px;
+      padding: 9px 11px;
+    }
+
+    .token-palette {
+      align-content: flex-start;
+      max-height: 150px;
+      overflow-y: auto;
+      padding-right: 3px;
+    }
+
+    .token-palette button {
+      padding: 6px 9px;
+      font-size: 14px;
+    }
+
+    .palette-box {
+      display: grid;
+      gap: 7px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      padding: 9px 11px;
+      border: 1px solid #cadbd3;
+      border-left: 5px solid var(--green);
+      border-radius: 10px;
+      background: #f7fbf8;
+      box-shadow: 0 8px 18px rgba(19, 37, 54, 0.08);
+    }
+
+    .palette-title {
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .step-feedback {
+      display: none;
+      padding: 8px 10px;
+      border: 1px solid #d3ded9;
+      border-radius: 8px;
+      background: #f7fbf8;
+      color: var(--green);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .step-feedback.error {
+      border-color: #ecd0c9;
+      background: #fff6f3;
+      color: var(--red);
+    }
+
+    .step-feedback.visible {
+      display: block;
+    }
+
+    .foc-group {
+      display: grid;
+      grid-template-columns: minmax(190px, max-content) max-content minmax(170px, 1fr);
+      gap: 10px;
+      align-items: center;
+      margin: 8px 0;
+    }
+
+    .foc-pair {
+      display: grid;
+      gap: 6px;
+    }
+
+    .foc-brace {
+      font-size: 58px;
+      line-height: 0.9;
+      color: var(--green);
+    }
+
+    .foc-arrow {
+      display: inline-block;
+      margin-right: 8px;
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .formula {
+      display: inline-block;
+      padding: 3px 7px;
+      border-radius: 7px;
+      background: #f2f5f3;
+      border: 1px solid #d9e2de;
+      color: var(--ink);
+      font-weight: 700;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+
+    .graph-title {
+      color: #5f6e77;
+      font-size: 22px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .graph-wrap {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      overflow: auto;
+    }
+
+    svg {
+      width: min(760px, 100%, 78vh);
+      height: auto;
+      border: 1px solid #d5e0dc;
+      border-radius: 10px;
+      background: #fbfaf5;
+      touch-action: none;
+    }
+
+    .legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .swatch {
+      width: 24px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .nav-bar {
+      position: fixed;
+      bottom: 14px;
+      left: 14px;
+      display: flex;
+      gap: 5px;
+      z-index: 50;
+    }
+
+    .nav-bar button {
+      min-height: 0 !important;
+      height: 28px;
+      min-width: 28px;
+      padding: 0 8px;
+      border-radius: 7px;
+      font-size: 13px;
+      background: rgba(248, 245, 237, 0.95);
+      border: 1px solid #d5ddd9;
+      color: var(--muted);
+      box-shadow: 0 1px 5px rgba(19,37,54,0.08);
+    }
+
+    .nav-bar button.primary {
+      background: var(--green);
+      color: white;
+      border-color: var(--green);
+    }
+
+    .step-done {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 6px 12px;
+      border-left: 3px solid var(--green);
+      background: #f7fbf8;
+      border-radius: 0 8px 8px 0;
+      font-size: 14px;
+    }
+
+    .step-done + .step-done { margin-top: 5px; }
+
+    .step-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--green);
+      text-transform: uppercase;
+      white-space: nowrap;
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-height: 850px) {
+      body { font-size: 17px; }
+      .app { gap: 12px; padding: 12px; }
+      .panel { padding: 13px; }
+      .progress-strip { padding: 4px; gap: 4px; }
+      .progress-step { font-size: 12px; padding: 4px 8px; }
+    }
+
+    @media (max-height: 720px) {
+      body { font-size: 15px; }
+      .app { gap: 10px; padding: 10px; }
+      .panel { padding: 10px; }
+      .course-credit { display: none; }
+      .progress-step { min-width: 80px; font-size: 11px; }
+      svg { width: min(100%, 46vh); }
+    }
+
+    @media (max-width: 900px) {
+      body {
+        overflow: auto;
+        font-size: 16px;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 12px;
+        padding: 10px;
+      }
+
+      .panel {
+        padding: 12px;
+      }
+
+      h1, h2 {
+        font-size: 20px;
+      }
+
+      .course-credit {
+        display: none;
+      }
+
+      .statement {
+        font-size: 16px;
+      }
+
+      .formula {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
+      svg { width: min(100%, 64vh); }
+    }
+    /* ── TTS ── */
+    #ttsToggle{position:fixed;bottom:20px;right:20px;z-index:1000;width:40px;height:40px;border-radius:50%;border:1px solid rgba(48,67,82,.14);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;color:#9aabbb;box-shadow:0 2px 10px rgba(19,37,54,.10);transition:color .2s,border-color .2s;}
+    #ttsToggle:hover{color:#176b52;border-color:rgba(23,107,82,.3);}
+    #ttsToggle.tts-active{color:#176b52;border-color:rgba(23,107,82,.25);background:rgba(237,246,242,.95);}
+    #ttsToggle svg{width:18px;height:18px;display:block;}
+    /* ── Progress ── */
+    #pgHUD{position:fixed;bottom:20px;left:20px;z-index:999;display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;border:1px solid rgba(48,67,82,.14);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);font-size:14px;color:#5f6e77;box-shadow:0 2px 10px rgba(19,37,54,.10);pointer-events:none;}
+    .pg-sc{color:#176b52;font-weight:700;display:flex;align-items:center;gap:4px;}
+    .pg-pr{color:#c98c2d;font-weight:700;display:flex;align-items:center;gap:4px;}
+    .pg-sep{opacity:.3;font-size:12px;}
+    #pgOverlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(19,37,54,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
+    .pg-card{background:#fff;border-radius:20px;padding:28px 32px;max-width:460px;width:90%;box-shadow:0 24px 64px rgba(19,37,54,.22);}
+    .pg-card h3{margin:0 0 20px;font-size:22px;color:#132536;}
+    .pg-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eef0f2;gap:12px;}
+    .pg-row:last-of-type{border-bottom:none;margin-bottom:16px;}
+    .pg-mod-name{color:#132536;font-weight:500;font-size:16px;}
+    .pg-mod-pts{font-size:14px;color:#5f6e77;white-space:nowrap;}
+    .pg-mod-pts .s{color:#176b52;font-weight:700;}
+    .pg-mod-pts .p{color:#c98c2d;font-weight:700;}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="progress-strip" id="progress"></div>
+
+    <aside class="panel side">
+      <h1>Fonction de dépense et demandes compensées</h1>
+      <div class="jump-nav">
+        <select id="jumpSelect" aria-label="Aller à une étape"></select>
+      </div>
+      <div class="statement" id="statement"></div>
+      <div class="controls" id="controls"></div>
+      <div class="feedback" id="feedback">Les droites sont parallèles car le rapport des prix ne change pas.</div>
+      <div class="nav-bar" id="navBar"></div>
+    </aside>
+
+    <main class="panel main">
+      <div class="graph-title" id="graphTitle">Prix et pente</div>
+      <div class="graph-wrap" id="graphWrap"></div>
+      <div class="legend" id="legend"></div>
+    </main>
+  </div>
+
+  <script>
+    const config = {
+      size: 560,
+      margin: 64,
+      maxB: 11,
+      maxC: 11,
+      pB: 20,
+      pC: 20,
+      oldPB: 20,
+      newPB: 50,
+      income: 160,
+      uBar: 4
+    };
+
+    const screens = [
+      {
+        title: "Introduction",
+        short: "Intro",
+        mode: "cover",
+        html: `
+          <p><strong>Ce module étudie le problème dual du choix du consommateur</strong> : minimiser la dépense pour atteindre un niveau de satisfaction donné.</p>
+          <p>Nous construisons la <strong>fonction de dépense</strong> et les <strong>demandes compensées (hicksiennes)</strong>, puis nous établissons l'<strong>équation de Slutsky</strong> qui décompose l'effet d'une variation de prix en effet de substitution et effet revenu.</p>
+          <ul style="margin:10px 0 0 16px;padding:0;line-height:1.9;">
+            <li>Rappel sur la droite budgétaire et sa pente</li>
+            <li>Minimisation de la dépense sous contrainte d'utilité</li>
+            <li>Demandes hicksiennes et fonction de dépense</li>
+            <li>Dualité marshallien / hicksien</li>
+            <li>Décomposition de Slutsky</li>
+          </ul>
+          <p style="color:var(--muted);font-size:15px;margin-top:12px;">Prérequis : modules 3 (choix sous contrainte), 6 (fonction d'utilité), 4 (effets substitution / revenu).</p>
+          <p class="course-credit" style="margin-top:18px;">Auteur : Tanguy van Ypersele — Tous droits réservés<br>Programmation effectuée à l'aide de l'IA.</p>`
+      },
+      {
+        title: "Rappel : prix et pente",
+        short: "Pente",
+        mode: "parallel-slider",
+        html: `
+          <p>Lorsque les prix <span class="formula">p<sub>B</sub></span> et <span class="formula">p<sub>C</sub></span> sont donnés, la pente de la droite de budget est fixée : <span class="formula">-p<sub>B</sub>/p<sub>C</sub></span>.</p>
+          <p>Le revenu ne change pas cette pente : il déplace seulement la droite parallèlement.</p>`
+      },
+      {
+        title: "Une infinité de droites budgétaires",
+        short: "Famille",
+        mode: "income-family",
+        html: `
+          <p>Pour un même système de prix, il existe autant de droites budgétaires parallèles qu'il existe de niveaux de revenu.</p>
+          <p>Augmenter le revenu élargit l'ensemble budgétaire sans modifier le rapport des prix.</p>`
+      },
+      {
+        title: "Fixer une courbe d'indifférence cible",
+        short: "u cible",
+        mode: "target-ci",
+        html: `
+          <p>On fixe maintenant un niveau d'utilité à atteindre : <span class="formula">ū</span>.</p>
+          <p>Graphiquement, cela revient à choisir une courbe d'indifférence particulière.</p>
+          <p><span class="formula">u(B,C)=ū</span></p>
+          <p>Avec Cobb-Douglas : <span class="formula">B<sup>1/2</sup>C<sup>1/2</sup>=ū</span>.</p>`
+      },
+      {
+        title: "Chercher le revenu minimal",
+        short: "Min R",
+        mode: "minimal-income",
+        html: `
+          <p>On cherche le plus petit revenu permettant d'atteindre cette courbe d'indifférence.</p>
+          <p>Déplacez une droite de budget parallèle : une droite trop basse ne permet pas d'atteindre <span class="formula">ū</span>, tandis qu'une droite plus haute coûte davantage.</p>
+          <p>Essayez de trouver la droite la plus basse qui permet encore d'atteindre la courbe verte.</p>`
+      },
+      {
+        title: "Les demandes compensées",
+        short: "Hicks",
+        mode: "hicksian",
+        html: `
+          <p>Le panier tangent donne les quantités choisies lorsque l'on minimise la dépense pour atteindre <span class="formula">ū</span>.</p>
+          <p>Ces quantités sont appelées demandes compensées ou demandes hicksiennes.</p>
+          <p>On les note avec un exposant <span class="formula">h</span>, comme Hicks : <span class="formula">B<sup>h</sup></span> et <span class="formula">C<sup>h</sup></span>.</p>
+          <p>Cela signifie : quantité demandée du bien lorsque l'on raisonne avec le problème hicksien, c'est-à-dire à utilité cible donnée.</p>
+          <p><span class="formula">B<sup>h</sup>(p<sub>B</sub>,p<sub>C</sub>,ū)</span></p>
+          <p><span class="formula">C<sup>h</sup>(p<sub>B</sub>,p<sub>C</sub>,ū)</span></p>`
+      },
+      {
+        title: "La fonction de dépense",
+        short: "Dépense",
+        mode: "expenditure",
+        html: `
+          <p>La fonction de dépense donne le revenu minimal nécessaire pour atteindre <span class="formula">ū</span> lorsque les prix sont <span class="formula">p<sub>B</sub></span> et <span class="formula">p<sub>C</sub></span>.</p>
+          <p><span class="formula">e(p<sub>B</sub>,p<sub>C</sub>,ū)=p<sub>B</sub>B<sup>h</sup>(p<sub>B</sub>,p<sub>C</sub>,ū)+p<sub>C</sub>C<sup>h</sup>(p<sub>B</sub>,p<sub>C</sub>,ū)</span></p>`
+      },
+      {
+        title: "Le programme de minimisation",
+        short: "Programme",
+        mode: "program",
+        html: `
+          <p>Mathématiquement, on résout une minimisation sous contrainte.</p>
+          <p>On cherche le panier le moins coûteux qui permet d'atteindre le niveau d'utilité <span class="formula">ū</span>.</p>
+          <p>Le Lagrangien ne sert pas seulement à maximiser une fonction d'utilité : il sert plus généralement à optimiser une fonction sous contrainte.</p>
+          <p>Ici, l'objectif n'est donc plus de maximiser l'utilité. On minimise la dépense, avec la contrainte d'atteindre exactement <span class="formula">ū</span>.</p>
+          <p><span class="formula">min<sub>B,C</sub> p<sub>B</sub>B+p<sub>C</sub>C</span></p>
+          <p>sous contrainte : <span class="formula">u(B,C)=ū</span></p>
+          <p>Lagrangien : <span class="formula">L=p<sub>B</sub>B+p<sub>C</sub>C+λ(ū-u(B,C))</span></p>
+          <p>Le <strong>multiplicateur de Lagrange</strong> <span class="formula">λ</span> mesure le coût marginal d'atteindre une unité d'utilité supplémentaire : de combien la dépense minimale augmente si la cible <span class="formula">ū</span> monte d'une unité.</p>
+          <div class="foc-group">
+            <div class="foc-pair">
+              <span class="formula">p<sub>B</sub>=λ UM<sub>B</sub></span>
+              <span class="formula">p<sub>C</sub>=λ UM<sub>C</sub></span>
+            </div>
+            <div class="foc-brace">}</div>
+            <div><span class="foc-arrow">⇒</span><span class="formula">p<sub>B</sub>/p<sub>C</sub> = UM<sub>B</sub>/UM<sub>C</sub></span></div>
+          </div>
+          <p><span class="formula">ū=u(B,C)</span></p>`
+      },
+      {
+        title: "Exemple Cobb-Douglas",
+        short: "Calcul",
+        mode: "cobb-reveal",
+        html: `
+          <p>Dans le cas <span class="formula">u(B,C)=B<sup>1/2</sup>C<sup>1/2</sup></span>, on peut calculer explicitement les demandes compensées.</p>
+          <p>On déroule toute la méthode : Lagrangien, conditions du premier ordre, tangence, puis résolution du système.</p>`
+      },
+      {
+        title: "Exercice : autre Cobb-Douglas",
+        short: "Exercice",
+        mode: "cobb-practice",
+        html: `
+          <p>Appliquez maintenant exactement la même méthode à une autre Cobb-Douglas :</p>
+          <p><span class="formula">u(B,C)=B<sup>1/3</sup>C<sup>2/3</sup></span></p>
+          <p>On cherche les demandes compensées qui minimisent la dépense pour atteindre <span class="formula">ū</span>.</p>`
+      },
+      {
+        title: "Lien avec demandes marshalliennes",
+        short: "Dualité",
+        mode: "marshall-hicks",
+        html: `
+          <p>Les demandes marshalliennes partent d'un revenu donné et maximisent l'utilité.</p>
+          <p>Les demandes compensées partent d'un niveau d'utilité donné et minimisent la dépense.</p>
+          <p>Par convention, on note souvent la demande marshallienne avec <span class="formula">x</span> : c'est le panier choisi quand les prix et le revenu sont donnés.</p>
+          <p>On note souvent la demande hicksienne avec <span class="formula">h</span> : c'est le panier le moins coûteux qui permet d'atteindre une utilité cible.</p>
+          <p>Marshallien : <span class="formula">x(p<sub>B</sub>,p<sub>C</sub>,R)</span> — panier qui maximise <span class="formula">u(B,C)</span> sous <span class="formula">p<sub>B</sub>B+p<sub>C</sub>C ≤ R</span></p>
+          <p>Hicksien : <span class="formula">h(p<sub>B</sub>,p<sub>C</sub>,ū)</span> — panier qui minimise <span class="formula">p<sub>B</sub>B+p<sub>C</sub>C</span> sous <span class="formula">u(B,C)=ū</span></p>`
+      },
+      {
+        title: "Lien avec effet substitution / effet revenu",
+        short: "Substitution",
+        mode: "substitution-link",
+        html: `
+          <p>Nous reconstruisons maintenant la décomposition à partir des outils vus dans cette séquence.</p>
+          <p>Le prix du bien B augmente. Le choix total change pour deux raisons : le bien B devient relativement plus cher, et le pouvoir d'achat diminue.</p>
+          <p>La demande hicksienne permet d'isoler l'effet de substitution : nouveaux prix, mais même niveau de satisfaction qu'au départ.</p>`
+      },
+      {
+        title: "Rappel : trois paniers",
+        short: "Rappel",
+        mode: "slutsky-recap",
+        html: `
+          <p><span class="formula">De la décomposition graphique à l'équation de Slutsky</span></p>
+          <p>Nous avons déjà construit trois paniers : le panier initial, le panier compensé et le panier final.</p>
+          <p>Ces trois paniers permettent de décomposer l'effet total d'un changement de prix.</p>
+          <p><span class="formula">x(p<sup>0</sup>,R)</span></p>
+          <p><span class="formula">h(p<sup>1</sup>,u<sub>0</sub>)</span></p>
+          <p><span class="formula">x(p<sup>1</sup>,R)</span></p>`
+      },
+      {
+        title: "Des flèches aux différences",
+        short: "Différences",
+        mode: "slutsky-differences",
+        html: `
+          <p>Les flèches du graphique peuvent se traduire en différences de quantités.</p>
+          <p>Pour le bien B, le changement total est la somme de deux changements.</p>`
+      },
+      {
+        title: "Un changement de prix très petit",
+        short: "Petit dp",
+        mode: "slutsky-small-change",
+        html: `
+          <p>L'équation de Slutsky correspond à la version locale de cette décomposition.</p>
+          <p>Au lieu d'un grand changement de prix, on imagine une variation infinitésimale.</p>
+          <p><span class="formula">p<sub>B</sub><sup>1</sup> → p<sub>B</sub><sup>0</sup></span> ou <span class="formula">dp<sub>B</sub></span> très petit.</p>`
+      },
+      {
+        title: "L'effet total",
+        short: "Total",
+        mode: "slutsky-total-derivative",
+        html: `
+          <p>Le changement observé de la demande marshallienne lorsque le prix de B varie est l'effet total.</p>
+          <p><span class="formula">∂B/∂p<sub>B</sub></span></p>
+          <p><span class="formula">∂B(p<sub>B</sub>,p<sub>C</sub>,R)/∂p<sub>B</sub></span></p>
+          <p>Cette dérivée mesure la réaction totale de la demande observée de B à son prix.</p>`
+      },
+      {
+        title: "L'effet de substitution",
+        short: "Substitution",
+        mode: "slutsky-substitution-derivative",
+        html: `
+          <p>L'effet de substitution est la réaction de la demande compensée au prix, en maintenant constant le niveau d'utilité.</p>
+          <p><span class="formula">∂B<sup>h</sup>/∂p<sub>B</sub></span></p>
+          <p><span class="formula">∂B<sup>h</sup>(p<sub>B</sub>,p<sub>C</sub>,u<sub>0</sub>)/∂p<sub>B</sub></span></p>
+          <p>On change le prix, mais on garde le niveau d'utilité constant. C'est exactement le rôle des demandes compensées.</p>`
+      },
+      {
+        title: "La perte de pouvoir d'achat",
+        short: "Revenu 1",
+        mode: "slutsky-income-loss",
+        html: `
+          <p>Si le prix de B augmente légèrement, le consommateur perd du pouvoir d'achat.</p>
+          <p>Cette perte dépend de la quantité de B qu'il consommait.</p>
+          <p><span class="formula">dp<sub>B</sub> &gt; 0</span></p>
+          <p><span class="formula">dR = -B dp<sub>B</sub></span></p>
+          <p>Si le consommateur achète B unités, une hausse infinitésimale <span class="formula">dp<sub>B</sub></span> augmente la dépense nécessaire de <span class="formula">B dp<sub>B</sub></span>. À revenu nominal donné, cela équivaut à une baisse de revenu réel.</p>`
+      },
+      {
+        title: "La réaction au revenu",
+        short: "Revenu 2",
+        mode: "slutsky-income-response",
+        html: `
+          <p>La demande marshallienne dépend du revenu.</p>
+          <p>Si le pouvoir d'achat baisse, la demande change selon la sensibilité de la demande au revenu.</p>`
+      },
+      {
+        title: "L'équation de Slutsky",
+        short: "Slutsky",
+        mode: "slutsky-equation",
+        html: `
+          <p>On peut maintenant assembler les deux effets : l'effet total est égal à l'effet de substitution plus l'effet revenu.</p>`
+      },
+      {
+        title: "Forme générale",
+        short: "Général",
+        mode: "slutsky-general",
+        html: `
+          <p>L'équation de Slutsky s'écrit pour n'importe quel bien <span class="formula">i</span> et n'importe quel prix <span class="formula">j</span>.</p>
+          <p><span class="formula">∂x<sub>i</sub>/∂p<sub>j</sub> = ∂h<sub>i</sub>/∂p<sub>j</sub> - x<sub>j</sub> ∂x<sub>i</sub>/∂R</span></p>
+          <p><span class="formula">x<sub>i</sub></span> : demande marshallienne du bien i.</p>
+          <p><span class="formula">h<sub>i</sub></span> : demande compensée du bien i.</p>
+          <p><span class="formula">p<sub>j</sub></span> : prix du bien j.</p>
+          <p><span class="formula">x<sub>j</sub></span> : quantité initialement consommée du bien j.</p>`
+      },
+      {
+        title: "Normal, inférieur, Giffen",
+        short: "Signes",
+        mode: "slutsky-signs",
+        html: `
+          <p>Pour le prix propre d'un bien, l'effet de substitution est toujours négatif.</p>
+          <p>L'effet revenu dépend du type de bien.</p>`
+      },
+      {
+        title: "Bilan",
+        short: "Fin",
+        mode: "end",
+        html: `
+          <p style="font-size:22px;font-weight:700;color:var(--green);margin-bottom:10px;">Bilan du module</p>
+          <ul style="margin:0 0 0 16px;padding:0;line-height:1.9;">
+            <li>La <strong>fonction de dépense</strong> <span class="formula">e(p<sub>B</sub>,p<sub>C</sub>,ū)</span> — revenu minimal pour atteindre ū aux prix donnés.</li>
+            <li>Les <strong>demandes hicksiennes</strong> <span class="formula">B<sup>h</sup>, C<sup>h</sup></span> — quantités qui atteignent ū au coût minimal.</li>
+            <li>La <strong>dualité</strong> : le problème marshallien et le problème hicksien sont symétriques.</li>
+            <li>L'<strong>équation de Slutsky</strong> : <span class="formula">∂x/∂p = ∂h/∂p − x · ∂x/∂R</span>.</li>
+            <li>L'effet de substitution est <strong>toujours négatif</strong> pour le prix propre.</li>
+          </ul>
+          <p class="course-credit" style="margin-top:18px;">Auteur : Tanguy van Ypersele — Tous droits réservés<br>Programmation effectuée à l'aide de l'IA.</p>`
+      }
+    ];
+
+    const state = {
+      phase: 0,
+      income: 160,
+      selectedIncome: 160,
+      tangentIncome: 130,
+      minimalIncomeFound: false,
+      revealStep: 0,
+      substitutionRevealStep: 0,
+      slutskyPB1: 50,
+      slutskyDP: 1,
+      slutskyRevealStep: 0,
+      slutskyEquationRevealStep: 0,
+      slutskyIncomeRevealStep: 0,
+      cobbPracticeStep: 1,
+      cobbPracticeAttempts: 0,
+      practiceChecked: false,
+      practiceProgress: {}
+    };
+
+    const progress = document.querySelector("#progress");
+    const statement = document.querySelector("#statement");
+    const controls = document.querySelector("#controls");
+    const feedback = document.querySelector("#feedback");
+    const graphWrap = document.querySelector("#graphWrap");
+    const graphTitle = document.querySelector("#graphTitle");
+    const legend = document.querySelector("#legend");
+    const jumpSelect = document.querySelector("#jumpSelect");
+    const app = document.querySelector(".app");
+
+    function utility(B, C) {
+      return Math.sqrt(B * C);
+    }
+
+    function marginalUtilityB(B, C) {
+      return 0.5 * Math.sqrt(C / B);
+    }
+
+    function marginalUtilityC(B, C) {
+      return 0.5 * Math.sqrt(B / C);
+    }
+
+    function tms(B, C) {
+      return marginalUtilityB(B, C) / marginalUtilityC(B, C);
+    }
+
+    function marshallianDemand(pB, pC, R) {
+      return { b: R / (2 * pB), c: R / (2 * pC) };
+    }
+
+    function hicksianDemand(pB, pC, uBar) {
+      return {
+        b: uBar * Math.sqrt(pC / pB),
+        c: uBar * Math.sqrt(pB / pC)
+      };
+    }
+
+    function expenditure(pB, pC, uBar) {
+      return 2 * uBar * Math.sqrt(pB * pC);
+    }
+
+    function formatNumber(value, digits = 2) {
+      if (Math.abs(value - Math.round(value)) < 0.001) return String(Math.round(value));
+      return value.toFixed(digits).replace(".", ",");
+    }
+
+    function noVisualMode(mode) {
+      return [
+        "cover",
+        "end",
+        "cobb-practice",
+        "slutsky-total-derivative",
+        "slutsky-substitution-derivative",
+        "slutsky-income-loss",
+        "slutsky-income-response",
+        "slutsky-equation",
+        "slutsky-general",
+        "slutsky-signs"
+      ].includes(mode);
+    }
+
+    function svgEl(name, attrs = {}) {
+      const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attrs).forEach(([key, value]) => element.setAttribute(key, value));
+      return element;
+    }
+
+    function sx(B) {
+      const inner = config.size - 2 * config.margin;
+      return config.margin + (B / config.maxB) * inner;
+    }
+
+    function sy(C) {
+      const inner = config.size - 2 * config.margin;
+      return config.size - config.margin - (C / config.maxC) * inner;
+    }
+
+    function drawAxes(svg = graphWrap.currentSvg) {
+      for (let b = 0; b <= config.maxB; b += 1) {
+        svg.appendChild(svgEl("line", { x1: sx(b), y1: sy(0), x2: sx(b), y2: sy(config.maxC), stroke: "#d7e0e4", "stroke-width": 1 }));
+      }
+      for (let c = 0; c <= config.maxC; c += 1) {
+        svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(c), x2: sx(config.maxB), y2: sy(c), stroke: "#d7e0e4", "stroke-width": 1 }));
+      }
+      svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(0), x2: sx(config.maxB), y2: sy(0), stroke: "#132536", "stroke-width": 2 }));
+      svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(0), x2: sx(0), y2: sy(config.maxC), stroke: "#132536", "stroke-width": 2 }));
+      for (let b = 0; b <= config.maxB; b += 2) {
+        const label = svgEl("text", { x: sx(b), y: sy(0) + 24, fill: "#66747d", "font-size": 13, "text-anchor": "middle" });
+        label.textContent = b;
+        svg.appendChild(label);
+      }
+      for (let c = 0; c <= config.maxC; c += 2) {
+        const label = svgEl("text", { x: sx(0) - 15, y: sy(c) + 4, fill: "#66747d", "font-size": 13, "text-anchor": "end" });
+        label.textContent = c;
+        svg.appendChild(label);
+      }
+      const bLabel = svgEl("text", { x: sx(config.maxB) - 6, y: sy(0) + 42, fill: "#132536", "font-size": 18, "font-weight": 700 });
+      bLabel.textContent = "B";
+      svg.appendChild(bLabel);
+      const cLabel = svgEl("text", { x: sx(0) - 34, y: sy(config.maxC) + 5, fill: "#132536", "font-size": 18, "font-weight": 700 });
+      cLabel.textContent = "C";
+      svg.appendChild(cLabel);
+    }
+
+    function drawBudgetLine(pB, pC, R, color, label = "", dash = "none", width = 3, opacity = 1) {
+      const bMax = R / pB;
+      const cMax = R / pC;
+      const b1 = Math.max(0, Math.min(config.maxB, bMax));
+      const cAtB1 = (R - pB * b1) / pC;
+      const c1 = Math.max(0, Math.min(config.maxC, cAtB1));
+      const c2 = Math.max(0, Math.min(config.maxC, cMax));
+      const bAtC2 = (R - pC * c2) / pB;
+      const b2 = Math.max(0, Math.min(config.maxB, bAtC2));
+      const line = svgEl("path", {
+        d: `M ${sx(b2)} ${sy(c2)} L ${sx(b1)} ${sy(c1)}`,
+        fill: "none",
+        stroke: color,
+        "stroke-width": width,
+        "stroke-dasharray": dash,
+        opacity
+      });
+      graphWrap.currentSvg?.appendChild(line);
+      if (label) {
+        const text = svgEl("text", { x: sx(Math.min(config.maxB - 0.4, Math.max(0.4, b1 - 0.25))), y: sy(Math.max(0.35, c1)) - 8, fill: color, "font-size": 15, "font-weight": 700, "text-anchor": "end" });
+        text.textContent = label;
+        graphWrap.currentSvg?.appendChild(text);
+      }
+    }
+
+    function drawIndifferenceCurve(uBar, color, label = "", width = 3, dash = "none", opacity = 1) {
+      const points = [];
+      const minB = Math.max(0.25, (uBar * uBar) / config.maxC);
+      const maxB = config.maxB;
+      for (let b = minB; b <= maxB; b += 0.05) {
+        const c = (uBar * uBar) / b;
+        if (c <= config.maxC) points.push(`${sx(b)} ${sy(c)}`);
+      }
+      if (!points.length) return;
+      graphWrap.currentSvg?.appendChild(svgEl("path", {
+        d: `M ${points.join(" L ")}`,
+        fill: "none",
+        stroke: color,
+        "stroke-width": width,
+        "stroke-dasharray": dash,
+        opacity
+      }));
+      if (label) {
+        const b = Math.min(config.maxB - 1.4, Math.max(1.3, uBar * 1.15));
+        const c = (uBar * uBar) / b;
+        const text = svgEl("text", { x: sx(b) + 8, y: sy(c) - 8, fill: color, "font-size": 16, "font-weight": 700 });
+        text.textContent = label;
+        graphWrap.currentSvg?.appendChild(text);
+      }
+    }
+
+    function drawCobbDouglasCurve(alpha, beta, uBar, color, label = "", width = 3, dash = "none", opacity = 1) {
+      const points = [];
+      for (let b = 0.25; b <= config.maxB; b += 0.05) {
+        const c = Math.pow(uBar / Math.pow(b, alpha), 1 / beta);
+        if (c <= config.maxC) points.push(`${sx(b)} ${sy(c)}`);
+      }
+      if (!points.length) return;
+      graphWrap.currentSvg?.appendChild(svgEl("path", {
+        d: `M ${points.join(" L ")}`,
+        fill: "none",
+        stroke: color,
+        "stroke-width": width,
+        "stroke-dasharray": dash,
+        opacity
+      }));
+      if (label) {
+        const b = Math.min(config.maxB - 1.8, Math.max(1.3, uBar * 1.1));
+        const c = Math.pow(uBar / Math.pow(b, alpha), 1 / beta);
+        const text = svgEl("text", { x: sx(b) + 8, y: sy(c) - 8, fill: color, "font-size": 16, "font-weight": 700 });
+        text.textContent = label;
+        graphWrap.currentSvg?.appendChild(text);
+      }
+    }
+
+    function drawPoint(B, C, label, color, radius = 8) {
+      graphWrap.currentSvg?.appendChild(svgEl("circle", { cx: sx(B), cy: sy(C), r: radius, fill: color, stroke: "white", "stroke-width": 3 }));
+      if (label) {
+        const text = svgEl("text", { x: sx(B) + 11, y: sy(C) - 10, fill: color, "font-size": 16, "font-weight": 700 });
+        text.textContent = label;
+        graphWrap.currentSvg?.appendChild(text);
+      }
+    }
+
+    function drawArrow(from, to, color) {
+      const id = `arrow-${color.replace("#", "")}`;
+      if (!graphWrap.currentSvg.querySelector(`#${id}`)) {
+        const defs = svgEl("defs");
+        const marker = svgEl("marker", { id, viewBox: "0 0 10 10", refX: "8", refY: "5", markerWidth: "6", markerHeight: "6", orient: "auto-start-reverse" });
+        marker.appendChild(svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: color }));
+        defs.appendChild(marker);
+        graphWrap.currentSvg.appendChild(defs);
+      }
+      graphWrap.currentSvg.appendChild(svgEl("line", { x1: sx(from.b), y1: sy(from.c), x2: sx(to.b), y2: sy(to.c), stroke: color, "stroke-width": 3, "marker-end": `url(#${id})` }));
+    }
+
+    function drawText(x, y, text, color = "#132536") {
+      const node = svgEl("text", { x: sx(x), y: sy(y), fill: color, "font-size": 16, "font-weight": 700 });
+      node.textContent = text;
+      graphWrap.currentSvg?.appendChild(node);
+    }
+
+    function slutskyPoints(pB1 = config.newPB) {
+      const x0 = marshallianDemand(config.oldPB, config.pC, config.income);
+      const u0 = utility(x0.b, x0.c);
+      const x1 = marshallianDemand(pB1, config.pC, config.income);
+      const h1 = hicksianDemand(pB1, config.pC, u0);
+      const e1 = expenditure(pB1, config.pC, u0);
+      return { x0, u0, x1, h1, e1 };
+    }
+
+    function drawSlutskyGraph(mode) {
+      const pB1 = mode === "slutsky-small-change" ? state.slutskyPB1 : config.newPB;
+      const { x0, u0, x1, h1, e1 } = slutskyPoints(pB1);
+      drawIndifferenceCurve(u0, "#176b52", "u0", 4);
+      drawBudgetLine(config.oldPB, config.pC, config.income, "#b6483b", "", "none", 3);
+      drawBudgetLine(pB1, config.pC, config.income, "#2156c5", "budget final", "none", 3);
+      drawBudgetLine(pB1, config.pC, e1, "#c98c2d", "budget compensé", "8 5", 3);
+      drawPoint(x0.b, x0.c, "x(p0,R)", "#b6483b", 8);
+      drawPoint(h1.b, h1.c, "h(p1,u0)", "#c98c2d", 8);
+      drawPoint(x1.b, x1.c, "x(p1,R)", "#2156c5", 8);
+      drawArrow(x0, h1, "#c98c2d");
+      drawArrow(h1, x1, "#2156c5");
+    }
+
+    function setFeedback(message, type = "ok") {
+      feedback.textContent = message;
+      feedback.classList.toggle("error", type === "error");
+    }
+
+    function tangentIncome() {
+      return expenditure(config.pB, config.pC, config.uBar);
+    }
+
+    function createSvg() {
+      graphWrap.innerHTML = "";
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", `0 0 ${config.size} ${config.size}`);
+      svg.setAttribute("aria-label", "Graphique fonction de dépense et demandes compensées");
+      graphWrap.currentSvg = svg;
+      drawAxes(svg);
+      graphWrap.appendChild(svg);
+      return svg;
+    }
+
+    function drawGraph() {
+      if (noVisualMode(screens[state.phase].mode)) {
+        graphWrap.innerHTML = "";
+        graphWrap.currentSvg = null;
+        return;
+      }
+      createSvg();
+      const screen = screens[state.phase];
+      const hOld = hicksianDemand(config.pB, config.pC, config.uBar);
+      const eOld = expenditure(config.pB, config.pC, config.uBar);
+
+      if (screen.mode === "parallel-slider") {
+        [80, 120, 160, 200].forEach((R) => drawBudgetLine(config.pB, config.pC, R, "#9eb7ad", "", "6 6", 2, 0.7));
+        drawBudgetLine(config.pB, config.pC, state.income, "#176b52", `R=${state.income}`, "none", 4);
+        drawText(0.7, 10.2, "pB = 20, pC = 20, pente = -1");
+      }
+
+      if (screen.mode === "income-family") {
+        [80, 120, 160, 220].forEach((R) => drawBudgetLine(config.pB, config.pC, R, R === state.selectedIncome ? "#176b52" : "#9eb7ad", R === state.selectedIncome ? `R=${R}` : "", R === state.selectedIncome ? "none" : "6 6", R === state.selectedIncome ? 4 : 2, R === state.selectedIncome ? 1 : 0.65));
+      }
+
+      if (["target-ci", "minimal-income", "hicksian", "expenditure", "program", "cobb-reveal", "marshall-hicks"].includes(screen.mode)) {
+        drawIndifferenceCurve(config.uBar, "#176b52", "u(B,C)=ū=4", 4);
+      }
+      if (screen.mode === "cobb-practice") {
+        const alpha = 1 / 3;
+        const beta = 2 / 3;
+        const b = config.uBar * Math.pow(config.pC / (2 * config.pB), beta);
+        const c = config.uBar * Math.pow((2 * config.pB) / config.pC, alpha);
+        const e = config.pB * b + config.pC * c;
+        drawCobbDouglasCurve(alpha, beta, config.uBar, "#176b52", "u(B,C)=ū", 4);
+        drawBudgetLine(config.pB, config.pC, e, "#c98c2d", "budget min.", "none", 4);
+        drawPoint(b, c, "solution", "#c98c2d", 9);
+      }
+
+      if (screen.mode === "target-ci") {
+        drawPoint(2, 8, "U=4", "#176b52", 7);
+        drawPoint(4, 4, "U=4", "#176b52", 7);
+        drawPoint(8, 2, "U=4", "#176b52", 7);
+      }
+
+      if (screen.mode === "minimal-income") {
+        drawBudgetLine(config.pB, config.pC, 120, "#b6483b", "trop bas", "6 6", 2);
+        drawBudgetLine(config.pB, config.pC, 220, "#2156c5", "plus haut", "6 6", 2);
+        drawBudgetLine(config.pB, config.pC, state.tangentIncome, "#c98c2d", `R=${Math.round(state.tangentIncome)}`, "none", 4);
+        if (state.minimalIncomeFound || Math.abs(state.tangentIncome - eOld) < 2) {
+          drawPoint(hOld.b, hOld.c, `B=${formatNumber(hOld.b)}, C=${formatNumber(hOld.c)}`, "#c98c2d", 9);
+          drawText(0.7, 10.2, `Avec pB=pC=20 et R=${Math.round(eOld)}, on atteint au mieux u=4`);
+        }
+      }
+
+      if (["hicksian", "expenditure", "program", "cobb-reveal", "marshall-hicks"].includes(screen.mode)) {
+        drawBudgetLine(config.pB, config.pC, eOld, "#c98c2d", `e=${Math.round(eOld)}`, "none", 4);
+        drawPoint(hOld.b, hOld.c, `(${formatNumber(hOld.b)} ; ${formatNumber(hOld.c)})`, "#c98c2d", 9);
+      }
+
+      if (screen.mode === "expenditure") {
+        drawText(0.7, 10.2, `e = 20×${formatNumber(hOld.b)} + 20×${formatNumber(hOld.c)} = ${Math.round(eOld)}`);
+      }
+
+      if (screen.mode === "marshall-hicks") {
+        const rMarshall = 240;
+        const x = marshallianDemand(config.pB, config.pC, rMarshall);
+        drawIndifferenceCurve(utility(x.b, x.c), "#2156c5", `u=${formatNumber(utility(x.b, x.c))}`, 2, "6 4", 0.65);
+        drawBudgetLine(config.pB, config.pC, rMarshall, "#2156c5", "R=240", "8 5", 3);
+        drawPoint(x.b, x.c, "x(p,R)", "#2156c5", 8);
+      }
+
+      if (screen.mode === "substitution-link") {
+        const x0 = marshallianDemand(config.oldPB, config.pC, config.income);
+        const x1 = marshallianDemand(config.newPB, config.pC, config.income);
+        const h1 = hicksianDemand(config.newPB, config.pC, utility(x0.b, x0.c));
+        const e1 = expenditure(config.newPB, config.pC, utility(x0.b, x0.c));
+        const step = state.substitutionRevealStep;
+        drawIndifferenceCurve(utility(x0.b, x0.c), "#176b52", "u0=4", 4);
+        drawBudgetLine(config.oldPB, config.pC, config.income, "#b6483b", "", "none", 3);
+        drawPoint(x0.b, x0.c, "x(p0,R)", "#b6483b", 8);
+        if (step >= 1) drawBudgetLine(config.newPB, config.pC, config.income, "#2156c5", "nouveau prix", "none", 3);
+        if (step >= 2) drawBudgetLine(config.newPB, config.pC, e1, "#c98c2d", `e=${formatNumber(e1)}`, "8 5", 3);
+        if (step >= 3) {
+          drawPoint(h1.b, h1.c, "h(p1,u0)", "#c98c2d", 8);
+        }
+        if (step >= 4) {
+          drawArrow(x0, h1, "#c98c2d");
+        }
+        if (step >= 5) {
+          drawPoint(x1.b, x1.c, "x(p1,R)", "#2156c5", 8);
+          drawArrow(h1, x1, "#2156c5");
+        }
+      }
+      if (screen.mode.startsWith("slutsky-") && ["slutsky-recap", "slutsky-differences", "slutsky-small-change"].includes(screen.mode)) {
+        drawSlutskyGraph(screen.mode);
+      }
+    }
+
+    function renderControls() {
+      const screen = screens[state.phase];
+
+      if (screen.mode === "cover") {
+        controls.innerHTML = `<div class="button-row"><button class="primary" data-action="next">Commencer</button></div>`;
+        controls.querySelector("[data-action='next']").addEventListener("click", next);
+        return;
+      }
+
+      if (screen.mode === "end") {
+        controls.innerHTML = `<div class="button-row"><button data-action="back">Retour</button><button class="primary" data-action="next">Recommencer</button></div>`;
+        controls.querySelector("[data-action='back']")?.addEventListener("click", previous);
+        controls.querySelector("[data-action='next']").addEventListener("click", next);
+        return;
+      }
+
+      const nav = `
+        <div class="button-row">
+          <button data-action="back">Retour</button>
+          <button class="primary" data-action="next">Suite</button>
+        </div>`;
+
+      if (screen.mode === "parallel-slider") {
+        controls.innerHTML = `
+          <div class="slider-box">
+            <strong>Revenu : <span id="incomeValue">${state.income}</span></strong>
+            <input id="incomeSlider" type="range" min="60" max="220" step="10" value="${state.income}">
+          </div>
+          ${nav}`;
+        controls.querySelector("#incomeSlider").addEventListener("input", (event) => {
+          state.income = Number(event.target.value);
+          controls.querySelector("#incomeValue").textContent = state.income;
+          setFeedback("Le revenu déplace la droite parallèlement : la pente reste égale à -pB/pC.");
+          drawGraph();
+        });
+      } else if (screen.mode === "income-family") {
+        controls.innerHTML = `
+          <div class="button-row">
+            <button data-income="80">Revenu faible</button>
+            <button data-income="160">Revenu moyen</button>
+            <button data-income="220">Revenu élevé</button>
+          </div>
+          ${nav}`;
+        controls.querySelectorAll("[data-income]").forEach((button) => {
+          button.classList.toggle("selected", Number(button.dataset.income) === state.selectedIncome);
+          button.addEventListener("click", () => {
+            state.selectedIncome = Number(button.dataset.income);
+            setFeedback("Augmenter le revenu élargit l'ensemble budgétaire sans modifier le rapport des prix.");
+            update();
+          });
+        });
+      } else if (screen.mode === "minimal-income") {
+        const target = tangentIncome();
+        const relationQuestion = state.minimalIncomeFound ? `
+          <div class="formula-box">
+            <p><strong>Constat</strong></p>
+            <p>Avec <span class="formula">p<sub>B</sub>=20</span>, <span class="formula">p<sub>C</sub>=20</span> et un revenu de <span class="formula">${Math.round(target)}</span>, on parvient au mieux à atteindre <span class="formula">ū=4</span> en consommant <span class="formula">B=${formatNumber(hicksianDemand(config.pB, config.pC, config.uBar).b)}</span> et <span class="formula">C=${formatNumber(hicksianDemand(config.pB, config.pC, config.uBar).c)}</span>.</p>
+            <p>Que remarquez-vous à ce panier ?</p>
+            <div class="button-row">
+              <button data-relation="equal">TMS = p<sub>B</sub>/p<sub>C</sub> et les deux pentes sont égales</button>
+              <button data-relation="higher">TMS &gt; p<sub>B</sub>/p<sub>C</sub></button>
+              <button data-relation="lower">La pente de la CI est plus faible que celle de la droite de budget</button>
+            </div>
+          </div>` : "";
+        controls.innerHTML = `
+          <div class="slider-box">
+            <strong>Revenu de la droite : <span id="tangentIncomeValue">${Math.round(state.tangentIncome)}</span></strong>
+            <input id="tangentSlider" type="range" min="80" max="240" step="2" value="${state.tangentIncome}">
+            <button class="primary" data-action="snap">Tester la droite minimale</button>
+          </div>
+          ${relationQuestion}
+          ${nav}`;
+        controls.querySelector("#tangentSlider").addEventListener("input", (event) => {
+          state.tangentIncome = Number(event.target.value);
+          state.minimalIncomeFound = Math.abs(state.tangentIncome - target) < 4;
+          controls.querySelector("#tangentIncomeValue").textContent = Math.round(state.tangentIncome);
+          if (state.minimalIncomeFound) {
+            setFeedback(`Bien. Avec pB=pC=20 et un revenu de ${Math.round(target)}, on parvient au mieux à atteindre ū=4 en consommant B=4 et C=4.`);
+            update();
+          } else if (state.tangentIncome < target) {
+            setFeedback("La droite est encore trop basse : elle n'atteint pas la courbe cible.", "error");
+            drawGraph();
+          } else {
+            setFeedback("Cette droite atteint la courbe, mais elle n'est pas minimale : on peut descendre encore.", "error");
+            drawGraph();
+          }
+        });
+        controls.querySelector("[data-action='snap']").addEventListener("click", () => {
+          state.tangentIncome = Math.round(target);
+          state.minimalIncomeFound = true;
+          setFeedback(`Bien. Avec pB=pC=20 et un revenu de ${Math.round(target)}, on parvient au mieux à atteindre ū=4 en consommant B=4 et C=4.`);
+          update();
+        });
+        controls.querySelectorAll("[data-relation]").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.relation === "equal") {
+              setFeedback("Exact. À ce panier, la droite de budget et la courbe d'indifférence ont la même pente : TMS = p_B/p_C, et donc pente de la CI = pente de la droite de budget.");
+            } else {
+              setFeedback("Pas exactement. Si une pente était différente de l'autre, on pourrait encore déplacer la droite ou choisir un autre panier sur la courbe. Au minimum, les deux courbes se touchent avec la même pente.", "error");
+            }
+          });
+        });
+      } else if (screen.mode === "cobb-reveal") {
+        const steps = [
+          `<p><strong>1. Lagrangien</strong></p>
+           <p><span class="formula">L=p<sub>B</sub>B+p<sub>C</sub>C+λ(ū-B<sup>1/2</sup>C<sup>1/2</sup>)</span></p>`,
+          `<p><strong>2. Conditions du premier ordre</strong></p>
+           <p><span class="formula">p<sub>B</sub>=λ(1/2)B<sup>-1/2</sup>C<sup>1/2</sup></span></p>
+           <p><span class="formula">p<sub>C</sub>=λ(1/2)B<sup>1/2</sup>C<sup>-1/2</sup></span></p>
+           <p><span class="formula">ū=B<sup>1/2</sup>C<sup>1/2</sup></span></p>`,
+          `<p><strong>3. Tangence</strong></p>
+           <p>En divisant les deux premières conditions, <span class="formula">λ</span> disparaît :</p>
+           <p><span class="formula">p<sub>B</sub>/p<sub>C</sub> = UM<sub>B</sub>/UM<sub>C</sub> = C/B</span></p>
+           <p>Donc <span class="formula">C = (p<sub>B</sub>/p<sub>C</sub>)B</span>.</p>`,
+          `<p><strong>4. Système à deux inconnues</strong></p>
+           <p>On utilise ensemble :</p>
+           <p><span class="formula">C = (p<sub>B</sub>/p<sub>C</sub>)B</span></p>
+           <p><span class="formula">B<sup>1/2</sup>C<sup>1/2</sup>=ū</span></p>`,
+          `<p><strong>5. Résolution pour B</strong></p>
+           <p><span class="formula">B<sup>1/2</sup>[(p<sub>B</sub>/p<sub>C</sub>)B]<sup>1/2</sup>=ū</span></p>
+           <p><span class="formula">B(p<sub>B</sub>/p<sub>C</sub>)<sup>1/2</sup>=ū</span></p>
+           <p><span class="formula">B<sup>h</sup>(p<sub>B</sub>,p<sub>C</sub>,ū)=ū √(p<sub>C</sub>/p<sub>B</sub>)</span></p>`,
+          `<p><strong>6. Résolution pour C</strong></p>
+           <p>On remplace <span class="formula">B<sup>h</sup></span> dans la relation de tangence :</p>
+           <p><span class="formula">C<sup>h</sup>(p<sub>B</sub>,p<sub>C</sub>,ū)=ū √(p<sub>B</sub>/p<sub>C</sub>)</span></p>`,
+          `<p><strong>7. Fonction de dépense</strong></p>
+           <p><span class="formula">e=p<sub>B</sub>B<sup>h</sup>+p<sub>C</sub>C<sup>h</sup></span></p>
+           <p><span class="formula">e(p<sub>B</sub>,p<sub>C</sub>,ū)=2ū √(p<sub>B</sub>p<sub>C</sub>)</span></p>`
+        ];
+        controls.innerHTML = `
+          <div class="reveal-box">
+            ${steps.slice(0, state.revealStep).join("") || "<p>Appuyez pour révéler la première étape.</p>"}
+          </div>
+          <div class="button-row">
+            <button class="primary" data-action="reveal">${state.revealStep >= steps.length ? "Tout est révélé" : "Révéler étape suivante"}</button>
+          </div>
+          ${nav}`;
+        controls.querySelector("[data-action='reveal']").addEventListener("click", () => {
+          state.revealStep = Math.min(steps.length, state.revealStep + 1);
+          setFeedback("Les demandes compensées sont les quantités qui atteignent ū au coût minimal.");
+          update();
+        });
+      } else if (screen.mode === "cobb-practice") {
+        const ps = state.cobbPracticeStep;
+        const pieces = [
+          ["p_B", "p<sub>B</sub>"], ["p_C", "p<sub>C</sub>"], ["B", "B"], ["C", "C"], ["λ", "λ"], ["ū", "ū"],
+          ["+", "+"], ["-", "-"], ["/", "/"], ["(", "("], [")", ")"], ["=", "="],
+          ["min", "min"], ["max", "max"],
+          ["p_B*B+p_C*C", "p<sub>B</sub>B+p<sub>C</sub>C"],
+          ["B^(1/3)C^(2/3)", "B<sup>1/3</sup>C<sup>2/3</sup>"],
+          ["B^(-2/3)", "B<sup>-2/3</sup>"], ["C^(-1/3)", "C<sup>-1/3</sup>"],
+          ["(1/3)B^(-2/3)C^(2/3)", "(1/3)B<sup>-2/3</sup>C<sup>2/3</sup>"],
+          ["(2/3)B^(1/3)C^(-1/3)", "(2/3)B<sup>1/3</sup>C<sup>-1/3</sup>"],
+          ["2(p_B/p_C)", "2(p<sub>B</sub>/p<sub>C</sub>)"],
+          ["ū(p_C/(2p_B))^(2/3)", "ū(p<sub>C</sub>/(2p<sub>B</sub>))<sup>2/3</sup>"],
+          ["ū(2p_B/p_C)^(1/3)", "ū(2p<sub>B</sub>/p<sub>C</sub>)<sup>1/3</sup>"]
+        ];
+        const palette = `
+          <div class="palette-box">
+            <div class="palette-title">Palette</div>
+            <div class="button-row token-palette">
+              ${pieces.map(([v, l]) => `<button data-piece="${v}">${l}</button>`).join("")}
+            </div>
+          </div>`;
+        let done = "";
+        if (ps >= 2) done += `<div class="step-done"><span class="step-tag">1 · Paramètres</span>Les demandes <span class="formula">B<sup>h</sup>(p<sub>B</sub>,p<sub>C</sub>,ū)</span> et <span class="formula">C<sup>h</sup>(p<sub>B</sub>,p<sub>C</sub>,ū)</span> dépendent des prix et du niveau d'utilité cible.</div>`;
+        if (ps >= 3) done += `<div class="step-done"><span class="step-tag">2 · Problème</span>min <span class="formula">p<sub>B</sub>B+p<sub>C</sub>C</span> &nbsp;s.c.&nbsp; <span class="formula">B<sup>1/3</sup>C<sup>2/3</sup>=ū</span></div>`;
+        if (ps >= 4) done += `<div class="step-done"><span class="step-tag">3 · Lagrangien</span><span class="formula">L=p<sub>B</sub>B+p<sub>C</sub>C+λ(ū−B<sup>1/3</sup>C<sup>2/3</sup>)</span></div>`;
+        if (ps >= 5) done += `<div class="step-done"><span class="step-tag">4 · CPO</span><span class="formula">p<sub>B</sub>=λ(1/3)B<sup>-2/3</sup>C<sup>2/3</sup></span> &nbsp; <span class="formula">p<sub>C</sub>=λ(2/3)B<sup>1/3</sup>C<sup>-1/3</sup></span> &nbsp; <span class="formula">ū=B<sup>1/3</sup>C<sup>2/3</sup></span></div>`;
+        if (ps >= 6) done += `<div class="step-done"><span class="step-tag">5 · Demandes</span><span class="formula">B<sup>h</sup>=ū(p<sub>C</sub>/(2p<sub>B</sub>))<sup>2/3</sup></span> &nbsp; <span class="formula">C<sup>h</sup>=ū(2p<sub>B</sub>/p<sub>C</sub>)<sup>1/3</sup></span></div>`;
+        if (done) done = `<div style="margin-bottom:10px;">${done}</div>`;
+        let stepHtml = "";
+        if (ps === 1) {
+          stepHtml = `
+            <div class="formula-box">
+              <p>Pour la demande marshallienne, les quantités dépendent des prix et du revenu :</p>
+              <p style="text-align:center"><span class="formula">x(p<sub>B</sub>, p<sub>C</sub>, R)</span></p>
+              <p>De quoi dépendent les <strong>demandes compensées</strong> <span class="formula">B<sup>h</sup></span> et <span class="formula">C<sup>h</sup></span> ?</p>
+              <div class="button-row" style="margin-top:8px;">
+                <button data-param="wrong1">p<sub>B</sub>, p<sub>C</sub> et R</button>
+                <button data-param="right">p<sub>B</sub>, p<sub>C</sub> et ū</button>
+                <button data-param="wrong2">ū et R seulement</button>
+              </div>
+              <div class="step-feedback" id="paramFb"></div>
+            </div>`;
+        } else if (ps === 2) {
+          stepHtml = `
+            ${palette}
+            <div class="formula-box">
+              <p><strong>Étape 2 — Écrivez le problème d'optimisation.</strong></p>
+              <div class="input-row"><label><input id="objInput" autocomplete="off" placeholder="min ou max … ?"></label></div>
+              <div class="input-row" style="margin-top:6px;"><label>sous contrainte que &nbsp;<input id="scInput" autocomplete="off" placeholder="…"></label></div>
+              <div class="button-row" style="margin-top:8px;"><button class="primary" data-action="check-problem">Valider</button></div>
+              <div class="step-feedback" id="problemFb"></div>
+            </div>`;
+        } else if (ps === 3) {
+          stepHtml = `
+            ${palette}
+            <div class="formula-box">
+              <p><strong>Étape 3 — Écrivez le Lagrangien.</strong></p>
+              <div class="input-row"><label>L = <input id="lagInput" autocomplete="off"></label></div>
+              <div class="button-row" style="margin-top:8px;"><button class="primary" data-action="check-lagrangian">Valider</button></div>
+              <div class="step-feedback" id="lagFb"></div>
+            </div>`;
+        } else if (ps === 4) {
+          stepHtml = `
+            ${palette}
+            <div class="formula-box">
+              <p><strong>Étape 4 — Conditions du premier ordre.</strong></p>
+              <div class="input-row">
+                <label>∂L/∂B = 0 : <input id="focBInput" autocomplete="off"></label>
+                <label>∂L/∂C = 0 : <input id="focCInput" autocomplete="off"></label>
+                <label>∂L/∂λ = 0 : <input id="focLInput" autocomplete="off"></label>
+              </div>
+              <div class="button-row" style="margin-top:8px;"><button class="primary" data-action="check-foc">Valider</button></div>
+              <div class="step-feedback" id="focFb"></div>
+            </div>`;
+        } else if (ps === 5) {
+          const hint1 = state.cobbPracticeAttempts >= 1
+            ? `<p class="hint-text" style="font-size:13px;color:var(--muted);margin-top:6px;">Indice 1 : divisez les deux premières CPO pour éliminer λ — vous obtiendrez une relation entre C, B et les prix.</p>` : "";
+          const hint2 = state.cobbPracticeAttempts >= 2
+            ? `<p class="hint-text" style="font-size:13px;color:var(--muted);margin-top:4px;">Indice 2 : la tangence donne <span class="formula">C=2(p<sub>B</sub>/p<sub>C</sub>)B</span>. Substituez dans <span class="formula">ū=B<sup>1/3</sup>C<sup>2/3</sup></span> pour trouver B<sup>h</sup>, puis C<sup>h</sup>.</p>` : "";
+          stepHtml = `
+            ${palette}
+            <div class="formula-box">
+              <p><strong>Étape 5 — Demandes compensées.</strong></p>
+              <p>Faites les calculs à la main (sur une feuille). À partir des CPO, trouvez B<sup>h</sup> et C<sup>h</sup> :</p>
+              ${hint1}${hint2}
+              <div class="input-row">
+                <label>B<sup>h</sup> = <input id="bhInput" autocomplete="off"></label>
+                <label>C<sup>h</sup> = <input id="chInput" autocomplete="off"></label>
+              </div>
+              <div class="button-row" style="margin-top:8px;">
+                <button class="primary" data-action="check-demands">Valider</button>
+                <button data-action="show-correction">Correction</button>
+              </div>
+              <div class="step-feedback" id="demandsFb"></div>
+              <div id="correctionBox"></div>
+            </div>`;
+        } else {
+          stepHtml = `
+            <div class="formula-box">
+              <p>Exercice complété pour <span class="formula">u(B,C)=B<sup>1/3</sup>C<sup>2/3</sup></span>.</p>
+              <p><span class="formula">B<sup>h</sup>=ū(p<sub>C</sub>/(2p<sub>B</sub>))<sup>2/3</sup></span></p>
+              <p><span class="formula">C<sup>h</sup>=ū(2p<sub>B</sub>/p<sub>C</sub>)<sup>1/3</sup></span></p>
+              <div class="button-row" style="margin-top:10px;"><button data-action="restart-practice">Recommencer l'exercice</button></div>
+            </div>`;
+        }
+        controls.innerHTML = `${done}${stepHtml}${nav}`;
+        const hasPB = (v) => v.includes("p_b") || v.includes("pb");
+        const hasPC = (v) => v.includes("p_c") || v.includes("pc");
+        const hasLambda = (v) => v.includes("λ") || v.includes("lambda");
+        const clean = (sel) => String(controls.querySelector(sel)?.value || "").toLowerCase().replace(/\s+/g, "").replace(/<[^>]*>/g, "");
+        const stepFb = (id, msg, ok = true) => {
+          const el = controls.querySelector(id);
+          if (!el) return;
+          el.textContent = msg;
+          el.classList.add("visible");
+          el.classList.toggle("error", !ok);
+          setFeedback(msg, ok ? "ok" : "error");
+        };
+        let activeInput = controls.querySelector("input");
+        controls.querySelectorAll("input").forEach(inp => {
+          inp.addEventListener("focus", () => { activeInput = inp; });
+        });
+        controls.querySelectorAll("[data-piece]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            if (!activeInput) return;
+            activeInput.value += (activeInput.value ? " " : "") + btn.dataset.piece;
+            activeInput.focus();
+          });
+        });
+        controls.querySelectorAll("[data-param]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            if (btn.dataset.param === "right") {
+              stepFb("#paramFb", "Exact. Les demandes compensées dépendent des prix et du niveau d'utilité cible ū — pas du revenu.");
+              setTimeout(() => { state.cobbPracticeStep = 2; update(); }, 1000);
+            } else {
+              stepFb("#paramFb", btn.dataset.param === "wrong1"
+                ? "Non. Le revenu R est le paramètre du problème marshallien. Ici on fixe ū et on minimise la dépense."
+                : "Il faut aussi les prix — ils déterminent le coût de chaque panier.", false);
+            }
+          });
+        });
+        controls.querySelector("[data-action='check-problem']")?.addEventListener("click", () => {
+          const obj = clean("#objInput");
+          const sc = clean("#scInput");
+          const hasMin = obj.includes("min");
+          const hasMax = obj.includes("max");
+          const objExprOk = hasPB(obj) && hasPC(obj) && obj.includes("b") && obj.includes("c") && obj.includes("+");
+          const scExprOk = sc.includes("b") && sc.includes("c") && sc.includes("1/3") && sc.includes("2/3");
+          const scUbarOk = sc.includes("ū") || sc.includes("u");
+          const scEqOk = sc.includes("=");
+          if (hasMax) {
+            stepFb("#problemFb", "Non : on minimise la dépense (ū est fixé, on réduit le coût) — pas une maximisation.", false);
+          } else if (!hasMin) {
+            stepFb("#problemFb", "Précisez le type d'optimisation : min ou max ?", false);
+          } else if (!objExprOk) {
+            stepFb("#problemFb", "L'objectif est la dépense totale : p_B B + p_C C.", false);
+          } else if (!scExprOk) {
+            stepFb("#problemFb", "La contrainte doit faire apparaître la fonction d'utilité B^(1/3)C^(2/3).", false);
+          } else if (!scEqOk || !scUbarOk) {
+            stepFb("#problemFb", "La contrainte est une égalité : B^(1/3)C^(2/3) = ū.", false);
+          } else {
+            stepFb("#problemFb", "Parfait. On minimise la dépense p_B B + p_C C sous la contrainte B^(1/3)C^(2/3) = ū.");
+            setTimeout(() => { state.cobbPracticeStep = 3; update(); }, 1000);
+          }
+        });
+        controls.querySelector("[data-action='check-lagrangian']")?.addEventListener("click", () => {
+          const lag = clean("#lagInput");
+          const ok = hasPB(lag) && hasPC(lag) && hasLambda(lag) && lag.includes("b") && lag.includes("c") && lag.includes("1/3") && lag.includes("2/3") && lag.includes("+") && (lag.includes("ū") || lag.includes("u"));
+          if (ok) {
+            stepFb("#lagFb", "Oui. Le Lagrangien = dépense + λ(ū − u(B,C)).");
+            setTimeout(() => { state.cobbPracticeStep = 4; update(); }, 1000);
+          } else if (!hasLambda(lag)) {
+            stepFb("#lagFb", "Il manque le multiplicateur λ.", false);
+          } else if (!hasPB(lag) || !hasPC(lag)) {
+            stepFb("#lagFb", "La dépense p_B B + p_C C doit figurer dans le Lagrangien.", false);
+          } else {
+            stepFb("#lagFb", "Ajoutez la contrainte d'utilité B^(1/3)C^(2/3) avec les bons exposants.", false);
+          }
+        });
+        controls.querySelector("[data-action='check-foc']")?.addEventListener("click", () => {
+          const focB = clean("#focBInput");
+          const focC = clean("#focCInput");
+          const focL = clean("#focLInput");
+          const focBOk = hasPB(focB) && hasLambda(focB) && focB.includes("1/3") && focB.includes("-2/3") && focB.includes("c");
+          const focCOk = hasPC(focC) && hasLambda(focC) && focC.includes("2/3") && focC.includes("-1/3") && focC.includes("b");
+          const focLOk = (focL.includes("u") || focL.includes("ū")) && focL.includes("b") && focL.includes("c") && focL.includes("1/3") && focL.includes("2/3");
+          if (focBOk && focCOk && focLOk) {
+            stepFb("#focFb", "Correct. Deux conditions de prix égalent chaque prix à λ × UM, la troisième impose ū = u(B,C).");
+            setTimeout(() => { state.cobbPracticeStep = 5; update(); }, 1000);
+          } else if (!focLOk) {
+            stepFb("#focFb", "∂L/∂λ = 0 doit redonner la contrainte : ū = B^(1/3)C^(2/3).", false);
+          } else if (!focBOk) {
+            stepFb("#focFb", "∂L/∂B : p_B = λ(1/3)B^(-2/3)C^(2/3). Attention à l'exposant -2/3 sur B.", false);
+          } else {
+            stepFb("#focFb", "∂L/∂C : p_C = λ(2/3)B^(1/3)C^(-1/3). Attention à l'exposant -1/3 sur C.", false);
+          }
+        });
+        const correctionHtml = `
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
+            <p><strong>Correction</strong></p>
+            <p>Tangence (CPO 1 ÷ CPO 2) : <span class="formula">C=2(p<sub>B</sub>/p<sub>C</sub>)B</span></p>
+            <p>Substitution dans ū = B<sup>1/3</sup>C<sup>2/3</sup> :</p>
+            <p><span class="formula">B<sup>1/3</sup>[2(p<sub>B</sub>/p<sub>C</sub>)B]<sup>2/3</sup>=ū → B·(2p<sub>B</sub>/p<sub>C</sub>)<sup>2/3</sup>=ū</span></p>
+            <p><span class="formula">B<sup>h</sup>=ū(p<sub>C</sub>/(2p<sub>B</sub>))<sup>2/3</sup></span> &nbsp; <span class="formula">C<sup>h</sup>=ū(2p<sub>B</sub>/p<sub>C</sub>)<sup>1/3</sup></span></p>
+          </div>`;
+        controls.querySelector("[data-action='check-demands']")?.addEventListener("click", () => {
+          const bhVal = controls.querySelector("#bhInput")?.value || "";
+          const chVal = controls.querySelector("#chInput")?.value || "";
+          const bh = bhVal.toLowerCase().replace(/\s+/g, "");
+          const ch = chVal.toLowerCase().replace(/\s+/g, "");
+          const bhOk = (bh.includes("u") || bh.includes("ū")) && (bh.includes("p_c/(2p_b)") || bh.includes("pc/(2pb)")) && (bh.includes("2/3") || bh.includes("0.666"));
+          const chOk = (ch.includes("u") || ch.includes("ū")) && (ch.includes("2p_b/p_c") || ch.includes("2pb/pc")) && (ch.includes("1/3") || ch.includes("0.333"));
+          if (bhOk && chOk) {
+            stepFb("#demandsFb", "Excellent ! Vous avez dérivé les demandes compensées pour cette Cobb-Douglas.");
+            state.cobbPracticeAttempts = 0;
+            setTimeout(() => { state.cobbPracticeStep = 6; update(); }, 1000);
+          } else {
+            state.cobbPracticeAttempts++;
+            let errMsg;
+            if (!bhOk && !chOk) errMsg = "Pas encore juste. Consultez les indices ci-dessus et réessayez.";
+            else if (!bhOk) errMsg = "C^h semble bon — revérifiez B^h : substituez la tangence dans ū = B^(1/3)C^(2/3).";
+            else errMsg = "B^h semble bon — revérifiez C^h : reportez B^h dans la relation de tangence.";
+            update();
+            const newBhEl = controls.querySelector("#bhInput");
+            const newChEl = controls.querySelector("#chInput");
+            if (newBhEl) newBhEl.value = bhVal;
+            if (newChEl) newChEl.value = chVal;
+            stepFb("#demandsFb", errMsg, false);
+          }
+        });
+        controls.querySelector("[data-action='show-correction']")?.addEventListener("click", () => {
+          const box = controls.querySelector("#correctionBox");
+          if (box) { box.innerHTML = correctionHtml; setFeedback("Correction affichée."); }
+        });
+        controls.querySelector("[data-action='restart-practice']")?.addEventListener("click", () => {
+          state.cobbPracticeStep = 1;
+          state.cobbPracticeAttempts = 0;
+          update();
+        });
+      } else if (screen.mode === "substitution-link") {
+        const x0 = marshallianDemand(config.oldPB, config.pC, config.income);
+        const x1 = marshallianDemand(config.newPB, config.pC, config.income);
+        const u0 = utility(x0.b, x0.c);
+        const h1 = hicksianDemand(config.newPB, config.pC, u0);
+        const e1 = expenditure(config.newPB, config.pC, u0);
+        const steps = [
+          `<p><strong>1. Situation initiale</strong></p>
+           <p>Au départ, <span class="formula">p<sub>B</sub><sup>0</sup>=20</span>, <span class="formula">p<sub>C</sub>=20</span> et <span class="formula">R=160</span>.</p>
+           <p>La demande marshallienne donne le panier initial :</p>
+           <p><span class="formula">x(p<sup>0</sup>,R)=(${formatNumber(x0.b)} ; ${formatNumber(x0.c)})</span></p>
+           <p>Le niveau de satisfaction atteint est <span class="formula">u<sub>0</sub>=${formatNumber(u0)}</span>.</p>`,
+          `<p><strong>2. Le prix de B augmente</strong></p>
+           <p>Le prix passe de <span class="formula">p<sub>B</sub><sup>0</sup>=20</span> à <span class="formula">p<sub>B</sub><sup>1</sup>=50</span>.</p>
+           <p>À revenu inchangé, le pouvoir d'achat baisse : la nouvelle droite de budget pivote vers l'intérieur.</p>`,
+          `<p><strong>3. Question de l'effet de substitution</strong></p>
+           <p>Quel aurait été mon choix si les prix avaient changé, mais si mon pouvoir d'achat, mesuré par le niveau de satisfaction atteint, n'avait pas changé ?</p>
+           <p>On garde donc <span class="formula">u<sub>0</sub></span> et on utilise les nouveaux prix :</p>
+           <p><span class="formula">h(p<sup>1</sup>,u<sub>0</sub>)</span> — panier qui minimise <span class="formula">p<sub>B</sub><sup>1</sup>B+p<sub>C</sub>C</span> sous <span class="formula">u(B,C)=u<sub>0</sub></span>.</p>
+           <p>Graphiquement, c'est la droite compensée, parallèle à la nouvelle droite de budget, qui atteint juste l'ancienne courbe d'indifférence.</p>`,
+          `<p><strong>4. Panier compensé</strong></p>
+           <p>La demande hicksienne au nouveau prix est :</p>
+           <p><span class="formula">h(p<sup>1</sup>,u<sub>0</sub>)=(${formatNumber(h1.b)} ; ${formatNumber(h1.c)})</span></p>
+           <p>Le revenu compensé correspondant est <span class="formula">e(p<sup>1</sup>,u<sub>0</sub>)=${formatNumber(e1)}</span>.</p>`,
+          `<p><strong>5. Effet de substitution</strong></p>
+           <p>L'effet de substitution compare le panier initial au panier compensé :</p>
+           <p><span class="formula">h(p<sup>1</sup>,u<sub>0</sub>) - x(p<sup>0</sup>,R)</span></p>
+           <p>Pour le bien B : <span class="formula">${formatNumber(h1.b)} - ${formatNumber(x0.b)} = ${formatNumber(h1.b - x0.b)}</span>.</p>
+           <p>À retenir : l'effet de substitution va toujours dans le même sens. Quand le prix relatif d'un bien augmente, l'effet de substitution implique toujours une diminution de la consommation de ce bien.</p>`,
+          `<p><strong>6. Effet revenu</strong></p>
+           <p>Le choix final avec les nouveaux prix et le revenu réel est :</p>
+           <p><span class="formula">x(p<sup>1</sup>,R)=(${formatNumber(x1.b)} ; ${formatNumber(x1.c)})</span></p>
+           <p>L'effet revenu compare le panier compensé au panier final :</p>
+           <p><span class="formula">x(p<sup>1</sup>,R)-h(p<sup>1</sup>,u<sub>0</sub>)</span></p>
+           <p>Pour le bien B : <span class="formula">${formatNumber(x1.b)} - ${formatNumber(h1.b)} = ${formatNumber(x1.b - h1.b)}</span>.</p>
+           <p>L'effet revenu peut être négatif ou positif. Si le bien est normal, la baisse du pouvoir d'achat réduit sa consommation : l'effet revenu est négatif. Si le bien est inférieur, la baisse du pouvoir d'achat augmente sa consommation : l'effet revenu est positif.</p>
+           <p>Ici, avec Cobb-Douglas, B est un bien normal : la perte de pouvoir d'achat réduit encore la consommation de B.</p>`,
+          `<p><strong>7. Décomposition</strong></p>
+           <p><span class="formula">effet total = x(p<sup>1</sup>,R)-x(p<sup>0</sup>,R)</span></p>
+           <p><span class="formula">effet substitution = h(p<sup>1</sup>,u<sub>0</sub>)-x(p<sup>0</sup>,R)</span></p>
+           <p><span class="formula">effet revenu = x(p<sup>1</sup>,R)-h(p<sup>1</sup>,u<sub>0</sub>)</span></p>`
+        ];
+        controls.innerHTML = `
+          <div class="reveal-box">
+            ${steps.slice(0, Math.max(1, state.substitutionRevealStep + 1)).join("")}
+          </div>
+          <div class="button-row">
+            <button class="primary" data-action="sub-next">${state.substitutionRevealStep >= steps.length - 1 ? "Construction complète" : "Étape suivante"}</button>
+          </div>
+          ${nav}`;
+        controls.querySelector("[data-action='sub-next']").addEventListener("click", () => {
+          state.substitutionRevealStep = Math.min(steps.length - 1, state.substitutionRevealStep + 1);
+          setFeedback("Le graphique se construit au même rythme que la décomposition.");
+          update();
+        });
+      } else if (screen.mode === "slutsky-differences") {
+        const steps = [
+          `<p><span class="formula">ΔB = ΔB<sup>sub</sup> + ΔB<sup>rev</sup></span></p>`,
+          `<p><span class="formula">B(p<sup>1</sup>,R)-B(p<sup>0</sup>,R)</span></p>
+           <p><span class="formula">= [B<sup>h</sup>(p<sup>1</sup>,u<sub>0</sub>)-B(p<sup>0</sup>,R)] + [B(p<sup>1</sup>,R)-B<sup>h</sup>(p<sup>1</sup>,u<sub>0</sub>)]</span></p>`
+        ];
+        controls.innerHTML = `
+          <div class="reveal-box">
+            ${steps.slice(0, Math.max(1, state.slutskyRevealStep + 1)).join("")}
+          </div>
+          <div class="button-row"><button class="primary" data-action="slutsky-reveal">Révéler étape suivante</button></div>
+          ${nav}`;
+        controls.querySelector("[data-action='slutsky-reveal']").addEventListener("click", () => {
+          state.slutskyRevealStep = Math.min(steps.length - 1, state.slutskyRevealStep + 1);
+          setFeedback("Les flèches deviennent des différences de quantités.");
+          update();
+        });
+      } else if (screen.mode === "slutsky-small-change") {
+        controls.innerHTML = `
+          <div class="slider-box">
+            <strong>Nouveau prix de B : <span id="slutskyPBValue">${state.slutskyPB1}</span></strong>
+            <input id="slutskyPBSlider" type="range" min="20" max="50" step="1" value="${state.slutskyPB1}">
+          </div>
+          ${nav}`;
+        controls.querySelector("#slutskyPBSlider").addEventListener("input", (event) => {
+          state.slutskyPB1 = Number(event.target.value);
+          controls.querySelector("#slutskyPBValue").textContent = state.slutskyPB1;
+          setFeedback("Quand le changement de prix devient très petit, les différences deviennent des dérivées.");
+          drawGraph();
+        });
+      } else if (screen.mode === "slutsky-income-loss") {
+        const initialB = marshallianDemand(config.oldPB, config.pC, config.income).b;
+        controls.innerHTML = `
+          <div class="formula-box">
+            <p>Dans notre exemple, le panier initial contient <span class="formula">B=${formatNumber(initialB)}</span> unités. Si <span class="formula">p<sub>B</sub></span> augmente d'une petite quantité <span class="formula">dp<sub>B</sub></span>, quelle est la variation de revenu réel <span class="formula">dR</span> équivalente ?</p>
+            <div class="button-row" style="margin-top:8px;">
+              <button data-il-answer="wrong">dR = +B dp<sub>B</sub> &gt; 0</button>
+              <button data-il-answer="right">dR = −B dp<sub>B</sub> &lt; 0</button>
+            </div>
+            <div class="step-feedback" id="ilFeedback"></div>
+            <p id="ilExplain" style="display:none;margin-top:8px;">Plus généralement : <span class="formula">dR = −B dp<sub>B</sub></span>. Plus la quantité initiale de B est grande, plus la perte de pouvoir d'achat est forte.</p>
+          </div>
+          ${nav}`;
+        controls.querySelectorAll("[data-il-answer]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const fb = controls.querySelector("#ilFeedback");
+            fb.classList.add("visible");
+            if (btn.dataset.ilAnswer === "right") {
+              fb.textContent = "Exact. La hausse de prix de B augmente la dépense de B·dp_B pour le même panier, ce qui équivaut à une perte de revenu réel.";
+              fb.classList.remove("error");
+              controls.querySelector("#ilExplain").style.display = "";
+              setFeedback("Plus la quantité initiale de B est grande, plus la perte de pouvoir d'achat est forte.");
+            } else {
+              fb.textContent = "Non. Si le prix de B monte, le consommateur doit payer plus pour le même panier : le revenu réel baisse.";
+              fb.classList.add("error");
+            }
+          });
+        });
+      } else if (screen.mode === "slutsky-income-response") {
+        const steps = [
+          `<p><span class="formula">dB = (∂B/∂R)dR</span></p>`,
+          `<p><span class="formula">dB = (∂B/∂R)(-B dp<sub>B</sub>)</span></p>`,
+          `<p><span class="formula">dB/dp<sub>B</sub> = -B ∂B/∂R</span></p>
+           <p>Ce terme est l'effet revenu provoqué par la variation du prix.</p>`
+        ];
+        controls.innerHTML = `
+          <div class="reveal-box">${steps.slice(0, Math.max(1, state.slutskyIncomeRevealStep + 1)).join("")}</div>
+          <div class="button-row"><button class="primary" data-action="income-reveal">Révéler étape suivante</button></div>
+          ${nav}`;
+        controls.querySelector("[data-action='income-reveal']").addEventListener("click", () => {
+          state.slutskyIncomeRevealStep = Math.min(steps.length - 1, state.slutskyIncomeRevealStep + 1);
+          setFeedback("Ce terme traduit la réaction de la demande à la perte de revenu réel.");
+          update();
+        });
+      } else if (screen.mode === "slutsky-equation") {
+        const steps = [
+          `<p><span class="formula">effet total = effet substitution + effet revenu</span></p>`,
+          `<p><span class="formula"><span style="color:#132536">∂B/∂p<sub>B</sub></span> = <span style="color:#c98c2d">∂B<sup>h</sup>/∂p<sub>B</sub></span> - <span style="color:#2156c5">B ∂B/∂R</span></span></p>
+           <p>Le signe moins vient du fait qu'une hausse de prix réduit le pouvoir d'achat.</p>`
+        ];
+        controls.innerHTML = `
+          <div class="reveal-box">${steps.slice(0, Math.max(1, state.slutskyEquationRevealStep + 1)).join("")}</div>
+          <div class="button-row"><button class="primary" data-action="equation-reveal">Révéler étape suivante</button></div>
+          ${nav}`;
+        controls.querySelector("[data-action='equation-reveal']").addEventListener("click", () => {
+          state.slutskyEquationRevealStep = Math.min(steps.length - 1, state.slutskyEquationRevealStep + 1);
+          setFeedback("Le signe moins vient de la perte de pouvoir d'achat.");
+          update();
+        });
+      } else if (screen.mode === "slutsky-recap" || screen.mode === "slutsky-total-derivative" || screen.mode === "slutsky-substitution-derivative" || screen.mode === "slutsky-general" || screen.mode === "slutsky-signs") {
+        const content = {
+          "slutsky-recap": `<div class="formula-box"><p>Rouge : panier initial. Or : panier compensé. Bleu : panier final.</p></div>`,
+          "slutsky-total-derivative": `<div class="formula-box"><p>L'effet total est ce que l'on observe dans la demande marshallienne quand le prix varie.</p></div>`,
+          "slutsky-substitution-derivative": `<div class="formula-box"><p>La dérivée hicksienne garde l'utilité constante : elle isole le pur changement de prix relatif.</p></div>`,
+          "slutsky-general": `<div class="formula-box"><p>Le terme <span class="formula">x<sub>j</sub></span> mesure l'ampleur de la perte de pouvoir d'achat provoquée par la variation du prix <span class="formula">p<sub>j</sub></span>.</p></div>`,
+          "slutsky-signs": `<div class="formula-box">
+            <p><span class="formula">∂x<sub>i</sub>/∂p<sub>i</sub> = ∂h<sub>i</sub>/∂p<sub>i</sub> - x<sub>i</sub> ∂x<sub>i</sub>/∂R</span></p>
+            <p>1. Bien normal : <span class="formula">∂x<sub>i</sub>/∂R &gt; 0</span>, donc effet revenu négatif.</p>
+            <p>2. Bien inférieur : <span class="formula">∂x<sub>i</sub>/∂R &lt; 0</span>, donc effet revenu positif.</p>
+            <p>3. Bien de Giffen : l'effet revenu positif domine l'effet substitution.</p>
+          </div>`
+        }[screen.mode];
+        controls.innerHTML = `${content}${nav}`;
+      } else {
+        const h = hicksianDemand(config.pB, config.pC, config.uBar);
+        const e = expenditure(config.pB, config.pC, config.uBar);
+        const x0 = marshallianDemand(config.oldPB, config.pC, config.income);
+        const x1 = marshallianDemand(config.newPB, config.pC, config.income);
+        const h1 = hicksianDemand(config.newPB, config.pC, utility(x0.b, x0.c));
+        const content = {
+          "target-ci": `<div class="formula-box"><p>Tous les paniers situés sur cette courbe donnent exactement le même niveau d'utilité <span class="formula">ū=4</span>.</p></div>`,
+          hicksian: `<div class="formula-box"><p><span class="formula">B<sup>h</sup>=${formatNumber(h.b)}</span> et <span class="formula">C<sup>h</sup>=${formatNumber(h.c)}</span> pour <span class="formula">p<sub>B</sub>=p<sub>C</sub>=20</span> et <span class="formula">ū=4</span>.</p></div>`,
+          expenditure: `<div class="formula-box"><p><span class="formula">e(20,20,4)=${Math.round(e)}</span></p><p>Le revenu minimal est le coût du panier compensé.</p></div>`,
+          program: `<div class="formula-box"><p>Les deux premières conditions donnent la tangence.</p><p>La troisième impose que l'on atteigne exactement le niveau d'utilité cible.</p></div>`,
+          "marshall-hicks": `<div class="formula-box"><p>Les deux problèmes sont liés : l'un part du revenu, l'autre part du niveau d'utilité.</p></div>`,
+          "substitution-link": `<div class="formula-box"><p><span class="formula">x(p<sup>0</sup>,R)=(${formatNumber(x0.b)} ; ${formatNumber(x0.c)})</span></p><p><span class="formula">h(p<sup>1</sup>,u<sub>0</sub>)=(${formatNumber(h1.b)} ; ${formatNumber(h1.c)})</span></p><p><span class="formula">x(p<sup>1</sup>,R)=(${formatNumber(x1.b)} ; ${formatNumber(x1.c)})</span></p></div>`
+        }[screen.mode] || "";
+        controls.innerHTML = `${content}${nav}`;
+      }
+
+      controls.querySelector("[data-action='back']")?.addEventListener("click", previous);
+      controls.querySelector("[data-action='next']")?.addEventListener("click", next);
+    }
+
+    function feedbackForMode(mode) {
+      return {
+        "cover": "",
+        "end": "Vous pouvez relire les étapes, revoir un concept ou recommencer depuis le début.",
+        "parallel-slider": "Les droites sont parallèles car le rapport des prix ne change pas.",
+        "income-family": "Augmenter le revenu élargit l'ensemble budgétaire sans modifier le rapport des prix.",
+        "target-ci": "Tous les paniers situés sur cette courbe donnent exactement le même niveau d'utilité ū.",
+        "minimal-income": "Déplacez la droite dorée pour trouver la droite la plus basse qui atteint encore la courbe verte.",
+        hicksian: "Les demandes compensées dépendent des prix et du niveau d'utilité cible, pas du revenu.",
+        expenditure: "Le revenu minimal est le coût du panier compensé.",
+        program: "Les deux premières conditions donnent la tangence. La troisième impose que l'on atteigne exactement le niveau d'utilité cible.",
+        "cobb-reveal": "Les demandes compensées sont les quantités qui atteignent ū au coût minimal.",
+        "cobb-practice": "Même méthode, nouveaux exposants : écrivez les CPO, éliminez λ, puis utilisez la contrainte d'utilité.",
+        "marshall-hicks": "Les deux problèmes sont liés : l'un part du revenu, l'autre part du niveau d'utilité.",
+        "substitution-link": "La demande compensée isole l'effet pur du changement de prix, en neutralisant l'effet revenu.",
+        "slutsky-recap": "Les trois paniers sont la base graphique de l'équation de Slutsky.",
+        "slutsky-differences": "Les flèches deviennent des différences de quantités.",
+        "slutsky-small-change": "Quand le changement de prix devient très petit, les différences deviennent des dérivées.",
+        "slutsky-total-derivative": "Cette dérivée mesure l'effet total observé sur la demande marshallienne.",
+        "slutsky-substitution-derivative": "La dérivée hicksienne garde l'utilité constante.",
+        "slutsky-income-loss": "Plus la quantité initiale de B est grande, plus la perte de pouvoir d'achat est forte.",
+        "slutsky-income-response": "Le terme revenu vient de la réaction de la demande à cette perte de pouvoir d'achat.",
+        "slutsky-equation": "Le signe moins vient du fait qu'une hausse de prix réduit le pouvoir d'achat.",
+        "slutsky-general": "Le terme x_j mesure l'ampleur de la perte de pouvoir d'achat.",
+        "slutsky-signs": "Un bien de Giffen est un bien inférieur dont l'effet revenu positif domine l'effet substitution."
+      }[mode] || "";
+    }
+
+    function updateProgress() {
+      progress.innerHTML = screens.map((screen, index) => {
+        const status = index < state.phase ? "done" : index === state.phase ? "current" : "";
+        return `<div class="progress-step ${status}">${screen.short}</div>`;
+      }).join("");
+    }
+
+    function updateLegend() {
+      const mode = screens[state.phase].mode;
+      const items = [];
+      if (["target-ci", "minimal-income", "hicksian", "expenditure", "program", "cobb-reveal", "cobb-practice", "marshall-hicks", "substitution-link"].includes(mode)) {
+        items.push(["#176b52", "Courbe d'indifférence cible"]);
+      }
+      if (["parallel-slider", "income-family"].includes(mode)) {
+        items.push(["#2156c5", "Droite de budget"]);
+      }
+      if (mode === "marshall-hicks") {
+        items.push(["#c98c2d", "Budget hicksien (min dépense, ū=4)"]);
+        items.push(["#2156c5", "Budget marshallien (R=240)"]);
+      }
+      if (["minimal-income", "hicksian", "expenditure", "program", "cobb-reveal", "cobb-practice", "substitution-link"].includes(mode)) {
+        items.push(["#c98c2d", "Budget compensé"]);
+      }
+      if (mode === "substitution-link") {
+        items.push(["#b6483b", "Panier initial"]);
+        items.push(["#2156c5", "Panier final"]);
+      }
+      if (["slutsky-recap", "slutsky-differences", "slutsky-small-change"].includes(mode)) {
+        items.push(["#b6483b", "Panier initial"]);
+        items.push(["#c98c2d", "Substitution"]);
+        items.push(["#2156c5", "Effet revenu"]);
+      }
+      legend.innerHTML = items.map(([color, label]) => `<span><i class="swatch" style="background:${color}"></i>${label}</span>`).join("");
+    }
+
+    function updateNavBar() {
+      const screen = screens[state.phase];
+      const navBar = document.querySelector("#navBar");
+      if (screen.mode === "cover") {
+        navBar.innerHTML = "";
+        return;
+      }
+      if (screen.mode === "cobb-practice") {
+        const ps = state.cobbPracticeStep;
+        navBar.innerHTML = `<button id="navStepBack" title="Étape précédente">↑</button><button id="navStepFwd" title="Étape suivante">↓</button>`;
+        navBar.querySelector("#navStepBack").addEventListener("click", () => {
+          if (ps > 1) { state.cobbPracticeStep = ps - 1; state.cobbPracticeAttempts = 0; update(); }
+        });
+        navBar.querySelector("#navStepFwd").addEventListener("click", () => {
+          if (ps < 6) { state.cobbPracticeStep = ps + 1; update(); }
+        });
+        return;
+      }
+      if (screen.mode === "end") {
+        navBar.innerHTML = `<button id="navBack">←</button><button class="primary" id="navNext">↺</button>`;
+      } else {
+        navBar.innerHTML = `<button id="navBack">←</button><button id="navNext">→</button>`;
+      }
+      navBar.querySelector("#navBack")?.addEventListener("click", previous);
+      navBar.querySelector("#navNext")?.addEventListener("click", next);
+    }
+
+    function renderScreen(index) {
+      state.phase = Math.max(0, Math.min(screens.length - 1, index));
+      const screen = screens[state.phase];
+      document.querySelector(".jump-nav").style.display = screen.mode === "cover" ? "none" : "";
+      app.classList.toggle("no-visual", noVisualMode(screen.mode));
+      graphTitle.textContent = screen.title;
+      statement.innerHTML = screen.html;
+      jumpSelect.value = String(state.phase);
+      setFeedback(feedbackForMode(screen.mode));
+      updateProgress();
+      updateLegend();
+      renderControls();
+      updateNavBar();
+      drawGraph();
+    }
+
+    function update() {
+      renderScreen(state.phase);
+    }
+
+    function next() {
+      if (state.phase === screens.length - 1) {
+        state.phase = 0;
+        state.revealStep = 0;
+        state.substitutionRevealStep = 0;
+        state.minimalIncomeFound = false;
+      } else {
+        state.phase += 1;
+      }
+      update();
+    }
+
+    function previous() {
+      state.phase = Math.max(0, state.phase - 1);
+      update();
+    }
+
+    function initJumpSelect() {
+      jumpSelect.innerHTML = screens.map((screen, index) => `<option value="${index}">${index + 1}. ${screen.title}</option>`).join("");
+      jumpSelect.addEventListener("change", () => renderScreen(Number(jumpSelect.value)));
+    }
+
+    initJumpSelect();
+    update();
+  </script>
+<button id="ttsToggle" type="button"></button>
+<script>
+(function(){
+  const synth=window.speechSynthesis;
+  let voice=null,enabled=localStorage.getItem('tts')!=='0';
+  const pick=()=>{const fr=synth.getVoices().filter(v=>v.lang.startsWith('fr'));voice=fr.find(v=>/neural|online/i.test(v.name))||fr.find(v=>/denise|thomas|paul|hortense|amelie|juliette|marie|pierre/i.test(v.name))||fr[0]||null;};
+  pick();synth.addEventListener('voiceschanged',pick);
+  const speak=t=>{if(!enabled)return;synth.cancel();const s=(t||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();if(!s)return;const u=new SpeechSynthesisUtterance(s);u.lang='fr-FR';u.rate=0.88;u.pitch=1.05;if(voice)u.voice=voice;synth.speak(u);};
+  const upd=()=>{const b=document.getElementById('ttsToggle');if(!b)return;b.classList.toggle('tts-active',enabled);const lbl=enabled?'Désactiver la voix':'Activer la voix';b.title=lbl;b.setAttribute('aria-label',lbl);b.innerHTML=enabled?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';};
+  document.getElementById('ttsToggle').addEventListener('click',()=>{enabled=!enabled;localStorage.setItem('tts',enabled?'1':'0');if(!enabled)synth.cancel();upd();});
+  upd();
+  const el=document.querySelector('#statement');
+  if(el){let tid=0;new MutationObserver(()=>{clearTimeout(tid);tid=setTimeout(()=>{speak(el.innerText||'');},80);}).observe(el,{childList:true,subtree:true,characterData:true});}
+})();
+</script>
+<div id="pgHUD"><span class="pg-sc">🏆 <span id="pgScore">0</span></span><span class="pg-sep">│</span><span class="pg-pr">⚡ <span id="pgPrec">0</span></span></div>
+<div id="pgOverlay"></div>
+<script>
+(function(){
+var MID='7';
+var MODS=[{id:'1a',n:'Préférences'},{id:'2',n:'Contrainte de budget'},{id:'2b',n:'Exercice budget'},{id:'3',n:'Choix sous contrainte'},{id:'4',n:'Substitution & revenu'},{id:'5',n:'Typologies de biens'},{id:'6',n:"Fonction d'utilité"},{id:'7',n:'Demandes compensées'},{id:'8',n:'Choix intertemporel'}];
+function ld(id){try{return JSON.parse(localStorage.getItem('prg_'+id)||'{}')}catch(e){return{}}}
+function sv(id,d){try{localStorage.setItem('prg_'+id,JSON.stringify(d))}catch(e){}}
+var sc=0,pr=0,tried=false;
+function upd(){var a=document.getElementById('pgScore'),b=document.getElementById('pgPrec');if(a)a.textContent=sc;if(b)b.textContent=pr;}
+var P={
+  wrong:function(){tried=true;},
+  correct:function(){sc++;if(!tried)pr++;tried=false;var d=ld(MID);d.score=Math.max(d.score||0,sc);d.prec=Math.max(d.prec||0,pr);d.seen=true;sv(MID,d);upd();},
+  nav:function(){tried=false;}
+};
+(function(){var d=ld(MID);d.seen=true;sv(MID,d);})();
+var st=(typeof state!=='undefined'&&state&&state.answered instanceof Set)?state:(typeof S!=='undefined'&&S&&S.answered instanceof Set)?S:null;
+if(st){var _a=st.answered.add.bind(st.answered);st.answered.add=function(k){if(!st.answered.has(k))P.correct();return _a(k);};}
+var fb=document.getElementById('feedback')||document.querySelector('.feedback');
+if(fb){new MutationObserver(function(){if(fb.classList.contains('error')||fb.classList.contains('err'))P.wrong();}).observe(fb,{attributes:true,attributeFilter:['class']});}
+var nr=document.querySelector('#narration,#statement,#narrationBox');
+if(nr){var nt=0;new MutationObserver(function(){clearTimeout(nt);nt=setTimeout(function(){P.nav();},150);}).observe(nr,{childList:true,subtree:true,characterData:true});}
+var others=MODS.filter(function(m){return m.id!==MID&&ld(m.id).seen;});
+if(others.length){var ov=document.getElementById('pgOverlay');if(ov){
+  var rows=others.map(function(m){var d=ld(m.id);return '<div class="pg-row"><span class="pg-mod-name">'+m.n+'</span><span class="pg-mod-pts"><span class="s">'+(d.score||0)+'</span> pts · <span class="p">'+(d.prec||0)+'</span> préc.</span></div>';}).join('');
+  ov.innerHTML='<div class="pg-card"><h3>📊 Votre progression</h3>'+rows+'<button id="pgClose" class="primary" type="button" style="width:100%;margin-top:8px">Commencer →</button></div>';
+  ov.style.display='flex';
+  document.getElementById('pgClose').addEventListener('click',function(){ov.style.display='none';});
+}}
+upd();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1579 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Effet substitution et effet revenu</title>
+  <style>
+    :root {
+      --paper: #f7f4ec;
+      --panel: #fffdf8;
+      --ink: #172838;
+      --muted: #60717c;
+      --line: #ddd8ce;
+      --green: #176b52;
+      --blue: #2156c5;
+      --red: #b6483b;
+      --gold: #c98c2d;
+      --violet: #6d4bc2;
+      --soft-blue: #eaf1ff;
+      --soft-green: #e8f4ee;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 19px;
+      line-height: 1.42;
+    }
+
+    .app {
+      height: 100vh;
+      height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(330px, 34%) minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 22px;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .progress-strip {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+      overflow-x: auto;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 253, 248, 0.92);
+      box-shadow: 0 10px 26px rgba(19, 37, 54, 0.04);
+    }
+
+    .progress-step {
+      flex: 0 0 auto;
+      padding: 7px 13px;
+      border: 1px solid #d6ded9;
+      border-radius: 999px;
+      background: #fbfaf5;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .progress-step.done { color: var(--green); background: #edf6f2; }
+    .progress-step.current { color: white; background: var(--green); border-color: var(--green); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 18px 38px rgba(23, 40, 56, 0.07);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .side {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-width: 0;
+      overflow: auto;
+    }
+
+    h1 {
+      margin: 0;
+      color: #5e6d77;
+      font-size: 27px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .cover-page {
+      width: min(860px, 100%);
+      display: grid;
+      gap: 22px;
+      padding: 34px;
+      background: #fffefa;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .cover-author { color: var(--muted); font-size: 18px; font-weight: 700; }
+    .cover-title { color: var(--green); font-size: 34px; font-weight: 700; line-height: 1.15; }
+    .cover-list { display: grid; gap: 10px; margin: 0; padding-left: 24px; font-size: 20px; }
+    .formula-card { padding: 20px; border: 1px solid #d5e0dc; border-radius: 14px; background: #edf3f0; }
+
+    .statement,
+    .feedback,
+    .hint-box {
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fffefa;
+    }
+
+    .statement p,
+    .feedback p,
+    .hint-box p { margin: 0 0 10px; }
+    .statement p:last-child,
+    .feedback p:last-child,
+    .hint-box p:last-child { margin-bottom: 0; }
+
+    .feedback {
+      min-height: 64px;
+      border-color: #d3ded9;
+      background: #f7fbf8;
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .feedback.error {
+      border-color: #ecd0c9;
+      background: #fff6f3;
+      color: var(--red);
+    }
+
+    .controls {
+      display: grid;
+      gap: 12px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      background: #e8edf0;
+      color: var(--ink);
+      cursor: pointer;
+      font: 700 18px Georgia, "Times New Roman", serif;
+    }
+
+    button.primary {
+      background: var(--green);
+      color: white;
+    }
+
+    input {
+      width: min(220px, 100%);
+      border: 1px solid #cdd8dc;
+      border-radius: 10px;
+      padding: 12px 13px;
+      background: white;
+      color: var(--ink);
+      font: 700 19px Georgia, "Times New Roman", serif;
+    }
+
+    .formula {
+      display: inline-block;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: #f2f5f3;
+      border: 1px solid #d9e2de;
+      font-weight: 700;
+    }
+
+    .legend {
+      display: grid;
+      gap: 8px;
+      padding: 12px 14px;
+      border: 1px solid #d8e0dd;
+      border-radius: 10px;
+      background: #fbfaf5;
+      font-size: 16px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend span.hidden {
+      display: none;
+    }
+
+    .income-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid #d8e0dd;
+      border-radius: 10px;
+      background: #fffefa;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .income-table th,
+    .income-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #e4e8e6;
+      text-align: left;
+    }
+
+    .income-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .swatch {
+      width: 22px;
+      height: 4px;
+      border-radius: 99px;
+      background: var(--green);
+    }
+
+    .main {
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 14px;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .graph-title {
+      color: #5e6d77;
+      font-size: 24px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .graph-wrap {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      overflow: auto;
+    }
+
+    svg {
+      width: min(920px, 100%, 82vh);
+      height: auto;
+      border: 1px solid #d5e0dc;
+      border-radius: 12px;
+      background: #fbfaf5;
+      touch-action: none;
+    }
+
+    .btn-dev {
+      background: #e8ecee;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      color: #555;
+      cursor: pointer;
+      font-size: 13px;
+      padding: 4px 10px;
+    }
+    .btn-dev:hover { background: #d8dde0; }
+    .dev-nav { display: flex; gap: 8px; margin-bottom: 8px; }
+    .nav-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 100;
+    }
+    .nav-panel {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+      padding: 20px;
+      min-width: 240px;
+      z-index: 101;
+    }
+    .nav-panel-title { font-weight: 700; font-size: 15px; margin-bottom: 12px; color: #2c3e50; }
+    .nav-panel-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: 1px solid #d0d8dc;
+      border-radius: 6px;
+      padding: 7px 12px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #2c3e50;
+    }
+    .nav-panel-item:hover { background: #f0f4f8; }
+    .context-diagram {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      margin: 16px 0;
+    }
+    .context-box {
+      background: #f0f4f8;
+      border: 1.5px solid #bcd;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 14px;
+      color: #555;
+      text-align: center;
+    }
+    .context-box.done { background: #e6f4ec; border-color: #6dbf8a; color: #2a7a4b; }
+    .context-box.current { background: #fff8e1; border-color: #f4c542; color: #7a5c00; font-weight: 700; }
+    .context-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.65; }
+    .context-name { font-weight: 700; }
+    .context-sub { font-size: 12px; opacity: 0.75; }
+    .context-op { font-size: 20px; color: #888; align-self: center; }
+
+    @media (max-height: 850px) {
+      body { font-size: 18px; }
+      .app { gap: 14px; padding: 14px; }
+      .progress-strip { padding: 6px; gap: 6px; }
+      .progress-step { padding: 6px 10px; font-size: 14px; }
+      .side, .main { padding: 16px; }
+      svg { width: min(820px, 100%, calc(100vh - 155px)); max-height: calc(100vh - 155px); }
+    }
+
+    @media (max-height: 720px) {
+      .app { gap: 8px; padding: 10px; }
+      .progress-step { padding: 4px 7px; font-size: 11px; }
+      .side, .main { padding: 12px; border-radius: 14px; }
+      svg { width: min(640px, 100%, calc(100vh - 130px)); max-height: calc(100vh - 130px); }
+    }
+
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .app { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+      svg { width: min(100%, 70vh); max-height: none; }
+    }
+    /* ── TTS ── */
+    #ttsToggle{position:fixed;bottom:20px;right:20px;z-index:1000;width:40px;height:40px;border-radius:50%;border:1px solid rgba(48,67,82,.14);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;color:#9aabbb;box-shadow:0 2px 10px rgba(19,37,54,.10);transition:color .2s,border-color .2s;}
+    #ttsToggle:hover{color:#176b52;border-color:rgba(23,107,82,.3);}
+    #ttsToggle.tts-active{color:#176b52;border-color:rgba(23,107,82,.25);background:rgba(237,246,242,.95);}
+    #ttsToggle svg{width:18px;height:18px;display:block;}
+    /* ── Progress ── */
+    #pgHUD{position:fixed;bottom:20px;left:20px;z-index:999;display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;border:1px solid rgba(48,67,82,.14);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);font-size:14px;color:#5f6e77;box-shadow:0 2px 10px rgba(19,37,54,.10);pointer-events:none;}
+    .pg-sc{color:#176b52;font-weight:700;display:flex;align-items:center;gap:4px;}
+    .pg-pr{color:#c98c2d;font-weight:700;display:flex;align-items:center;gap:4px;}
+    .pg-sep{opacity:.3;font-size:12px;}
+    #pgOverlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(19,37,54,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
+    .pg-card{background:#fff;border-radius:20px;padding:28px 32px;max-width:460px;width:90%;box-shadow:0 24px 64px rgba(19,37,54,.22);}
+    .pg-card h3{margin:0 0 20px;font-size:22px;color:#132536;}
+    .pg-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eef0f2;gap:12px;}
+    .pg-row:last-of-type{border-bottom:none;margin-bottom:16px;}
+    .pg-mod-name{color:#132536;font-weight:500;font-size:16px;}
+    .pg-mod-pts{font-size:14px;color:#5f6e77;white-space:nowrap;}
+    .pg-mod-pts .s{color:#176b52;font-weight:700;}
+    .pg-mod-pts .p{color:#c98c2d;font-weight:700;}
+  </style>
+</head>
+<body>
+  <div class="nav-backdrop" id="navBackdrop">
+    <div class="nav-panel" id="navPanel">
+      <div class="nav-panel-title">Aller à une phase</div>
+      <button class="nav-panel-item" data-phase="0">Départ</button>
+      <button class="nav-panel-item" data-phase="1">Prix B</button>
+      <button class="nav-panel-item" data-phase="2">Nouveau choix</button>
+      <button class="nav-panel-item" data-phase="3">Compensation</button>
+      <button class="nav-panel-item" data-phase="4">Substitution</button>
+      <button class="nav-panel-item" data-phase="5">Revenu</button>
+      <button class="nav-panel-item" data-phase="6">Bilan</button>
+      <button class="nav-panel-item" data-phase="7">Biens normaux / inférieurs</button>
+      <button class="nav-panel-item" data-phase="8">Revenus minimaux</button>
+      <button class="nav-panel-item" data-phase="9">Nouveaux prix</button>
+      <button class="nav-panel-item" data-phase="10">Quiz 1</button>
+      <button class="nav-panel-item" data-phase="11">Quiz 2</button>
+      <button class="nav-panel-item" data-phase="12">Quiz 3</button>
+      <button class="nav-panel-item" data-phase="13">Quiz 4</button>
+      <button class="nav-panel-item" data-phase="14">Quiz 5</button>
+      <button class="nav-panel-item" data-phase="15">Fin</button>
+    </div>
+  </div>
+  <div class="app">
+    <nav class="progress-strip" id="progressStrip"></nav>
+    <aside class="panel side">
+      <h1>Effet substitution et effet revenu</h1>
+      <div class="dev-nav">
+        <button id="devSkipButton" class="btn-dev" type="button" title="Avancer sans répondre (dev)">dev →</button>
+        <button id="navJumpButton" class="btn-dev" type="button" title="Aller à une phase">↗ aller à</button>
+      </div>
+      <div class="statement" id="statement"></div>
+      <div class="controls" id="controls"></div>
+      <div class="legend">
+        <span id="legendInitial"><i class="swatch" style="background:#b6483b"></i>Budget initial</span>
+        <span id="legendNew"><i class="swatch" style="background:#2156c5"></i>Budget après augmentation du prix</span>
+        <span id="legendCompensated"><i class="swatch" style="background:#c98c2d"></i>Budget compensé</span>
+      </div>
+      <div class="feedback" id="feedback">Commençons par identifier le choix initial du consommateur.</div>
+    </aside>
+
+    <main class="panel main">
+      <div class="graph-title" id="graphTitle">Situation initiale</div>
+      <div class="graph-wrap" id="graphWrap"></div>
+    </main>
+  </div>
+
+  <script>
+    const config = {
+      size: 560,
+      margin: 64,
+      maxB: 16,
+      maxC: 16,
+      income: 160,
+      oldPB: 20,
+      pC: 20,
+      newPB: 50,
+      utility: 16
+    };
+
+    const state = {
+      phase: 0,
+      showCover: true,
+      goodTypeAnswered: false,
+      quizAnswers: {},
+      compensatedIncome: null,
+      compensatedDone: false,
+      clickedInitial: false,
+      clickedNew: false,
+      newBudgetIntercepts: [],
+      minIncome: {
+        mode: "old",
+        target: 0,
+        current: 160,
+        tangentFound: false,
+        oldValues: [],
+        newValues: [],
+        newExtremes: []
+      }
+    };
+
+    const statement = document.querySelector("#statement");
+    const controls = document.querySelector("#controls");
+    const feedback = document.querySelector("#feedback");
+    const graphTitle = document.querySelector("#graphTitle");
+    const graphWrap = document.querySelector("#graphWrap");
+    const progressStrip = document.querySelector("#progressStrip");
+    const legendEl = document.querySelector(".legend");
+    const devSkipButton = document.querySelector("#devSkipButton");
+    const navJumpButton = document.querySelector("#navJumpButton");
+    const navBackdrop = document.querySelector("#navBackdrop");
+    const navPanel = document.querySelector("#navPanel");
+    const legendNew = document.querySelector("#legendNew");
+    const legendCompensated = document.querySelector("#legendCompensated");
+
+    const stepLabels = ["Départ", "Prix B", "Nouveau choix", "Compensation", "Substitution", "Revenu", "Bilan", "Biens", "Revenus min.", "Nouveaux prix", "Quiz 1", "Quiz 2", "Quiz 3", "Quiz 4", "Quiz 5", "Fin"];
+
+    function sx(b) {
+      const inner = config.size - 2 * config.margin;
+      return config.margin + (b / config.maxB) * inner;
+    }
+
+    function sy(c) {
+      const inner = config.size - 2 * config.margin;
+      return config.size - config.margin - (c / config.maxC) * inner;
+    }
+
+    function unitFromEvent(svg, event) {
+      const bounds = svg.getBoundingClientRect();
+      const view = svg.viewBox.baseVal;
+      const pixelX = view.x + ((event.clientX - bounds.left) / bounds.width) * view.width;
+      const pixelY = view.y + ((event.clientY - bounds.top) / bounds.height) * view.height;
+      const inner = config.size - 2 * config.margin;
+      return {
+        b: Math.max(0, Math.min(config.maxB, ((pixelX - config.margin) / inner) * config.maxB)),
+        c: Math.max(0, Math.min(config.maxC, ((config.size - config.margin - pixelY) / inner) * config.maxC))
+      };
+    }
+
+    function svgEl(tag, attrs = {}) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      return el;
+    }
+
+    function setFeedback(message, type = "ok") {
+      feedback.textContent = message;
+      feedback.classList.toggle("error", type === "error");
+    }
+
+    function formatNumber(value) {
+      if (Number.isInteger(value)) return String(value);
+      return value.toFixed(1).replace(".", ",").replace(/,0$/, "");
+    }
+
+    function parseNumber(value) {
+      return Number(String(value).trim().replace(",", "."));
+    }
+
+    const minIncomeCurves = [
+      { level: 9, color: "#176b52", name: "CI verte" },
+      { level: 25, color: "#2156c5", name: "CI bleue" },
+      { level: 36, color: "#6d4bc2", name: "CI violette" }
+    ];
+
+    function minimalIncome(level, pB) {
+      return 2 * Math.sqrt(level * pB * config.pC);
+    }
+
+    function minIncomeTarget() {
+      return minIncomeCurves[state.minIncome.target];
+    }
+
+    function initialChoice() {
+      return {
+        b: config.income / (2 * config.oldPB),
+        c: config.income / (2 * config.pC)
+      };
+    }
+
+    function newChoice() {
+      return {
+        b: config.income / (2 * config.newPB),
+        c: config.income / (2 * config.pC)
+      };
+    }
+
+    function compensatedChoice() {
+      const b = Math.sqrt(config.utility * config.pC / config.newPB);
+      const c = Math.sqrt(config.utility * config.newPB / config.pC);
+      return { b, c };
+    }
+
+    function compensatedIncome() {
+      const p = compensatedChoice();
+      return config.newPB * p.b + config.pC * p.c;
+    }
+
+    function ciPath(level) {
+      const points = [];
+      for (let b = 0.35; b <= config.maxB; b += 0.04) {
+        const c = level / b;
+        if (c >= 0.2 && c <= config.maxC) {
+          points.push(`${points.length ? "L" : "M"} ${sx(b).toFixed(1)} ${sy(c).toFixed(1)}`);
+        }
+      }
+      return points.join(" ");
+    }
+
+    function drawBudget(svg, income, pB, color, dash = "none", label = "") {
+      const bMax = income / pB;
+      const cMax = income / config.pC;
+      svg.appendChild(svgEl("path", {
+        d: `M ${sx(0)} ${sy(cMax)} L ${sx(bMax)} ${sy(0)}`,
+        fill: "none",
+        stroke: color,
+        "stroke-width": 4,
+        "stroke-linecap": "round",
+        "stroke-dasharray": dash,
+        "data-comp-line": color === "#c98c2d" ? "true" : "false"
+      }));
+      if (label) {
+        const text = svgEl("text", {
+          x: sx(Math.min(bMax, config.maxB)) - 112,
+          y: sy(Math.min(cMax, config.maxC)) + 28,
+          fill: color,
+          "font-size": 17,
+          "font-weight": 700,
+          "data-comp-line": color === "#c98c2d" ? "true" : "false"
+        });
+        text.textContent = label;
+        svg.appendChild(text);
+      }
+    }
+
+    function drawLostPurchasingPower(svg) {
+      const oldBMax = config.income / config.oldPB;
+      const oldCMax = config.income / config.pC;
+      const newBMax = config.income / config.newPB;
+      svg.appendChild(svgEl("polygon", {
+        points: `${sx(0)},${sy(oldCMax)} ${sx(newBMax)},${sy(0)} ${sx(oldBMax)},${sy(0)}`,
+        fill: "#b6483b",
+        opacity: 0.16
+      }));
+      const label = svgEl("text", {
+        x: sx((newBMax + oldBMax) / 2) - 70,
+        y: sy(1.15),
+        fill: "#b6483b",
+        "font-size": 15,
+        "font-weight": 700
+      });
+      label.textContent = "paniers devenus inaccessibles";
+      svg.appendChild(label);
+    }
+
+    function drawCI(svg, level, color, width = 2, dash = "none", opacity = 0.72) {
+      svg.appendChild(svgEl("path", {
+        d: ciPath(level),
+        fill: "none",
+        stroke: color,
+        "stroke-width": width,
+        "stroke-linecap": "round",
+        "stroke-dasharray": dash,
+        opacity
+      }));
+    }
+
+    function drawCIFamily(svg) {
+      const initialLevel = initialChoice().b * initialChoice().c;
+      const newLevel = newChoice().b * newChoice().c;
+      [
+        { level: newLevel * 0.58, color: "#7fae9e", dash: "5 5" },
+        { level: newLevel, color: "#2156c5", dash: state.phase >= 3 ? "none" : "5 5", highlight: state.phase >= 3 },
+        { level: initialLevel, color: "#176b52", dash: state.phase >= 1 ? "none" : "5 5", highlight: state.phase >= 1 },
+        { level: initialLevel * 1.6, color: "#7fae9e", dash: "5 5" }
+      ].forEach((curve) => {
+        drawCI(svg, curve.level, curve.color, curve.highlight ? 2.2 : 1.2, curve.dash, curve.highlight ? 0.9 : 0.42);
+      });
+    }
+
+    function drawPoint(svg, point, label, color, ghost = false) {
+      svg.appendChild(svgEl("circle", {
+        cx: sx(point.b),
+        cy: sy(point.c),
+        r: 8,
+        fill: color,
+        stroke: "white",
+        "stroke-width": 3,
+        opacity: ghost ? 0.35 : 1
+      }));
+      const text = svgEl("text", {
+        x: sx(point.b) + 10,
+        y: sy(point.c) - 10,
+        fill: color,
+        "font-size": 17,
+        "font-weight": 700,
+        opacity: ghost ? 0.4 : 1
+      });
+      text.textContent = label;
+      svg.appendChild(text);
+    }
+
+    function drawAxes(svg) {
+      for (let i = 0; i <= config.maxB; i += 1) {
+        svg.appendChild(svgEl("line", { x1: sx(i), y1: sy(0), x2: sx(i), y2: sy(config.maxC), stroke: "#d7e0e4", "stroke-width": 1 }));
+      }
+      for (let i = 0; i <= config.maxC; i += 1) {
+        svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(i), x2: sx(config.maxB), y2: sy(i), stroke: "#d7e0e4", "stroke-width": 1 }));
+      }
+      svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(0), x2: sx(config.maxB) + 16, y2: sy(0), stroke: "#172838", "stroke-width": 3 }));
+      svg.appendChild(svgEl("line", { x1: sx(0), y1: sy(0), x2: sx(0), y2: sy(config.maxC) - 16, stroke: "#172838", "stroke-width": 3 }));
+      svg.appendChild(svgEl("polygon", { points: `${sx(config.maxB) + 16},${sy(0)} ${sx(config.maxB) + 3},${sy(0) - 7} ${sx(config.maxB) + 3},${sy(0) + 7}`, fill: "#172838" }));
+      svg.appendChild(svgEl("polygon", { points: `${sx(0)},${sy(config.maxC) - 16} ${sx(0) - 7},${sy(config.maxC) - 3} ${sx(0) + 7},${sy(config.maxC) - 3}`, fill: "#172838" }));
+
+      for (let i = 0; i <= config.maxB; i += 1) {
+        const label = svgEl("text", { x: sx(i) - 5, y: sy(0) + 22, fill: "#66747d", "font-size": 13, "font-weight": 700 });
+        label.textContent = i;
+        svg.appendChild(label);
+      }
+      for (let i = 0; i <= config.maxC; i += 1) {
+        const label = svgEl("text", { x: sx(0) - 24, y: sy(i) + 5, fill: "#66747d", "font-size": 13, "font-weight": 700 });
+        label.textContent = i;
+        svg.appendChild(label);
+      }
+      const labelB = svgEl("text", { x: sx(config.maxB) - 84, y: sy(0) + 42, fill: "#172838", "font-size": 22, "font-weight": 700 });
+      labelB.textContent = "Bien B";
+      svg.appendChild(labelB);
+      const labelC = svgEl("text", { x: sx(0) - 38, y: sy(config.maxC) + 100, fill: "#172838", "font-size": 22, "font-weight": 700, transform: `rotate(-90 ${sx(0) - 38} ${sy(config.maxC) + 100})` });
+      labelC.textContent = "Bien C";
+      svg.appendChild(labelC);
+    }
+
+    function drawMinIncomeTable() {
+      const showNew = state.phase >= 9;
+      return `
+        <table class="income-table">
+          <thead>
+            <tr>
+              <th>Niveau</th>
+              <th>R min. avec pB = 20</th>
+              ${showNew ? "<th>R min. avec pB = 50</th>" : ""}
+            </tr>
+          </thead>
+          <tbody>
+            ${minIncomeCurves.map((curve, index) => {
+              const oldValue = state.minIncome.oldValues[index];
+              const newValue = state.minIncome.newValues[index];
+              return `<tr>
+                <td><span style="color:${curve.color}">u = ${curve.level}</span></td>
+                <td>${oldValue ? formatNumber(oldValue) : "..."}</td>
+                ${showNew ? `<td>${newValue ? formatNumber(newValue) : "..."}</td>` : ""}
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function drawMinIncomeGraph(svg) {
+      const pB = state.phase >= 9 ? config.newPB : config.oldPB;
+      const target = minIncomeTarget();
+      minIncomeCurves.forEach((curve) => {
+        drawCI(svg, curve.level, curve.color, curve.level === target.level ? 2.4 : 1.4, curve.level === target.level ? "none" : "5 5", curve.level === target.level ? 0.9 : 0.5);
+      });
+
+      if (state.phase === 9 && state.minIncome.newExtremes.length < 2) {
+        drawBudget(svg, config.income, config.oldPB, "#b6483b", "6 5", "ancien pB");
+        state.minIncome.newExtremes.forEach((point) => drawPoint(svg, point, "", "#2156c5"));
+        svg.addEventListener("click", (event) => handleMinIncomeNewExtreme(svg, event));
+        return;
+      }
+
+      drawMinIncomeBudget(svg, state.minIncome.current, pB);
+      const income = minimalIncome(target.level, pB);
+      if (state.minIncome.tangentFound) {
+        const point = {
+          b: Math.sqrt(target.level * config.pC / pB),
+          c: Math.sqrt(target.level * pB / config.pC)
+        };
+        drawPoint(svg, point, "T", target.color);
+      }
+      if (!state.minIncome.tangentFound) {
+        enableMinIncomeDrag(svg);
+      }
+    }
+
+    function nearestMinIncomeNewExtreme(point) {
+      const bMax = config.income / config.newPB;
+      const cMax = config.income / config.pC;
+      return point.c <= point.b ? { b: bMax, c: 0 } : { b: 0, c: cMax };
+    }
+
+    function handleMinIncomeNewExtreme(svg, event) {
+      const proposed = nearestMinIncomeNewExtreme(unitFromEvent(svg, event));
+      const sameAxisIndex = state.minIncome.newExtremes.findIndex((point) => (point.b === 0) === (proposed.b === 0));
+      if (sameAxisIndex >= 0) {
+        state.minIncome.newExtremes[sameAxisIndex] = proposed;
+      } else {
+        state.minIncome.newExtremes.push(proposed);
+      }
+      if (state.minIncome.newExtremes.length === 2) {
+        state.minIncome.current = config.income;
+        setFeedback("La nouvelle droite est placée. Cherchez maintenant le revenu minimal pour chaque niveau de satisfaction avec le nouveau prix.");
+      } else {
+        setFeedback("Premier point extrême placé. Cliquez sur l'autre axe.");
+      }
+      update();
+    }
+
+    function enableMinIncomeDrag(svg) {
+      let dragging = false;
+      svg.addEventListener("pointerdown", (event) => {
+        dragging = true;
+        svg.setPointerCapture(event.pointerId);
+        updateMinIncomeLine(svg, event);
+      });
+      svg.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        updateMinIncomeLine(svg, event);
+      });
+      svg.addEventListener("pointerup", () => { dragging = false; });
+      svg.addEventListener("pointercancel", () => { dragging = false; });
+    }
+
+    function updateMinIncomeLine(svg, event) {
+      event.preventDefault();
+      const point = unitFromEvent(svg, event);
+      const pB = state.phase >= 9 ? config.newPB : config.oldPB;
+      const income = point.b * pB + point.c * config.pC;
+      state.minIncome.current = Math.max(20, Math.min(420, income));
+      svg.querySelectorAll("[data-min-line='true']").forEach((el) => el.remove());
+      drawMinIncomeBudget(svg, state.minIncome.current, pB);
+    }
+
+    function drawMinIncomeBudget(svg, income, pB) {
+      const bMax = income / pB;
+      const cMax = income / config.pC;
+      svg.appendChild(svgEl("path", {
+        d: `M ${sx(0)} ${sy(cMax)} L ${sx(bMax)} ${sy(0)}`,
+        fill: "none",
+        stroke: "#b6483b",
+        "stroke-width": 4,
+        "stroke-linecap": "round",
+        "data-min-line": "true"
+      }));
+      const text = svgEl("text", {
+        x: sx(Math.min(bMax, config.maxB)) - 112,
+        y: sy(Math.min(cMax, config.maxC)) + 28,
+        fill: "#b6483b",
+        "font-size": 16,
+        "font-weight": 700,
+        "data-min-line": "true"
+      });
+      text.textContent = `R = ${formatNumber(income)}`;
+      svg.appendChild(text);
+    }
+
+    function drawGraph() {
+      graphWrap.innerHTML = "";
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", `0 0 ${config.size} ${config.size}`);
+      svg.setAttribute("aria-label", "Graphique des effets substitution et revenu");
+      drawAxes(svg);
+
+      if (state.phase >= 8 && state.phase <= 9) {
+        drawMinIncomeGraph(svg);
+        graphWrap.appendChild(svg);
+        return;
+      }
+
+      const x0 = initialChoice();
+      const x1 = newChoice();
+      const xs = compensatedChoice();
+
+      drawBudget(svg, config.income, config.oldPB, "#b6483b", "none", "R = 160");
+      drawCIFamily(svg);
+
+      if (state.phase >= 2 || state.newBudgetIntercepts.length === 2) {
+        drawBudget(svg, config.income, config.newPB, "#2156c5");
+      }
+      if (state.phase >= 2 && state.phase < 4) {
+        drawLostPurchasingPower(svg);
+      }
+      if (state.phase >= 1 && state.phase < 7) {
+        state.newBudgetIntercepts.forEach((point) => drawPoint(svg, point, "", "#2156c5"));
+      }
+      if (state.phase >= 3) {
+        const income = state.compensatedIncome ?? config.income;
+        drawBudget(svg, income, config.newPB, "#c98c2d", "8 5", `R = ${formatNumber(income)}`);
+      }
+      if (state.phase >= 4) {
+        drawPoint(svg, xs, "S", "#c98c2d");
+      }
+      if (state.phase >= 1) drawPoint(svg, x0, "P₁", "#176b52");
+      if (state.clickedNew || state.phase >= 3) drawPoint(svg, x1, "P₂", "#6d4bc2");
+
+      if (state.phase === 7 || (state.phase >= 10 && state.phase <= 14)) {
+        drawArrow(svg, x0, xs, "#c98c2d");
+        drawArrow(svg, xs, x1, "#6d4bc2");
+      }
+
+      if (state.phase === 0) {
+        svg.addEventListener("click", (event) => handleInitialClick(svg, event));
+      }
+      if (state.phase === 1) {
+        svg.addEventListener("click", (event) => handleNewBudgetExtremeClick(svg, event));
+      }
+      if (state.phase === 2) {
+        svg.addEventListener("click", (event) => handleNewClick(svg, event));
+      }
+      if (state.phase === 3) {
+        enableCompensatedDrag(svg);
+      }
+
+      graphWrap.appendChild(svg);
+    }
+
+    function drawArrow(svg, from, to, color) {
+      const id = `arrow-${color.replace("#", "")}`;
+      if (!svg.querySelector(`#${id}`)) {
+        const defs = svgEl("defs");
+        const marker = svgEl("marker", { id, viewBox: "0 0 10 10", refX: "8", refY: "5", markerWidth: "6", markerHeight: "6", orient: "auto-start-reverse" });
+        marker.appendChild(svgEl("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: color }));
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+      }
+      svg.appendChild(svgEl("line", {
+        x1: sx(from.b), y1: sy(from.c), x2: sx(to.b), y2: sy(to.c),
+        stroke: color,
+        "stroke-width": 4,
+        "marker-end": `url(#${id})`,
+        opacity: 0.9
+      }));
+    }
+
+    function closeTo(point, target, tolerance = 0.75) {
+      return Math.hypot(point.b - target.b, point.c - target.c) <= tolerance;
+    }
+
+    function handleInitialClick(svg, event) {
+      if (closeTo(unitFromEvent(svg, event), initialChoice())) {
+        state.clickedInitial = true;
+        state.phase = 1;
+        state.newBudgetIntercepts = [];
+        setFeedback("Exact. Le panier P₁ est le choix initial : la droite de budget est tangente à la courbe d'indifférence verte.");
+        update();
+      } else {
+        setFeedback("Pas encore. Cherchez le point où la droite rouge est tangente à la CI verte.", "error");
+      }
+    }
+
+    function nearestNewBudgetExtreme(point) {
+      const bMax = config.income / config.newPB;
+      const cMax = config.income / config.pC;
+      if (point.c <= point.b) {
+        return { b: bMax, c: 0 };
+      }
+      return { b: 0, c: cMax };
+    }
+
+    function handleNewBudgetExtremeClick(svg, event) {
+      const proposed = nearestNewBudgetExtreme(unitFromEvent(svg, event));
+      const sameAxisIndex = state.newBudgetIntercepts.findIndex((point) => (point.b === 0) === (proposed.b === 0));
+      if (sameAxisIndex >= 0) {
+        state.newBudgetIntercepts[sameAxisIndex] = proposed;
+      } else {
+        state.newBudgetIntercepts.push(proposed);
+      }
+      if (state.newBudgetIntercepts.length < 2) {
+        setFeedback("Premier panier extrême placé. Cliquez maintenant sur l'autre axe pour compléter la nouvelle droite de budget.");
+      } else {
+        state.phase = 2;
+        setFeedback("Exact. La nouvelle droite est tracée : elle pivote vers l'intérieur et devient plus raide.");
+      }
+      update();
+    }
+
+    function handleNewClick(svg, event) {
+      if (closeTo(unitFromEvent(svg, event), newChoice())) {
+        state.clickedNew = true;
+        state.phase = 3;
+        state.compensatedIncome = config.income;
+        setFeedback("Exact. Le panier P₂ est le nouveau choix. On va maintenant neutraliser la perte de pouvoir d'achat.");
+        update();
+      } else {
+        setFeedback("Pas encore. Cherchez la tangence entre la nouvelle droite bleue et la nouvelle CI violette.", "error");
+      }
+    }
+
+    function enableCompensatedDrag(svg) {
+      let dragging = false;
+      svg.addEventListener("pointerdown", (event) => {
+        dragging = true;
+        svg.setPointerCapture(event.pointerId);
+        updateCompensatedLine(svg, event);
+      });
+      svg.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        updateCompensatedLine(svg, event);
+      });
+      svg.addEventListener("pointerup", () => {
+        dragging = false;
+      });
+      svg.addEventListener("pointercancel", () => {
+        dragging = false;
+      });
+    }
+
+    function updateCompensatedLine(svg, event) {
+      event.preventDefault();
+      const point = unitFromEvent(svg, event);
+      const income = point.b * config.newPB + point.c * config.pC;
+      const maxIncome = config.maxB * config.newPB + config.maxC * config.pC;
+      state.compensatedIncome = Math.max(40, Math.min(maxIncome, income));
+      svg.querySelectorAll("[data-comp-line='true']").forEach((el) => el.remove());
+      drawBudget(svg, state.compensatedIncome, config.newPB, "#c98c2d", "8 5", `R = ${formatNumber(state.compensatedIncome)}`);
+    }
+
+    function updateProgress() {
+      const allLabels = ["Intro", ...stepLabels];
+      const activeIndex = state.showCover ? 0 : state.phase + 1;
+      progressStrip.innerHTML = allLabels.map((label, index) => {
+        const status = index < activeIndex ? "done" : index === activeIndex ? "current" : "";
+        return `<span class="progress-step ${status}">${label}</span>`;
+      }).join("");
+    }
+
+    function updateLegend() {
+      legendEl.style.display = state.showCover ? "none" : "";
+      legendNew.classList.toggle("hidden", state.phase < 1);
+      legendCompensated.classList.toggle("hidden", state.phase < 3);
+    }
+
+    function renderCoverPage() {
+      graphTitle.textContent = "";
+      graphWrap.innerHTML = `
+        <div class="cover-page">
+          <div class="cover-author">Auteur : Tanguy van Ypersele · © Tous droits réservés<br>Programmation effectuée à l'aide de l'IA.</div>
+          <div class="cover-title">Chapitre 5 : effet de substitution et effet revenu</div>
+          <div class="formula-card">
+            <p>Dans ce module, nous allons :</p>
+            <ul class="cover-list">
+              <li>décomposer l'impact d'une variation de prix en deux effets distincts ;</li>
+              <li>distinguer l'<strong>effet de substitution</strong> (le consommateur réoriente ses achats) ;</li>
+              <li>distinguer l'<strong>effet revenu</strong> (le pouvoir d'achat change) ;</li>
+              <li>construire la <strong>fonction de dépense minimale</strong> pour différents niveaux de satisfaction.</li>
+            </ul>
+          </div>
+        </div>
+      `;
+      statement.innerHTML = "";
+      feedback.textContent = "";
+      controls.innerHTML = `
+        <div class="button-row">
+          <button class="primary" id="coverStartButton">Commencer →</button>
+        </div>
+      `;
+      document.getElementById("coverStartButton").addEventListener("click", () => {
+        state.showCover = false;
+        setFeedback("Commençons par identifier le choix initial du consommateur.");
+        update();
+      });
+    }
+
+    function renderPhaseZero() {
+      graphTitle.textContent = "Situation initiale";
+      statement.innerHTML = `
+        <p>Un consommateur dispose d'un revenu de <span class="formula">160 euros</span>.</p>
+        <p>Les deux biens ont le même prix : p<sub>B</sub> = 20 et p<sub>C</sub> = 20. La droite de budget est représentée en rouge et des courbes d'indifférence en pointillés. Cliquez sur le panier qu'un consommateur avec de telles préférences choisirait.</p>
+      `;
+      controls.innerHTML = "";
+    }
+
+    function renderPhaseOne() {
+      graphTitle.textContent = "Hausse du prix de B";
+      statement.innerHTML = `
+        <p>Le prix du bien B augmente : il passe de <span class="formula">20</span> à <span class="formula">50</span>. Avec un revenu inchangé de 160 €, le consommateur peut maintenant acheter au plus <span class="formula">160/50 = 3,2</span> unités de B au lieu de 8 : l'intercept sur l'axe B se réduit. L'intercept sur l'axe C reste inchangé (p<sub>C</sub> ne bouge pas). La droite pivote vers l'intérieur et sa pente (−p<sub>B</sub>/p<sub>C</sub>) devient plus raide.</p>
+        <p>Placez les deux paniers extrêmes de la nouvelle droite de budget.</p>
+      `;
+      controls.innerHTML = `
+        <div class="button-row">
+          <button data-action="clear">Effacer les points</button>
+        </div>
+      `;
+      controls.querySelector("button").addEventListener("click", () => {
+        state.newBudgetIntercepts = [];
+        setFeedback("Cliquez sur les deux axes pour placer les paniers extrêmes de la nouvelle droite.");
+        update();
+      });
+    }
+
+    function renderPhaseTwo() {
+      graphTitle.textContent = "Perte de pouvoir d'achat";
+      statement.innerHTML = `
+        <p>La hausse du prix de B réduit le pouvoir d'achat : les paniers dans la zone rouge étaient accessibles avant, mais ne le sont plus avec les nouveaux prix.</p>
+        <p>La pente de la droite de budget est devenue plus raide, car le bien B est devenu relativement plus cher.</p>
+        <p>Cliquez maintenant sur le panier choisi, après cette augmentation du prix du bien B.</p>
+      `;
+      controls.innerHTML = "";
+    }
+
+    function renderPhaseThree() {
+      graphTitle.textContent = "Compensation du pouvoir d'achat";
+      statement.innerHTML = `
+        <p>Nous voulons voir le choix que ce consommateur aurait fait si son pouvoir d'achat n'avait pas changé.</p>
+        <p>Le pouvoir d'achat n'a pas changé si, après l'augmentation du prix du bien B, le consommateur est encore capable d'atteindre le niveau de satisfaction qu'il atteignait en consommant P₁.</p>
+        <p>Nous cherchons donc le revenu qu'il faudrait donner au consommateur pour qu'aux nouveaux prix, il puisse atteindre le niveau de satisfaction qu'il atteignait avant l'augmentation du prix. En déplaçant la droite dorée, montrez le niveau de revenu dont on a besoin.</p>
+      `;
+      controls.innerHTML = `
+        <div class="button-row">
+          <button class="primary" data-action="check">Vérifier le revenu compensé</button>
+        </div>
+      `;
+      controls.querySelector("button").addEventListener("click", () => {
+        const expected = compensatedIncome();
+        if (Math.abs((state.compensatedIncome ?? 0) - expected) <= 2) {
+          state.compensatedDone = true;
+          state.phase = 4;
+          setFeedback(`Exact. Le revenu compensé est d'environ ${formatNumber(expected)} euros. Le point S est le panier de substitution.`);
+          update();
+        } else if ((state.compensatedIncome ?? 0) < expected) {
+          setFeedback("La droite dorée est encore trop basse : l'ancienne CI reste inaccessible.", "error");
+        } else {
+          setFeedback("La droite dorée est trop haute : le consommateur peut dépasser l'ancienne CI. Il faut être juste tangent.", "error");
+        }
+      });
+    }
+
+    function renderPhaseFour() {
+      graphTitle.textContent = "Effet substitution";
+      statement.innerHTML = `
+        <p>Si le consommateur était compensé pour sa perte de pouvoir d'achat, il choisirait le panier S.</p>
+        <p>Le nouveau panier a substitué du bien C, devenu relativement moins cher, au bien B dont le prix a augmenté. L'effet de substitution va toujours dans le même sens : moins du bien dont le prix relatif a augmenté et plus de l'autre.</p>
+      `;
+      controls.innerHTML = `
+        <div class="button-row">
+          <button class="primary" data-action="next">Voir l'effet revenu</button>
+        </div>
+      `;
+      controls.querySelector("button").addEventListener("click", () => {
+        state.phase = 5;
+        setFeedback("On part maintenant du panier compensé S vers le nouveau choix P₂.");
+        update();
+      });
+    }
+
+    function renderPhaseFive() {
+      graphTitle.textContent = "Effet revenu";
+      statement.innerHTML = `
+        <p>Le déplacement de S vers P₂ mesure l'effet revenu.</p>
+        <p>En retirant la compensation de revenu, on revient de la droite compensée (dorée) à la droite bleue. Ce resserrement de la contrainte représente la perte de revenu réelle subie par le consommateur après la hausse du prix de B. L'effet revenu mesure l'impact de cette perte sur le choix : le consommateur passe du panier compensé S au panier final P₂.</p>
+      `;
+      controls.innerHTML = `
+        <div class="button-row">
+          <button class="primary" data-action="next">Faire le bilan</button>
+        </div>
+      `;
+      controls.querySelector("button").addEventListener("click", () => {
+        state.phase = 6;
+        setFeedback("La décomposition est complète : effet total = effet substitution + effet revenu.");
+        update();
+      });
+    }
+
+    function renderPhaseSix() {
+      graphTitle.textContent = "Bilan";
+      const x0 = initialChoice();
+      const xs = compensatedChoice();
+      const x1 = newChoice();
+      statement.innerHTML = `
+        <p><span class="formula">Effet total</span> : de P₁ à P₂, la quantité de bien B diminue de ${formatNumber(x0.b - x1.b)} unité(s).</p>
+        <p><span class="formula">Effet substitution</span> : de P₁ à S, la quantité de bien B diminue de ${formatNumber(x0.b - xs.b)} unité(s).</p>
+        <p><span class="formula">Effet revenu</span> : de S à P₂, la quantité de bien B diminue de ${formatNumber(xs.b - x1.b)} unité(s).</p>
+      `;
+      controls.innerHTML = `
+        <div class="button-row">
+          <button class="primary" data-action="next">Aller plus loin →</button>
+          <button data-action="restart">Recommencer</button>
+        </div>
+      `;
+      controls.querySelector("[data-action='next']").addEventListener("click", () => {
+        state.phase = 7;
+        setFeedback("Pour chaque niveau de satisfaction, quel est le revenu minimal nécessaire aux nouveaux prix ?");
+        update();
+      });
+      controls.querySelector("[data-action='restart']").addEventListener("click", reset);
+    }
+
+    function renderMinIncomeSearch(nextPhase, intro = "") {
+      const target = minIncomeTarget();
+      const pB = state.phase >= 9 ? config.newPB : config.oldPB;
+      const expected = minimalIncome(target.level, pB);
+      const values = state.phase >= 9 ? state.minIncome.newValues : state.minIncome.oldValues;
+
+      statement.innerHTML = `
+        ${intro}
+        <p>Les prix sont fixés : <span class="formula">p<sub>B</sub> = ${pB}</span> et <span class="formula">p<sub>C</sub> = 20</span>.</p>
+        <p>Déplacez la contrainte budgétaire jusqu'au point où elle permet tout juste d'atteindre la <span class="formula" style="color:${target.color}">${target.name}</span>, puis vérifiez.</p>
+        ${drawMinIncomeTable()}
+      `;
+
+      if (!state.minIncome.tangentFound) {
+        controls.innerHTML = `
+          <div class="button-row">
+            <button class="primary" data-action="check">Vérifier la droite</button>
+          </div>
+        `;
+        controls.querySelector("[data-action='check']").addEventListener("click", () => {
+          if (Math.abs(state.minIncome.current - expected) <= 3) {
+            state.minIncome.current = expected;
+            state.minIncome.tangentFound = true;
+            setFeedback("Exact. Cette droite donne le revenu minimal pour atteindre cette courbe d'indifférence. Encodez maintenant ce revenu.");
+            update();
+          } else if (state.minIncome.current < expected) {
+            setFeedback("La droite est encore trop basse : ce niveau de satisfaction n'est pas atteignable.", "error");
+          } else {
+            setFeedback("La droite est trop haute : ce niveau est atteignable, mais pas tout juste.", "error");
+          }
+        });
+        return;
+      }
+
+      controls.innerHTML = `
+        <label>Revenu minimal
+          <input id="minIncomeInput" inputmode="decimal" autocomplete="off" />
+        </label>
+        <div class="button-row">
+          <button class="primary" data-action="save">Valider le revenu</button>
+        </div>
+      `;
+      controls.querySelector("[data-action='save']").addEventListener("click", () => {
+        const value = parseNumber(document.querySelector("#minIncomeInput").value);
+        if (Math.abs(value - expected) <= 3) {
+          values[state.minIncome.target] = expected;
+          if (state.minIncome.target < minIncomeCurves.length - 1) {
+            state.minIncome.target += 1;
+            state.minIncome.current = config.income;
+            state.minIncome.tangentFound = false;
+            setFeedback("Bien. Passons au niveau de satisfaction suivant.");
+          } else if (nextPhase !== null) {
+            state.phase = nextPhase;
+            state.minIncome.target = 0;
+            state.minIncome.current = config.income;
+            state.minIncome.tangentFound = false;
+            setFeedback(nextPhase === 9
+              ? "Pour des prix donnés, chaque niveau de satisfaction correspond à un revenu minimal. Changeons maintenant le prix du bien B."
+              : "Excellent ! La fonction de dépense est construite pour les deux niveaux de prix. Passons aux questions de révision.");
+          } else {
+            setFeedback("Bien. Le tableau associe maintenant chaque niveau de satisfaction au revenu minimal correspondant avec ces nouveaux prix.");
+          }
+          update();
+        } else {
+          setFeedback("Pas encore. Encodez le revenu de la droite qui est tout juste tangente à la CI indiquée.", "error");
+        }
+      });
+    }
+
+    function renderPhaseSeven() {
+      graphTitle.textContent = "Revenu minimal et satisfaction";
+      const intro = (state.minIncome.target === 0 && state.minIncome.oldValues.length === 0)
+        ? `<p>La décomposition de Slutsky montre l'importance du revenu compensé. Nous allons maintenant construire la <strong>fonction de dépense</strong> : pour chaque niveau de satisfaction, quel est le revenu minimal nécessaire aux prix donnés ?</p>`
+        : "";
+      renderMinIncomeSearch(9, intro);
+    }
+
+    function renderPhaseEight() {
+      graphTitle.textContent = "Nouveaux prix";
+      if (state.minIncome.newExtremes.length < 2) {
+        statement.innerHTML = `
+          <p>Le prix du bien B augmente : <span class="formula">p<sub>B</sub> = 50</span>, tandis que <span class="formula">p<sub>C</sub> = 20</span>.</p>
+          <p>Placez les deux points extrêmes de la nouvelle contrainte budgétaire pour un revenu de 160 euros.</p>
+          ${drawMinIncomeTable()}
+        `;
+        controls.innerHTML = `<div class="button-row"><button data-action="clear">Effacer les points</button></div>`;
+        controls.querySelector("[data-action='clear']").addEventListener("click", () => {
+          state.minIncome.newExtremes = [];
+          setFeedback("Cliquez sur les deux axes pour placer les nouveaux points extrêmes.");
+          update();
+        });
+        return;
+      }
+      renderMinIncomeSearch(10);
+    }
+
+    function renderPhaseClassification() {
+      graphTitle.textContent = "Classification du bien B";
+
+      if (state.goodTypeAnswered) {
+        statement.innerHTML = `
+          <p>Dans cet exemple, <strong>B est un bien normal</strong> : quand le revenu diminue (retrait de la compensation), le consommateur achète moins de B. L'effet revenu renforce l'effet de substitution.</p>
+          <p>Notez la distinction entre deux axes de classification :</p>
+          <ul style="padding-left: 20px; margin: 8px 0;">
+            <li><strong>Bien normal / inférieur</strong> — selon la réaction au revenu</li>
+            <li><strong>Bien ordinaire / de Giffen</strong> — selon la réaction au prix</li>
+          </ul>
+          <p>Un bien <strong>ordinaire</strong> (demande ↓ quand prix ↑) peut être <em>normal</em> (les deux effets se cumulent) <em>ou inférieur</em> (si l'ES dépasse l'ER). Un bien de <strong>Giffen</strong> est un bien inférieur si extrême que l'ER l'emporte sur l'ES.</p>
+        `;
+        controls.innerHTML = `
+          <div class="button-row">
+            <button class="primary" data-action="next">Continuer →</button>
+          </div>
+        `;
+        controls.querySelector("button").addEventListener("click", () => {
+          state.phase = 8;
+          setFeedback("Pour chaque niveau de satisfaction, quel est le revenu minimal nécessaire aux prix donnés ?");
+          update();
+        });
+        return;
+      }
+
+      statement.innerHTML = `
+        <p>Les flèches sur le graphique indiquent les deux effets :</p>
+        <ul style="padding-left: 20px; margin: 8px 0;">
+          <li><span style="color:#c98c2d; font-weight:700;">→ Effet substitution</span> (P₁ → S) : B diminue, C augmente.</li>
+          <li><span style="color:#6d4bc2; font-weight:700;">→ Effet revenu</span> (S → P₂) : la perte de revenu réel affecte aussi les quantités.</li>
+        </ul>
+        <p>Ici, S → P₂ montre que la consommation de B <em>diminue encore</em>. Quelle est donc la nature du bien B ?</p>
+      `;
+      controls.innerHTML = `
+        <div class="button-row">
+          <button data-choice="normal">Bien normal — une baisse de revenu réduit la consommation de B</button>
+        </div>
+        <div class="button-row">
+          <button data-choice="inferior">Bien inférieur — une baisse de revenu augmente la consommation de B</button>
+        </div>
+      `;
+      controls.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (btn.dataset.choice === "normal") {
+            state.goodTypeAnswered = true;
+            setFeedback("Exact ! Quand le revenu diminue, la consommation de B diminue aussi → B est bien normal.");
+          } else {
+            setFeedback("Non. Pour un bien inférieur, une baisse de revenu augmenterait la consommation. Ici S → P₂ montre que B baisse davantage, signe d'un bien normal.", "error");
+          }
+          update();
+        });
+      });
+    }
+
+    const quizQuestions = [
+      {
+        question: "L'effet de substitution (P₁ → S) va toujours dans la même direction. Laquelle ?",
+        options: [
+          "Il augmente la consommation du bien dont le prix relatif a augmenté.",
+          "Il réduit la consommation du bien dont le prix relatif a augmenté.",
+          "Il varie selon les préférences : parfois positif, parfois négatif."
+        ],
+        correct: 1,
+        explanation: "L'effet de substitution est toujours défavorable au bien devenu relativement plus cher. La convexité des courbes d'indifférence garantit cette loi : le consommateur se tourne vers le bien relativement moins cher."
+      },
+      {
+        question: "Dans cet exemple, l'effet revenu (S → P₂) réduit lui aussi la consommation de B. Qu'est-ce que cela révèle sur la nature du bien B ?",
+        options: [
+          "B est un bien normal.",
+          "B est un bien inférieur.",
+          "B est un bien de Giffen."
+        ],
+        correct: 0,
+        explanation: "Quand la compensation est retirée, le revenu réel diminue. Or la consommation de B diminue aussi → revenu et consommation varient dans le même sens. C'est la définition d'un bien normal. Pour un bien inférieur, c'est l'inverse : une baisse de revenu augmente la demande."
+      },
+      {
+        question: "Si pB augmente et que B est un bien inférieur, l'effet revenu est...",
+        options: [
+          "Négatif : il renforce l'effet de substitution (moins de B encore).",
+          "Positif : il compense partiellement l'effet de substitution (plus de B).",
+          "Toujours nul pour les biens inférieurs."
+        ],
+        correct: 1,
+        explanation: "Pour un bien inférieur, une baisse de revenu entraîne une hausse de la consommation. L'ER est donc positif (↑ B) et s'oppose à l'ES négatif (↓ B)."
+      },
+      {
+        question: "Un bien ordinaire (dont la demande baisse quand le prix monte) peut être...",
+        options: [
+          "Uniquement un bien normal.",
+          "Uniquement un bien inférieur.",
+          "Un bien normal ou un bien inférieur."
+        ],
+        correct: 2,
+        explanation: "Un bien est ordinaire si l'effet total est négatif : ES (−) + ER (?). Pour un bien normal ER est aussi négatif → toujours ordinaire. Pour un bien inférieur ER est positif, mais si |ES| > |ER|, la demande baisse quand même → bien inférieur ordinaire."
+      },
+      {
+        question: "Un bien de Giffen (dont la demande augmente quand le prix monte) est nécessairement...",
+        options: [
+          "Un bien normal.",
+          "Un bien inférieur dont l'effet revenu dépasse en magnitude l'effet de substitution.",
+          "Un bien ordinaire."
+        ],
+        correct: 1,
+        explanation: "Pour qu'une hausse de prix augmente la demande, il faut que l'ER positif l'emporte sur l'ES négatif. Or seul un bien inférieur a un ER positif. Un bien de Giffen est donc nécessairement inférieur — et non ordinaire."
+      }
+    ];
+
+    function renderQuizPhase(i) {
+      const q = quizQuestions[i];
+      graphTitle.textContent = `Question ${i + 1} / ${quizQuestions.length}`;
+      const answered = state.quizAnswers[i] !== undefined;
+
+      if (answered) {
+        const chosen = state.quizAnswers[i];
+        const isCorrect = chosen === q.correct;
+        statement.innerHTML = `
+          <p><strong>${q.question}</strong></p>
+          ${!isCorrect ? `<p style="color:var(--red);">✗ ${q.options[chosen]}</p>` : ""}
+          <p style="color:var(--green); font-weight:700;">✓ ${q.options[q.correct]}</p>
+          <p style="font-size:15px; color:var(--muted); margin-top:8px;">${q.explanation}</p>
+        `;
+        const isLast = i === quizQuestions.length - 1;
+        controls.innerHTML = `
+          <div class="button-row">
+            <button class="primary" data-action="next">${isLast ? "Terminer →" : "Question suivante →"}</button>
+          </div>
+        `;
+        controls.querySelector("button").addEventListener("click", () => {
+          state.phase += 1;
+          setFeedback(isLast ? "Félicitations, vous avez complété le module !" : "");
+          update();
+        });
+        return;
+      }
+
+      statement.innerHTML = `<p><strong>${q.question}</strong></p>`;
+      controls.innerHTML = q.options.map((opt, j) => `
+        <div class="button-row">
+          <button data-option="${j}">${opt}</button>
+        </div>
+      `).join("");
+      controls.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const chosen = Number(btn.dataset.option);
+          state.quizAnswers[i] = chosen;
+          setFeedback(chosen === q.correct ? "Correct !" : "Pas tout à fait — la bonne réponse est affichée ci-dessous.");
+          update();
+        });
+      });
+    }
+
+    function renderPhaseNine() {
+      graphTitle.textContent = "Fin de séquence";
+      graphWrap.innerHTML = "";
+      statement.innerHTML = `
+        <p>Vous avez exploré la décomposition de Slutsky et la construction de la fonction de dépense minimale.</p>
+        <div class="context-diagram">
+          <div class="context-box done">
+            <div class="context-tag">Chapitre 1</div>
+            <div class="context-name">Les préférences</div>
+          </div>
+          <div class="context-op">→</div>
+          <div class="context-box done">
+            <div class="context-tag">Chapitre 2</div>
+            <div class="context-name">Contrainte de budget</div>
+          </div>
+          <div class="context-op">→</div>
+          <div class="context-box done">
+            <div class="context-tag">Chapitre 3</div>
+            <div class="context-name">Choix optimal</div>
+          </div>
+          <div class="context-op">→</div>
+          <div class="context-box done">
+            <div class="context-tag">Chapitre 4</div>
+            <div class="context-name">Typologie des biens</div>
+          </div>
+          <div class="context-op">→</div>
+          <div class="context-box current">
+            <div class="context-tag">Chapitre 5</div>
+            <div class="context-name">Effets substitution &amp; revenu</div>
+            <div class="context-sub">ES · ER · Fonction de dépense ✓</div>
+          </div>
+        </div>
+      `;
+      controls.innerHTML = `
+        <div class="button-row">
+          <button data-action="restart">Recommencer depuis le début</button>
+        </div>
+      `;
+      controls.querySelector("button").addEventListener("click", reset);
+    }
+
+    function reset() {
+      state.phase = 0;
+      state.showCover = false;
+      state.goodTypeAnswered = false;
+      state.quizAnswers = {};
+      state.compensatedIncome = null;
+      state.compensatedDone = false;
+      state.clickedInitial = false;
+      state.clickedNew = false;
+      state.newBudgetIntercepts = [];
+      state.minIncome = {
+        mode: "old",
+        target: 0,
+        current: 160,
+        tangentFound: false,
+        oldValues: [],
+        newValues: [],
+        newExtremes: []
+      };
+      setFeedback("Commençons par identifier le choix initial du consommateur.");
+      update();
+    }
+
+    function jumpToPhase(phase) {
+      state.phase = Number(phase);
+      state.showCover = false;
+      if (state.phase >= 7) {
+        state.clickedInitial = true;
+        state.clickedNew = true;
+        state.goodTypeAnswered = true;
+      }
+      if (state.phase >= 3 && state.compensatedIncome === null) {
+        state.compensatedIncome = config.income;
+      }
+      if (state.phase >= 4) {
+        state.compensatedIncome = compensatedIncome();
+      }
+      if (state.phase >= 2 && state.newBudgetIntercepts.length !== 2) {
+        state.newBudgetIntercepts = [
+          { b: config.income / config.newPB, c: 0 },
+          { b: 0, c: config.income / config.pC }
+        ];
+      }
+      if (state.phase >= 10) {
+        state.minIncome.oldValues = minIncomeCurves.map(c => minimalIncome(c.level, config.oldPB));
+        state.minIncome.newValues = minIncomeCurves.map(c => minimalIncome(c.level, config.newPB));
+        state.minIncome.target = minIncomeCurves.length - 1;
+        state.minIncome.tangentFound = true;
+        state.minIncome.newExtremes = [
+          { b: config.income / config.newPB, c: 0 },
+          { b: 0, c: config.income / config.pC }
+        ];
+      }
+      setFeedback("Étape chargée pour vérification rapide.");
+      update();
+    }
+
+    function openNavPanel() { navBackdrop.style.display = "block"; }
+    function closeNavPanel() { navBackdrop.style.display = ""; }
+
+    devSkipButton.addEventListener("click", () => {
+      if (state.phase < stepLabels.length - 1) { state.phase += 1; setFeedback("Étape avancée (dev)."); update(); }
+    });
+    navJumpButton.addEventListener("click", openNavPanel);
+    navBackdrop.addEventListener("click", (e) => { if (e.target === navBackdrop) closeNavPanel(); });
+    navPanel.querySelectorAll(".nav-panel-item").forEach((btn) => {
+      btn.addEventListener("click", () => { closeNavPanel(); jumpToPhase(btn.dataset.phase); });
+    });
+
+    function update() {
+      updateProgress();
+      updateLegend();
+      if (state.showCover) { renderCoverPage(); return; }
+      if (state.phase === 0) renderPhaseZero();
+      if (state.phase === 1) renderPhaseOne();
+      if (state.phase === 2) renderPhaseTwo();
+      if (state.phase === 3) renderPhaseThree();
+      if (state.phase === 4) renderPhaseFour();
+      if (state.phase === 5) renderPhaseFive();
+      if (state.phase === 6) renderPhaseSix();
+      if (state.phase === 7) renderPhaseClassification();
+      if (state.phase === 8) renderPhaseSeven();
+      if (state.phase === 9) renderPhaseEight();
+      if (state.phase >= 10 && state.phase <= 14) renderQuizPhase(state.phase - 10);
+      if (state.phase === 15) renderPhaseNine();
+      if (state.phase < 15) drawGraph();
+    }
+
+    update();
+  </script>
+<button id="ttsToggle" type="button"></button>
+<script>
+(function(){
+  const synth=window.speechSynthesis;
+  let voice=null,enabled=localStorage.getItem('tts')!=='0';
+  const pick=()=>{const fr=synth.getVoices().filter(v=>v.lang.startsWith('fr'));voice=fr.find(v=>/neural|online/i.test(v.name))||fr.find(v=>/denise|thomas|paul|hortense|amelie|juliette|marie|pierre/i.test(v.name))||fr[0]||null;};
+  pick();synth.addEventListener('voiceschanged',pick);
+  const speak=t=>{if(!enabled)return;synth.cancel();const s=(t||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();if(!s)return;const u=new SpeechSynthesisUtterance(s);u.lang='fr-FR';u.rate=0.88;u.pitch=1.05;if(voice)u.voice=voice;synth.speak(u);};
+  const upd=()=>{const b=document.getElementById('ttsToggle');if(!b)return;b.classList.toggle('tts-active',enabled);const lbl=enabled?'Désactiver la voix':'Activer la voix';b.title=lbl;b.setAttribute('aria-label',lbl);b.innerHTML=enabled?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';};
+  document.getElementById('ttsToggle').addEventListener('click',()=>{enabled=!enabled;localStorage.setItem('tts',enabled?'1':'0');if(!enabled)synth.cancel();upd();});
+  upd();
+  const el=document.querySelector('#statement');
+  if(el){let tid=0;new MutationObserver(()=>{clearTimeout(tid);tid=setTimeout(()=>{speak(el.innerText||'');},80);}).observe(el,{childList:true,subtree:true,characterData:true});}
+})();
+</script>
+<div id="pgHUD"><span class="pg-sc">🏆 <span id="pgScore">0</span></span><span class="pg-sep">│</span><span class="pg-pr">⚡ <span id="pgPrec">0</span></span></div>
+<div id="pgOverlay"></div>
+<script>
+(function(){
+var MID='4';
+var MODS=[{id:'1a',n:'Préférences'},{id:'2',n:'Contrainte de budget'},{id:'2b',n:'Exercice budget'},{id:'3',n:'Choix sous contrainte'},{id:'4',n:'Substitution & revenu'},{id:'5',n:'Typologies de biens'},{id:'6',n:"Fonction d'utilité"},{id:'7',n:'Demandes compensées'},{id:'8',n:'Choix intertemporel'}];
+function ld(id){try{return JSON.parse(localStorage.getItem('prg_'+id)||'{}')}catch(e){return{}}}
+function sv(id,d){try{localStorage.setItem('prg_'+id,JSON.stringify(d))}catch(e){}}
+var sc=0,pr=0,tried=false;
+function upd(){var a=document.getElementById('pgScore'),b=document.getElementById('pgPrec');if(a)a.textContent=sc;if(b)b.textContent=pr;}
+var P={
+  wrong:function(){tried=true;},
+  correct:function(){sc++;if(!tried)pr++;tried=false;var d=ld(MID);d.score=Math.max(d.score||0,sc);d.prec=Math.max(d.prec||0,pr);d.seen=true;sv(MID,d);upd();},
+  nav:function(){tried=false;}
+};
+(function(){var d=ld(MID);d.seen=true;sv(MID,d);})();
+var st=(typeof state!=='undefined'&&state&&state.answered instanceof Set)?state:(typeof S!=='undefined'&&S&&S.answered instanceof Set)?S:null;
+if(st){var _a=st.answered.add.bind(st.answered);st.answered.add=function(k){if(!st.answered.has(k))P.correct();return _a(k);};}
+var fb=document.getElementById('feedback')||document.querySelector('.feedback');
+if(fb){new MutationObserver(function(){if(fb.classList.contains('error')||fb.classList.contains('err'))P.wrong();}).observe(fb,{attributes:true,attributeFilter:['class']});}
+var nr=document.querySelector('#narration,#statement,#narrationBox');
+if(nr){var nt=0;new MutationObserver(function(){clearTimeout(nt);nt=setTimeout(function(){P.nav();},150);}).observe(nr,{childList:true,subtree:true,characterData:true});}
+var others=MODS.filter(function(m){return m.id!==MID&&ld(m.id).seen;});
+if(others.length){var ov=document.getElementById('pgOverlay');if(ov){
+  var rows=others.map(function(m){var d=ld(m.id);return '<div class="pg-row"><span class="pg-mod-name">'+m.n+'</span><span class="pg-mod-pts"><span class="s">'+(d.score||0)+'</span> pts · <span class="p">'+(d.prec||0)+'</span> préc.</span></div>';}).join('');
+  ov.innerHTML='<div class="pg-card"><h3>📊 Votre progression</h3>'+rows+'<button id="pgClose" class="primary" type="button" style="width:100%;margin-top:8px">Commencer →</button></div>';
+  ov.style.display='flex';
+  document.getElementById('pgClose').addEventListener('click',function(){ov.style.display='none';});
+}}
+upd();
+})();
+</script>
+</body>
+</html>
